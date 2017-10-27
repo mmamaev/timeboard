@@ -222,6 +222,7 @@ class _Timeline(pd.Series):
         return super(_Timeline, self).__init__(index=frame, data=data)
 
     def apply_disruptions(self,disruptions):
+        # test
         return self
 
 
