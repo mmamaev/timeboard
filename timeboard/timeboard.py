@@ -1,4 +1,4 @@
-from .core import _Timeline, Organizer, Period
+from .core import _Timeline, Organizer, Period, get_timestamp
 from .workshift import Workshift
 from .interval import Interval
 from .exceptions import OutOfBoundsError, VoidIntervalError
@@ -170,10 +170,39 @@ class Timeboard:
         return self.get_workshift(arg)
 
     def _locate(self, point_in_time):
+        """Find base unit by timestamp
+        
+        Parameters
+        ----------
+        point_in_time : Timestamp-like
+        
+        Returns 
+        -------
+        {int >=0, -1, -2}
+            If the base unit is found, its index in the timeline is returned.
+            Otherwise -1 is returned if `point_in_time` is outside the 
+            timeline in the future, -2 - if it is in the past.
+            
+        """
         try:
-            return self._timeline.frame.get_loc(point_in_time)
+            pit_ts = get_timestamp(point_in_time)
+        except:
+            raise
+
+        try:
+            loc = self._timeline.frame.get_loc(pit_ts)
+            if loc <0:
+                raise RuntimeError("_Frame.get_loc returned negative {}"
+                                   " for PiT {}".format(loc, point_in_time))
+            return loc
         except KeyError:
-            return None
+            if  pit_ts < self._timeline.frame.start_time:
+                return -2
+            elif pit_ts > self._timeline.frame.end_time:
+                return -1
+            else:
+                raise RuntimeError("PiT {} is within frame but _Frame.get_loc"
+                                   " raised KeyError".format(point_in_time))
 
     def _handle_out_of_bounds(self, msg=None):
         if msg is None:
@@ -219,7 +248,7 @@ class Timeboard:
             (`location`) of the workshift within the timeline.
         """
         loc = self._locate(point_in_time)
-        if loc is None:
+        if loc <0:
             return self._handle_out_of_bounds()
         else:
             return Workshift(self, loc)
@@ -343,10 +372,10 @@ class Timeboard:
             raise TypeError("Unacceptable combination of interval reference "
                             "and 'length' or 'period' parameters")
 
-        if locs[0] is None:
+        if locs[0] < 0:
             raise OutOfBoundsError('First interval bound is '
                                    'outside {}'.format(self))
-        if locs[1] is None:
+        if locs[1] < 0:
             raise OutOfBoundsError('Second interval bound is '
                                    'outside {}'.format(self))
 
@@ -380,10 +409,10 @@ class Timeboard:
         if length == 0:
             return self._handle_void_interval('Interval length cannot be zero')
         loc0 = self._locate(start_ref)
-        if loc0 is not None:
+        if loc0 >= 0:
             return sorted((loc0, loc0 + length - int(copysign(1, length))))
         else:
-            return None, None
+            return loc0, loc0
 
     def _get_interval_locs_by_period(self, period_ref, period_freq):
         p = Period(period_ref, freq=period_freq)

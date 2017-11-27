@@ -1,9 +1,9 @@
 from itertools import product
-from ..core import Timestamp
+from ..core import get_timestamp
 from timeboard import Timeboard, Organizer, OutOfBoundsError
 
-CALENDAR_LIMITS = (Timestamp('01 Jan 2005'),
-                   Timestamp('31 Dec 2018'))
+CALENDAR_LIMITS = (get_timestamp('01 Jan 2005'),
+                   get_timestamp('31 Dec 2018'))
 
 def week8x5_limits():
     return CALENDAR_LIMITS
@@ -29,8 +29,8 @@ def week8x5_amendments(start=CALENDAR_LIMITS[0],
                        custom_amendments=None,
                        work_on_dec31=True, short_eves=True):
 
-    start_ts = Timestamp(start)
-    end_ts = Timestamp(end)
+    start_ts = get_timestamp(start)
+    end_ts = get_timestamp(end)
     _check_limits(start_ts, end_ts)
 
     if short_eves:
@@ -84,7 +84,7 @@ def week8x5_amendments(start=CALENDAR_LIMITS[0],
 
     amendments.update(holidays(start_ts.year, end_ts.year, work_on_dec31))
     amendments = { k: v for k, v in amendments.items()
-                   if start_ts <= Timestamp(k) <= end_ts }
+                   if start_ts <= get_timestamp(k) <= end_ts }
     if custom_amendments is not None:
         amendments.update(custom_amendments)
 

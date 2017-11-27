@@ -6,6 +6,11 @@ from pandas import Period, Timestamp, NaT
 from itertools import cycle, dropwhile
 from collections import Iterable
 
+def get_timestamp(arg):
+    try:
+        return arg.to_timestamp()
+    except AttributeError:
+        return Timestamp(arg)
 
 def _skiperator(values, direction='forward', skip=0):
     """Build a skip-and-cycle generator

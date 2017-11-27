@@ -25,9 +25,9 @@ class TestWorkshiftConstructor(object):
     def test_locate_outside(self):
         clnd = tb_12_days()
         loc = clnd._locate('13 Jan 2017')
-        assert loc is None
+        assert loc == -1
         loc = clnd._locate('30 Dec 2016')
-        assert loc is None
+        assert loc == -2
 
     def test_locate_bad_ts(self):
         clnd = tb_12_days()
@@ -78,7 +78,8 @@ class TestWorkshiftConstructor(object):
 
     def test_workshift_constructor_from_pd_period(self):
         clnd = tb_12_days()
-        ws = clnd(pd.Period('02 Jan 2017', freq='W-MON'))
+        # freq='W' begins in Mon, which is 02 Jan
+        ws = clnd(pd.Period('05 Jan 2017', freq='W'))
         assert ws._loc == 2
         assert ws.start_time == datetime.datetime(2017, 1, 2, 0, 0, 0)
         assert ws.end_time > datetime.datetime(2017, 1, 2, 23, 59, 59)

@@ -49,36 +49,48 @@ class TestIntervalLocatorFromReference:
 
     def test_interval_locator_with_OOB_ts(self):
         clnd = tb_12_days()
+        # only one end of the interval is OOB
         assert clnd._get_interval_locs_from_reference(
-            ('02 Jan 2017 15:00', '13 Jan 2017 15:00')) == (2, None)
+            ('02 Jan 2017 15:00', '13 Jan 2017 15:00')) == (2, -1)
         assert clnd._get_interval_locs_from_reference(
-            ('30 Dec 2016 15:00', '08 Jan 2017 15:00')) == (None, 8)
+            ('30 Dec 2016 15:00', '08 Jan 2017 15:00')) == (-2, 8)
+        # the interval spans over the timeboard
         assert clnd._get_interval_locs_from_reference(
-            ('30 Dec 2016 15:00', '13 Jan 2017 15:00')) == (None, None)
+            ('30 Dec 2016 15:00', '13 Jan 2017 15:00')) == (-2, -1)
+        assert clnd._get_interval_locs_from_reference(
+            ('13 Jan 2017 15:00', '30 Dec 2016 15:00')) == (-1, -2)
+        # the interval is completely outside the timeboard
+        assert clnd._get_interval_locs_from_reference(
+            ('25 Dec 2016 15:00', '30 Dec 2016 15:00')) == (-2, -2)
+        assert clnd._get_interval_locs_from_reference(
+            ('30 Dec 2016 15:00', '25 Dec 2016 15:00')) == (-2, -2)
+        assert clnd._get_interval_locs_from_reference(
+            ('13 Jan 2017 15:00', '15 Jan 2017 15:00')) == (-1, -1)
+        assert clnd._get_interval_locs_from_reference(
+            ('15 Jan 2017 15:00', '13 Jan 2017 15:00')) == (-1, -1)
 
     def test_interval_locator_from_pd_periods(self):
         clnd = tb_12_days()
-        # looks like period is evaluated by PeriodIndex.get_loc to end_time
-        # (while period.to_timestamp yields start_time)
+        # if we could not directly Timestamp() a reference, we try to call its
+        # `to_timestamp` method which would return reference's start time
 
-        # January ends on day 31, which is outside clnd, so we get None
+        # First day of Jan is inside clnd
         assert clnd._get_interval_locs_from_reference(
             (pd.Period('02 Jan 2017', freq='M'),
-                                 '11 Jan 2017 15:00')) == (None, 11)
-        # freq=W ends weeks on Sundays, so the week of 02 Jan ends on 08 Jan
+                                 '11 Jan 2017 15:00')) == (1, 11)
+        # While 31 Dec is within clnd, the first day of Dec is outside
         assert clnd._get_interval_locs_from_reference(
-            (pd.Period('02 Jan 2017', freq='W'),
-                                 '11 Jan 2017 15:00')) == (8,11)
-        # freq=W-MON ends weeks on Mondays, and 02 Jan is Monday
+            (pd.Period('31 Dec 2016', freq='M'),
+                                 '11 Jan 2017 15:00')) == (-2, 11)
+        # freq=W begins weeks on Mon which is 02 Jan 2017
+        assert clnd._get_interval_locs_from_reference(
+            (pd.Period('05 Jan 2017', freq='W'),
+                                 '11 Jan 2017 15:00')) == (2, 11)
+        # freq=W-MON ends weeks on Mondays, and 02 Jan is Monday,
+        # but this week begins on Tue 27 Dec 2016 which is outside the timeboard
         assert clnd._get_interval_locs_from_reference(
             (pd.Period('02 Jan 2017', freq='W-MON'),
-                                 '11 Jan 2017 15:00')) == (2,11)
-        clnd2 = tb.Timeboard(base_unit_freq='D',
-                        start='31 Dec 2016', end='12 Feb 2017',
-                        layout=[0, 1, 0])
-        assert clnd2._get_interval_locs_from_reference(
-            (pd.Period('02 Jan 2017', freq='M'),
-                                  '11 Jan 2017 15:00')) == (31, 11)
+                                 '11 Jan 2017 15:00')) == (-2, 11)
 
 
     def test_interval_locator_with_bad_ts(self):
@@ -195,10 +207,29 @@ class TestIntervalConstructorWithTS:
 
     def test_interval_constructor_with_OOB_ts(self):
         clnd = tb_12_days()
+        # only one enf of the interval is OOB
         with pytest.raises(OutOfBoundsError):
             clnd.get_interval(('02 Jan 2017 15:00', '13 Jan 2017 15:00'))
         with pytest.raises(OutOfBoundsError):
             clnd.get_interval(('30 Dec 2016 15:00', '08 Jan 2017 15:00'))
+        # the interval spans over the timeboard
+        with pytest.raises(OutOfBoundsError):
+            clnd.get_interval(('30 Dec 2016 15:00', '13 Jan 2017 15:00'))
+        # check for OOBError precedes VoidIntervalError;
+        # this must be changed when clipping is enabled
+        with pytest.raises(OutOfBoundsError):
+            clnd.get_interval(('13 Jan 2017 15:00', '30 Dec 2016 15:00'))
+        # the interval is completely outside the timeboard
+        with pytest.raises(OutOfBoundsError):
+            clnd.get_interval(('25 Dec 2016 15:00', '30 Dec 2016 15:00'))
+        # OOBError is ok, since we cannot clip a complete outsider anyway
+        with pytest.raises(OutOfBoundsError):
+            clnd.get_interval(('30 Dec 2016 15:00', '25 Dec 2016 15:00'))
+        with pytest.raises(OutOfBoundsError):
+            clnd.get_interval(('13 Jan 2017 15:00', '15 Jan 2017 15:00'))
+        # OOBError is ok, since we cannot clip a complete outsider anyway
+        with pytest.raises(OutOfBoundsError):
+            clnd.get_interval(('15 Jan 2017 15:00', '13 Jan 2017 15:00'))
 
     def test_interval_constructor_with_same_ts(self):
         clnd = tb_12_days()
@@ -387,11 +418,11 @@ class TestIntervalConstructorOtherWays:
                         layout=[0, 1, 0])
         ivl = clnd.get_interval((pd.Period('05 Jan 2017 15:00', freq='M'),
                                  pd.Period('19 Feb 2017 15:00', freq='M')))
-        assert ivl.start_time == datetime.datetime(2017, 1, 31, 0, 0, 0)
-        assert ivl.end_time > datetime.datetime(2017, 2, 28, 23, 59, 59)
-        assert ivl.end_time < datetime.datetime(2017, 3, 1, 0, 0, 0)
-        assert ivl._loc == (31,31+28)
-        assert ivl.length == 29
+        assert ivl.start_time == datetime.datetime(2017, 1, 1, 0, 0, 0)
+        assert ivl.end_time > datetime.datetime(2017, 2, 1, 23, 59, 59)
+        assert ivl.end_time < datetime.datetime(2017, 2, 2, 0, 0, 0)
+        assert ivl._loc == (1,32)
+        assert ivl.length == 32
         assert not ivl.is_void
 
     def test_interval_constructor_bad_arg_combinations(self):
@@ -402,9 +433,9 @@ class TestIntervalConstructorOtherWays:
             clnd.get_interval(('01 Jan 2017',))
         with pytest.raises(TypeError):
             clnd.get_interval('01 Jan 2017', '05 Jan 2017')
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             clnd.get_interval(('01 Jan 2017',), length=1)
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             clnd.get_interval(('anyhting', 'anything'), length=1)
         with pytest.raises(ValueError):
             clnd.get_interval(('02 Jan 2017',), period='W')
