@@ -2,15 +2,25 @@ from .exceptions import (OutOfBoundsError,
                          VoidIntervalError,
                          UnsupportedPeriodError)
 import pandas as pd
-from pandas import Period, Timestamp, NaT
 from itertools import cycle, dropwhile
 from collections import Iterable
+
 
 def get_timestamp(arg):
     try:
         return arg.to_timestamp()
     except AttributeError:
-        return Timestamp(arg)
+        return pd.Timestamp(arg)
+
+
+def get_period(period_ref, freq=None, honor_period=True):
+    if isinstance(period_ref, pd.Period) and honor_period:
+        return period_ref
+    elif freq is None:
+        raise TypeError("Expected a frequency for period_ref, got None")
+    else:
+        return pd.Period(get_timestamp(period_ref), freq=freq)
+
 
 def _skiperator(values, direction='forward', skip=0):
     """Build a skip-and-cycle generator
@@ -52,6 +62,7 @@ def _skiperator(values, direction='forward', skip=0):
     counter = make_counter()
     return dropwhile(counter, cycle(pattern))
 
+
 def _check_splitby_freq(base_unit_freq, split_by):
     """
     Check if the value of `split_by` from some Organizer can be used 
@@ -73,6 +84,7 @@ def _check_splitby_freq(base_unit_freq, split_by):
         # returning nothing (NoneType)
         )
 
+
 def _to_iterable(x):
     if x is None:
         return x
@@ -83,6 +95,7 @@ def _to_iterable(x):
         return x
     else:
         return [x]
+
 
 class _Frame(pd.PeriodIndex) :
     """Ordered sequence of uniform periods of time.
@@ -358,6 +371,7 @@ class _Frame(pd.PeriodIndex) :
         # TODO: add support of partial point-in-time specifications
         return self._create_subframes(span_first, span_last, split_at)
 
+
 class _Subframe:
     """Container class defining a subframe within some frame.
     
@@ -387,6 +401,7 @@ class _Subframe:
     def __repr__(self):
         return "{}({},{},{},{])".format(self.__class__, self.first, self.last,
                                         self.skip_left, self.skip_right)
+
 
 class _Timeline(pd.Series):
     """Period-indexed series of labels.
@@ -612,7 +627,7 @@ class _Timeline(pd.Series):
                                 'other Organizers')
 
 
-class Organizer:
+class Organizer(object):
     """Container class defining rules for setting up timeline's layout.
     
     Parameters

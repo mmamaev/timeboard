@@ -1,6 +1,7 @@
 import timeboard as tb
 from timeboard.interval import Interval
 from timeboard.exceptions import OutOfBoundsError, VoidIntervalError
+from timeboard.timeboard import _Location, OOB_LEFT, OOB_RIGHT, LOC_WITHIN
 
 import datetime
 import pandas as pd
@@ -19,55 +20,71 @@ class TestIntervalLocatorFromReference:
 
     def test_interval_locator_default(self):
         clnd = tb_12_days()
-        assert clnd._get_interval_locs_from_reference(None) == (0, 12)
+        assert clnd._get_interval_locs_from_reference(
+            None, False, False) == [_Location(0, LOC_WITHIN),
+                                    _Location(12, LOC_WITHIN)]
 
     def test_interval_locator_with_two_ts(self):
         clnd = tb_12_days()
         assert clnd._get_interval_locs_from_reference(
-            ('02 Jan 2017 15:00', '08 Jan 2017 15:00')) == (2, 8)
+            ('02 Jan 2017 15:00', '08 Jan 2017 15:00'), False, False) == [
+            _Location(2, LOC_WITHIN), _Location(8, LOC_WITHIN)]
         # reverse is ok; it is taken care later in 'get_interval'
         assert clnd._get_interval_locs_from_reference(
-            ('08 Jan 2017 15:00', '02 Jan 2017 15:00')) == (8, 2)
+            ('08 Jan 2017 15:00', '02 Jan 2017 15:00'), False, False) == [
+            _Location(8, LOC_WITHIN), _Location(2, LOC_WITHIN)]
 
     def test_interval_locator_with_with_excessive_item(self):
         clnd = tb_12_days()
-        assert clnd._get_interval_locs_from_reference(('02 Jan 2017 15:00',
-                                                       '08 Jan 2017 15:00',
-                                                       'something')) == (2, 8)
+        assert clnd._get_interval_locs_from_reference(
+            ('02 Jan 2017 15:00','08 Jan 2017 15:00','something'), False,
+            False) == [_Location(2, LOC_WITHIN), _Location(8, LOC_WITHIN)]
 
     def test_interval_locator_with_two_pd_ts(self):
         clnd = tb_12_days()
         assert clnd._get_interval_locs_from_reference(
                                 (pd.Timestamp('02 Jan 2017 15:00'),
-                                 pd.Timestamp('08 Jan 2017 15:00'))) == (2, 8)
+                                 pd.Timestamp('08 Jan 2017 15:00')),
+                                False, False) == [
+                            _Location(2, LOC_WITHIN), _Location(8, LOC_WITHIN)]
 
     def test_interval_locator_with_two_datettime_ts(self):
         clnd = tb_12_days()
         assert clnd._get_interval_locs_from_reference(
                 (datetime.datetime(2017, 1, 2, 15, 0, 0),
-                 datetime.datetime(2017, 1, 8, 15, 0, 0))) == (2, 8)
+                 datetime.datetime(2017, 1, 8, 15, 0, 0)),
+                False, False) == [
+            _Location(2, LOC_WITHIN), _Location(8, LOC_WITHIN)]
 
     def test_interval_locator_with_OOB_ts(self):
         clnd = tb_12_days()
         # only one end of the interval is OOB
         assert clnd._get_interval_locs_from_reference(
-            ('02 Jan 2017 15:00', '13 Jan 2017 15:00')) == (2, -1)
+            ('02 Jan 2017 15:00', '13 Jan 2017 15:00'), False, False) == [
+            _Location(2, LOC_WITHIN), _Location(None, OOB_RIGHT)]
         assert clnd._get_interval_locs_from_reference(
-            ('30 Dec 2016 15:00', '08 Jan 2017 15:00')) == (-2, 8)
+            ('30 Dec 2016 15:00', '08 Jan 2017 15:00'), False, False) == [
+            _Location(None, OOB_LEFT), _Location(8, LOC_WITHIN)]
         # the interval spans over the timeboard
         assert clnd._get_interval_locs_from_reference(
-            ('30 Dec 2016 15:00', '13 Jan 2017 15:00')) == (-2, -1)
+            ('30 Dec 2016 15:00', '13 Jan 2017 15:00'), False, False) == [
+            _Location(None, OOB_LEFT), _Location(None, OOB_RIGHT)]
         assert clnd._get_interval_locs_from_reference(
-            ('13 Jan 2017 15:00', '30 Dec 2016 15:00')) == (-1, -2)
+            ('13 Jan 2017 15:00', '30 Dec 2016 15:00'), False, False) == [
+            _Location(None, OOB_RIGHT), _Location(None, OOB_LEFT)]
         # the interval is completely outside the timeboard
         assert clnd._get_interval_locs_from_reference(
-            ('25 Dec 2016 15:00', '30 Dec 2016 15:00')) == (-2, -2)
+            ('25 Dec 2016 15:00', '30 Dec 2016 15:00'), False, False) == [
+            _Location(None, OOB_LEFT), _Location(None, OOB_LEFT)]
         assert clnd._get_interval_locs_from_reference(
-            ('30 Dec 2016 15:00', '25 Dec 2016 15:00')) == (-2, -2)
+            ('30 Dec 2016 15:00', '25 Dec 2016 15:00'), False, False) == [
+            _Location(None, OOB_LEFT), _Location(None, OOB_LEFT)]
         assert clnd._get_interval_locs_from_reference(
-            ('13 Jan 2017 15:00', '15 Jan 2017 15:00')) == (-1, -1)
+            ('13 Jan 2017 15:00', '15 Jan 2017 15:00'), False, False) == [
+            _Location(None, OOB_RIGHT), _Location(None, OOB_RIGHT)]
         assert clnd._get_interval_locs_from_reference(
-            ('15 Jan 2017 15:00', '13 Jan 2017 15:00')) == (-1, -1)
+            ('15 Jan 2017 15:00', '13 Jan 2017 15:00'), False, False) == [
+            _Location(None, OOB_RIGHT), _Location(None, OOB_RIGHT)]
 
     def test_interval_locator_from_pd_periods(self):
         clnd = tb_12_days()
@@ -76,62 +93,107 @@ class TestIntervalLocatorFromReference:
 
         # First day of Jan is inside clnd
         assert clnd._get_interval_locs_from_reference(
-            (pd.Period('02 Jan 2017', freq='M'),
-                                 '11 Jan 2017 15:00')) == (1, 11)
+            (pd.Period('02 Jan 2017', freq='M'), '11 Jan 2017 15:00'),
+            False, False) == [
+            _Location(1, LOC_WITHIN), _Location(11, LOC_WITHIN)]
         # While 31 Dec is within clnd, the first day of Dec is outside
         assert clnd._get_interval_locs_from_reference(
-            (pd.Period('31 Dec 2016', freq='M'),
-                                 '11 Jan 2017 15:00')) == (-2, 11)
+            (pd.Period('31 Dec 2016', freq='M'), '11 Jan 2017 15:00'),
+            False, False) == [
+            _Location(None, OOB_LEFT), _Location(11, LOC_WITHIN)]
         # freq=W begins weeks on Mon which is 02 Jan 2017
         assert clnd._get_interval_locs_from_reference(
-            (pd.Period('05 Jan 2017', freq='W'),
-                                 '11 Jan 2017 15:00')) == (2, 11)
+            (pd.Period('05 Jan 2017', freq='W'), '11 Jan 2017 15:00'),
+            False, False) == [
+            _Location(2, LOC_WITHIN), _Location(11, LOC_WITHIN)]
         # freq=W-MON ends weeks on Mondays, and 02 Jan is Monday,
         # but this week begins on Tue 27 Dec 2016 which is outside the timeboard
         assert clnd._get_interval_locs_from_reference(
-            (pd.Period('02 Jan 2017', freq='W-MON'),
-                                 '11 Jan 2017 15:00')) == (-2, 11)
+            (pd.Period('02 Jan 2017', freq='W-MON'), '11 Jan 2017 15:00'),
+            False, False) == [
+            _Location(None, OOB_LEFT), _Location(11, LOC_WITHIN)]
 
 
     def test_interval_locator_with_bad_ts(self):
         clnd = tb_12_days()
         with pytest.raises(ValueError):
             clnd._get_interval_locs_from_reference(
-                ('bad_timestamp', '08 Jan 2017 15:00'))
+                ('bad_timestamp', '08 Jan 2017 15:00'), False, False)
         with pytest.raises(ValueError):
             clnd._get_interval_locs_from_reference(
-                ('02 Jan 2017 15:00', 'bad_timestamp'))
+                ('02 Jan 2017 15:00', 'bad_timestamp'), False, False)
 
     def test_interval_locator_with_singletons(self):
         clnd = tb_12_days()
         with pytest.raises(TypeError):
-            clnd._get_interval_locs_from_reference(('08 Jan 2017 15:00',))
-        with pytest.raises(ValueError):
-            clnd._get_interval_locs_from_reference('08 Jan 2017 15:00')
+            clnd._get_interval_locs_from_reference(('08 Jan 2017 15:00',),
+                                                   False, False)
+        with pytest.raises(TypeError):
+            clnd._get_interval_locs_from_reference('08 Jan 2017 15:00',
+                                                   False, False)
         with pytest.raises(TypeError):
             clnd._get_interval_locs_from_reference(
-                pd.Timestamp('08 Jan 2017 15:00'))
+                pd.Timestamp('08 Jan 2017 15:00'), False, False)
 
 class TestIntervalStripLocs:
 
     def test_interval_strip_locs(self):
         clnd = tb_12_days()
-        assert clnd._strip_interval_locs((2, 8), '11') == (2, 8)
-        assert clnd._strip_interval_locs((2, 8), '01') == (3, 8)
-        assert clnd._strip_interval_locs((2, 8), '10') == (2, 7)
-        assert clnd._strip_interval_locs((2, 8), '00') == (3, 7)
-        assert clnd._strip_interval_locs((2, 4), '00') == (3, 3)
+        assert clnd._strip_interval_locs(
+            [_Location(2,'anything'),_Location(8, 'whatever')], False, False) \
+            == [_Location(2,'anything'),_Location(8, 'whatever')]
+        assert clnd._strip_interval_locs(
+            [_Location(2,'anything'),_Location(8, 'whatever')], True, False) \
+            == [_Location(3,'anything'),_Location(8, 'whatever')]
+        assert clnd._strip_interval_locs(
+            [_Location(2,'anything'),_Location(8, 'whatever')], False, True) \
+            == [_Location(2,'anything'),_Location(7, 'whatever')]
+        assert clnd._strip_interval_locs(
+            [_Location(2,'anything'),_Location(8, 'whatever')], True, True) \
+            == [_Location(3,'anything'),_Location(7, 'whatever')]
+        assert clnd._strip_interval_locs(
+            [_Location(2,'anything'),_Location(4, 'whatever')], True, True) \
+            == [_Location(3,'anything'),_Location(3, 'whatever')]
 
+
+    def test_interval_strip_locs_single_unit(self):
+        clnd = tb_12_days()
+        assert clnd._strip_interval_locs(
+            [_Location(2,'anything'),_Location(2, 'whatever')], False, False) \
+            == [_Location(2,'anything'),_Location(2, 'whatever')]
+        assert clnd._strip_interval_locs(
+            [_Location(2,'anything'),_Location(2, 'whatever')], True, False) \
+            == [_Location(3,'anything'),_Location(2, 'whatever')]
+        assert clnd._strip_interval_locs(
+            [_Location(2,'anything'),_Location(2, 'whatever')], False, True) \
+            == [_Location(2,'anything'),_Location(1, 'whatever')]
+        assert clnd._strip_interval_locs(
+            [_Location(2,'anything'),_Location(2, 'whatever')], True, True) \
+            == [_Location(3,'anything'),_Location(1, 'whatever')]
 
     def test_interval_strip_locs_corner_cases(self):
         clnd = tb_12_days()
-        assert clnd._strip_interval_locs((2, 2), '11') == (2, 2)
-        assert clnd._strip_interval_locs((2, 2), '01') == (3, 2)
-        assert clnd._strip_interval_locs((2, 2), '10') == (2, 1)
-        assert clnd._strip_interval_locs((2, 2), '00') == (3, 1)
-        assert clnd._strip_interval_locs((2, 3), '00') == (3, 2)
-        assert clnd._strip_interval_locs((0, 0), '00') == (1, -1)
-        assert clnd._strip_interval_locs((-4, -2), '00') == (-3, -3)
+        assert clnd._strip_interval_locs(
+            [_Location(0, 'anything'), _Location(0, 'whatever')], True, True) \
+            == [_Location(1, 'anything'), _Location(-1, 'whatever')]
+        assert clnd._strip_interval_locs(
+            [_Location(-4, 'anything'), _Location(-2, 'whatever')], True, True) \
+            == [_Location(-3, 'anything'), _Location(-3, 'whatever')]
+        assert clnd._strip_interval_locs(
+            [_Location(None,'anything'),_Location(2, 'whatever')], False, False) \
+            == [_Location(None,'anything'),_Location(2, 'whatever')]
+        assert clnd._strip_interval_locs(
+            [_Location(None,'anything'),_Location(2, 'whatever')], True, False) \
+            == [_Location(None,'anything'),_Location(2, 'whatever')]
+        assert clnd._strip_interval_locs(
+            [_Location(None,'anything'),_Location(2, 'whatever')], False, True) \
+            == [_Location(None,'anything'),_Location(1, 'whatever')]
+        assert clnd._strip_interval_locs(
+            [_Location(2,'anything'),_Location(None, 'whatever')], True, True) \
+            == [_Location(3,'anything'),_Location(None, 'whatever')]
+        assert clnd._strip_interval_locs(
+            [_Location(None,'anything'),_Location(None, 'whatever')], True, True) \
+            == [_Location(None,'anything'),_Location(None, 'whatever')]
 
 
     def test_interval_strip_locs_bad_locs(self):
@@ -139,12 +201,12 @@ class TestIntervalStripLocs:
         # type and value; other parts of 'get_interval' should care about this
         assert True
 
-    def test_interval_strip_locs_bad_closed(self):
+    def test_get_interval_with_bad_closed(self):
         clnd = tb_12_days()
         with pytest.raises(ValueError):
-            clnd._strip_interval_locs((2, 8), '010')
+            clnd.get_interval(closed='010')
         with pytest.raises(ValueError):
-            clnd._strip_interval_locs((2, 8), True)
+            clnd.get_interval(closed=True)
 
 
 class TestIntervalConstructorWithTS:
@@ -207,17 +269,24 @@ class TestIntervalConstructorWithTS:
 
     def test_interval_constructor_with_OOB_ts(self):
         clnd = tb_12_days()
-        # only one enf of the interval is OOB
+        # only one end of the interval is OOB
         with pytest.raises(OutOfBoundsError):
-            clnd.get_interval(('02 Jan 2017 15:00', '13 Jan 2017 15:00'))
+            ivl = clnd.get_interval(('02 Jan 2017 15:00', '13 Jan 2017 15:00'))
         with pytest.raises(OutOfBoundsError):
-            clnd.get_interval(('30 Dec 2016 15:00', '08 Jan 2017 15:00'))
+            clnd.get_interval(('02 Jan 2017 15:00', '13 Jan 2017 15:00'),
+                              clip_period=False)
+        with pytest.raises(OutOfBoundsError):
+            ivl = clnd.get_interval(('30 Dec 2016 15:00', '08 Jan 2017 15:00'))
+        with pytest.raises(OutOfBoundsError):
+            clnd.get_interval(('30 Dec 2016 15:00', '08 Jan 2017 15:00'),
+                              clip_period=False)
         # the interval spans over the timeboard
         with pytest.raises(OutOfBoundsError):
-            clnd.get_interval(('30 Dec 2016 15:00', '13 Jan 2017 15:00'))
-        # check for OOBError precedes VoidIntervalError;
-        # this must be changed when clipping is enabled
+            ivl = clnd.get_interval(('30 Dec 2016 15:00', '13 Jan 2017 15:00'))
         with pytest.raises(OutOfBoundsError):
+            clnd.get_interval(('30 Dec 2016 15:00', '13 Jan 2017 15:00'),
+                              clip_period=False)
+        with pytest.raises(VoidIntervalError):
             clnd.get_interval(('13 Jan 2017 15:00', '30 Dec 2016 15:00'))
         # the interval is completely outside the timeboard
         with pytest.raises(OutOfBoundsError):
@@ -304,13 +373,31 @@ class TestIntervalConstructorOtherWays:
 
     def test_interval_constructor_with_OOB_period(self):
         clnd = tb_12_days()
-        # period defined by good ts but extends beyond the left bound of clnd
+        #period is defined by good ts but extends beyond the left bound of clnd
+        ivl = clnd.get_interval('01 Jan 2017 15:00', period='W')
+        assert ivl._loc == (0, 1)
         with pytest.raises(OutOfBoundsError):
-            clnd.get_interval('01 Jan 2017 15:00', period='W')
-        # period defined by good ts but extends beyond the right bound of clnd
+            clnd.get_interval('01 Jan 2017 15:00', period='W',
+                              clip_period=False)
+        #same period defined by outside ts
+        ivl = clnd.get_interval('26 Dec 2016 15:00', period='W')
+        assert ivl._loc == (0, 1)
+        #period is defined by good ts but extends beyond the right bound of clnd
+        ivl = clnd.get_interval('10 Jan 2017 15:00', period='W')
+        assert ivl._loc == (9, 12)
         with pytest.raises(OutOfBoundsError):
-            clnd.get_interval('10 Jan 2017 15:00', period='W')
-        # period completely outside clnd
+            clnd.get_interval('10 Jan 2017 15:00', period='W',
+                              clip_period=False)
+        #same period defined by outside ts
+        ivl = clnd.get_interval('14 Jan 2017 15:00', period='W')
+        assert ivl._loc == (9, 12)
+        #period spans over clnd (a year ending on 31 March)
+        ivl = clnd.get_interval('10 Mar 2017 15:00', period='A-MAR')
+        assert ivl._loc == (0, 12)
+        with pytest.raises(OutOfBoundsError):
+            clnd.get_interval('10 Mar 2017 15:00', period='A-MAR',
+                              clip_period=False)
+        #period is completely outside clnd
         with pytest.raises(OutOfBoundsError):
             clnd.get_interval('18 Jan 2017 15:00', period='W')
 
@@ -396,18 +483,25 @@ class TestIntervalConstructorOtherWays:
         assert not ivl.is_void
 
     def test_interval_constructor_from_pd_period_OOB(self):
-        clnd = tb.Timeboard(base_unit_freq='D',
-                        start='07 Jan 2017', end='18 Jan 2017',
-                        layout=[0, 1, 0])
+        clnd = tb_12_days()
+        # period defined by good ts but extends beyond the reight bound of clnd
+        ivl = clnd.get_interval(pd.Period('10 Jan 2017 15:00', freq='W'))
+        assert ivl._loc == (9, 12)
+        with pytest.raises(OutOfBoundsError):
+            clnd.get_interval(pd.Period('10 Jan 2017 15:00', freq='W'),
+                              clip_period=False)
         # period defined by good ts but extends beyond the left bound of clnd
+        ivl = clnd.get_interval(pd.Period('01 Jan 2017 15:00', freq='W'))
+        assert ivl._loc == (0, 1)
         with pytest.raises(OutOfBoundsError):
-            clnd.get_interval(pd.Period('08 Jan 2017 15:00', freq='W'))
-        # period defined by good ts but extends beyond the right bound of clnd
-        with pytest.raises(OutOfBoundsError):
-            clnd.get_interval(pd.Period('17 Jan 2017 15:00', freq='W'))
+            clnd.get_interval(pd.Period('01 Jan 2017 15:00', freq='W'),
+                              clip_period=False)
         # period overlapping clnd
+        ivl = clnd.get_interval(pd.Period('08 Mar 2017 15:00', freq='A-MAR'))
+        assert ivl._loc == (0, 12)
         with pytest.raises(OutOfBoundsError):
-            clnd.get_interval(pd.Period('08 Jan 2017 15:00', freq='M'))
+            clnd.get_interval(pd.Period('08 Mar 2017 15:00', freq='A-MAR'),
+                              clip_period=False)
         # period completely outside clnd
         with pytest.raises(OutOfBoundsError):
             clnd.get_interval(pd.Period('25 Jan 2017 15:00', freq='W'))
@@ -427,7 +521,7 @@ class TestIntervalConstructorOtherWays:
 
     def test_interval_constructor_bad_arg_combinations(self):
         clnd = tb_12_days()
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             clnd.get_interval('01 Jan 2017')
         with pytest.raises(TypeError):
             clnd.get_interval(('01 Jan 2017',))
@@ -437,9 +531,9 @@ class TestIntervalConstructorOtherWays:
             clnd.get_interval(('01 Jan 2017',), length=1)
         with pytest.raises(TypeError):
             clnd.get_interval(('anyhting', 'anything'), length=1)
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             clnd.get_interval(('02 Jan 2017',), period='W')
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             clnd.get_interval(('anyhting', 'anything'), period='W')
         with pytest.raises(TypeError):
             clnd.get_interval('anyhting', length=1, period='W')

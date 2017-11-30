@@ -1,8 +1,8 @@
-from .exceptions import OutOfBoundsError, VoidIntervalError
-from .core import Period, NaT
+from .exceptions import OutOfBoundsError
+from .core import get_period
 
 
-class Workshift:
+class Workshift(object):
     """A constituent of timeboard. 
     
     Timeboard's timeline is a sequence of workshifts. Each workshift has
@@ -87,7 +87,7 @@ class Workshift:
         return "Workshift '{}{}' at {}".\
                 format(duration_str,
                        self._tb.base_unit_freq,
-                       Period(self.ref, freq=self._tb.base_unit_freq))
+                       get_period(self.ref, freq=self._tb.base_unit_freq))
 
     @property
     def label(self):

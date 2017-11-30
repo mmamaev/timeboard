@@ -2,9 +2,9 @@ from .exceptions import (OutOfBoundsError,
                          VoidIntervalError,
                          UnsupportedPeriodError)
 from .workshift import Workshift
-from .core import _Frame, _check_splitby_freq, Period
+from .core import _Frame, _check_splitby_freq, get_period
 
-class Interval:
+class Interval(object):
     """A series of workshifts within the timeboard.
     
     Interval is defined by two positions on the timeline which point to 
@@ -108,8 +108,10 @@ class Interval:
     def __str__(self):
         return "Interval of '{}': {} -> {}" \
                 .format(self._tb.base_unit_freq,
-                        str(Period(self.start_time, freq=self._tb.base_unit_freq)),
-                        str(Period(self.end_time, freq=self._tb.base_unit_freq)))
+                        str(get_period(self.start_time,
+                                       freq=self._tb.base_unit_freq)),
+                        str(get_period(self.end_time,
+                                       freq=self._tb.base_unit_freq)))
 
     @property
     def start_time(self):
@@ -289,8 +291,8 @@ class Interval:
         period_index = _Frame(start=ivl_duty_start_ts, end=ivl_duty_end_ts,
                               base_unit_freq=period)
         len_of_1st_period = self._tb.get_interval(
-            (period_index[0].start_time, period_index[0].end_time)).\
-            count(duty=duty)
+            (period_index[0].start_time, period_index[0].end_time),
+            clip_period=False).count(duty=duty)
 
         if ivl_duty_end_ts <= period_index[0].end_time:
             ivl_units_in_only_period = self.count(duty=duty)
@@ -298,22 +300,22 @@ class Interval:
 
         result = 0.0
         ivl_units_in_1st_period = self._tb.get_interval(
-            (ivl_duty_start_ts, period_index[0].end_time)).count(duty=duty)
+            (ivl_duty_start_ts, period_index[0].end_time), clip_period=False).count(duty=duty)
         result += float(ivl_units_in_1st_period) / len_of_1st_period
 
         ivl_units_in_last_period = self._tb.get_interval(
-            (period_index[-1].start_time, ivl_duty_end_ts)).count(duty=duty)
+            (period_index[-1].start_time, ivl_duty_end_ts), clip_period=False).count(duty=duty)
         len_of_last_period = self._tb.get_interval(
-            (period_index[-1].start_time, period_index[-1].end_time)).\
-            count(duty=duty)
+            (period_index[-1].start_time, period_index[-1].end_time),
+            clip_period=False).count(duty=duty)
         result += float(ivl_units_in_last_period) / len_of_last_period
 
         full_periods_in_ivl = len(period_index) - 2
         if full_periods_in_ivl > 0:
 
             def duty_is_present(p):
-                return self._tb.get_interval(
-                    (p.start_time, p.end_time)).count(duty=duty) > 0
+                return self._tb.get_interval((p.start_time, p.end_time),
+                                             clip_period=False).count(duty=duty) > 0
 
             result += sum(map(duty_is_present, period_index[1:-1]))
 

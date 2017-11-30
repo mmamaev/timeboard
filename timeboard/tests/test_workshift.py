@@ -1,6 +1,7 @@
 import timeboard as tb
 from timeboard.workshift import Workshift
-from timeboard.exceptions import OutOfBoundsError, VoidIntervalError
+from timeboard.exceptions import OutOfBoundsError
+from timeboard.timeboard import _Location, LOC_WITHIN, OOB_LEFT, OOB_RIGHT
 
 import datetime
 import pytest
@@ -19,15 +20,14 @@ class TestWorkshiftConstructor(object):
     def test_locate(self):
         clnd = tb_12_days()
         loc = clnd._locate('04 Jan 2017')
-        assert loc == 4
-        assert isinstance(loc, int)
+        assert loc == _Location(4, LOC_WITHIN)
 
     def test_locate_outside(self):
         clnd = tb_12_days()
         loc = clnd._locate('13 Jan 2017')
-        assert loc == -1
+        assert loc == _Location(None, OOB_RIGHT)
         loc = clnd._locate('30 Dec 2016')
-        assert loc == -2
+        assert loc == _Location(None, OOB_LEFT)
 
     def test_locate_bad_ts(self):
         clnd = tb_12_days()

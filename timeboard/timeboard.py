@@ -1,14 +1,18 @@
-from .core import _Timeline, Organizer, Period, get_timestamp
+from .core import _Timeline, Organizer, get_period, get_timestamp
 from .workshift import Workshift
 from .interval import Interval
 from .exceptions import OutOfBoundsError, VoidIntervalError
-from collections import Iterable
+from collections import Iterable, namedtuple
 from math import copysign
 import warnings
 
+OOB_LEFT = -911
+OOB_RIGHT = -119
+LOC_WITHIN = 0
 
+_Location = namedtuple('_Location',['index', 'where'])
 
-class Timeboard:
+class Timeboard(object):
     """Your customized calendar.
     
     A Timeboard object consists of two main parts:
@@ -87,7 +91,7 @@ class Timeboard:
     end_time : Timestamp
         When the last workshift of the timeboard ends.
     workshift_ref
-    selectore : function
+    selector : function
         
     See also
     --------
@@ -133,10 +137,10 @@ class Timeboard:
         return self._repr
 
     def __str__(self):
-        return "Timeboard of '{}': {} -> {}" \
-                .format(self.base_unit_freq,
-                        str(Period(self.start_time, freq=self.base_unit_freq)),
-                        str(Period(self.end_time, freq=self.base_unit_freq)))
+        return "Timeboard of '{}': {} -> {}".format(
+            self.base_unit_freq,
+            str(get_period(self.start_time, freq=self.base_unit_freq)),
+            str(get_period(self.end_time, freq=self.base_unit_freq)))
 
     @property
     def base_unit_freq(self):
@@ -178,10 +182,17 @@ class Timeboard:
         
         Returns 
         -------
-        {int >=0, -1, -2}
-            If the base unit is found, its index in the timeline is returned.
-            Otherwise -1 is returned if `point_in_time` is outside the 
-            timeline in the future, -2 - if it is in the past.
+        _Location 
+            _Location is a namedtuple of two fields:
+            index: {int >=0, None}
+            where: {LOC_WITHIN, OOB_RIGHT, OOB_LEFT}
+            If the base unit is found, its index in the timeline is returned
+            in `index` field and `LOC_WITHIN` constant is returned in `where` 
+            field. 
+            If `point_in_time` is outside the timeline, `index` field 
+            is set to `None` and `where` field contains indication whether 
+            the point in time is in the future(`where=OOB_RIGHT`) or in the 
+            past (`where=OOB_LEFT`)
             
         """
         try:
@@ -194,12 +205,12 @@ class Timeboard:
             if loc <0:
                 raise RuntimeError("_Frame.get_loc returned negative {}"
                                    " for PiT {}".format(loc, point_in_time))
-            return loc
+            return _Location(loc, LOC_WITHIN)
         except KeyError:
             if  pit_ts < self._timeline.frame.start_time:
-                return -2
+                return _Location(None, OOB_LEFT)
             elif pit_ts > self._timeline.frame.end_time:
-                return -1
+                return _Location(None, OOB_RIGHT)
             else:
                 raise RuntimeError("PiT {} is within frame but _Frame.get_loc"
                                    " raised KeyError".format(point_in_time))
@@ -248,15 +259,15 @@ class Timeboard:
             (`location`) of the workshift within the timeline.
         """
         loc = self._locate(point_in_time)
-        if loc <0:
+        if loc.index is None:
             return self._handle_out_of_bounds()
         else:
-            return Workshift(self, loc)
+            return Workshift(self, loc.index)
 
 
     def get_interval(self, interval_ref=None, length=None, period=None,
-                     closed='11'):
-        """Create interval (a series of workshifts).
+                     clip_period=True, closed='11'):
+        """Create interval on the timeline.
         
         A number of techniques to define the interval can be used. They are 
         mutually exclusive. Accepted  parameters are listed below along with 
@@ -296,8 +307,11 @@ class Timeboard:
         The interval is created only if the boundaries of the calendar period 
         are aligned with workshift boundaries, that is, no workshift has its 
         parts located both within and outside the calendar period.
-        The interval will extend from the first to the last workshifts in 
-        the calendar period.
+        If the calendar period extends beyond the timeline, `clip_period` 
+        parameter is consulted. If it is True, then the calendar period is 
+        clipped at the bound(s) of the timeline, meaning that only the part of 
+        the period falling inside the timeline is considered. If 
+        `clip_period` is False, OutOfBoundsError is raised.
         
         Parameters
         ----------
@@ -329,6 +343,9 @@ class Timeboard:
         
         Other Parameters
         ----------------
+        clip_period : bool, optional (default True)
+            Only when defining the interval with a calendar period: if True, 
+            clip a calendar period at the bound(s) of the timeline.
         closed : {'11', '01', '10', '00'}, optional (default '11')
             Interpret the interval definition as closed ('11'), half-open 
             ('01' or '10'), or open ('00'). The symbol of zero indicates 
@@ -353,6 +370,18 @@ class Timeboard:
             If the combination of parameters passed to the method is not 
             allowed (is meaningless).
             
+            
+        Notes
+        -----
+        If you attempt to create an interval from two points in time or by 
+        length, and the interval would extend beyond the timeline, 
+        OutOfBoundsError is always raised. `clip_period` is effective only if
+        you are creating the interval from a calendar period.
+        
+        If the interval was created by clipping a calendar period, `closed` 
+        is not honored for the clipped end(s) (i.e. the `closed` indicator for
+        the clipped end is reset to '1').
+            
         See also
         --------
         timeboard.interval.Interval(timeboard, (location1, location2))
@@ -362,45 +391,79 @@ class Timeboard:
             of the interval within the timeline.
         """
 
+        if closed not in ['00', '01', '10', '11']:
+            raise ValueError("Unacceptable 'closed' parameter")
+        drop_head = closed[0] == '0'
+        drop_tail = closed[1] == '0'
+
         if length is None and period is None:
-            locs = self._get_interval_locs_from_reference(interval_ref)
+            try:
+                locs = self._get_interval_locs_from_reference(
+                    interval_ref, drop_head, drop_tail)
+            except TypeError:
+                try:
+                    p = get_period(interval_ref, freq=None)
+                except:
+                    raise TypeError('Could not interpret the provided interval '
+                                    'reference. Expected a sequence of two '
+                                    'Timestamp-like, or a Period-like, or None. '
+                                    'Received: {}'.format(interval_ref))
+                else:
+                    locs = self._get_interval_locs_by_period(
+                        p, None, clip_period, drop_head, drop_tail)
+
         elif length is not None and period is None:
-            locs = self._get_interval_locs_by_length(interval_ref, length)
+            locs = self._get_interval_locs_by_length(
+                interval_ref, length, drop_head, drop_tail)
         elif period is not None and length is None:
-            locs = self._get_interval_locs_by_period(interval_ref, period)
+            locs = self._get_interval_locs_by_period(
+                interval_ref, period, clip_period, drop_head, drop_tail)
         else:
             raise TypeError("Unacceptable combination of interval reference "
                             "and 'length' or 'period' parameters")
 
-        if locs[0] < 0:
-            raise OutOfBoundsError('First interval bound is '
-                                   'outside {}'.format(self))
-        if locs[1] < 0:
-            raise OutOfBoundsError('Second interval bound is '
-                                   'outside {}'.format(self))
 
-        locs = self._strip_interval_locs(locs, closed)
+        if locs[0].index is None and locs[1].index is None:
+            if clip_period and locs[0].where > locs[1].where:
+                return self._handle_void_interval(
+                    "Attempted to create reversed overlapping interval "
+                    "referenced by '{}' within {}".format(interval_ref, self))
+            else:
+                raise OutOfBoundsError("Interval referenced by '{}' is "
+                                       "completely outside {}".
+                                       format(interval_ref, self))
+        if locs[0].index is None:
+            raise OutOfBoundsError("The 1st bound of interval referenced by '{}' "
+                                   "is outside {}".format(interval_ref, self))
+        if locs[1].index is None:
+            raise OutOfBoundsError("The 2nd bound of interval referenced by '{}' "
+                                   "is outside {}".format(interval_ref, self))
+        if locs[0].index > locs[1].index:
+            return self._handle_void_interval(
+                    "Attempted to create interval with reversed indices "
+                    "({}, {}) within {}".
+                    format(locs[0].index, locs[1].index, self))
 
-        if locs[0] > locs[1]:
-            return self._handle_void_interval()
-        else:
-            return Interval(self, locs)
+        return Interval(self, (locs[0].index, locs[1].index))
 
-    def _get_interval_locs_from_reference(self, interval_ref):
+    def _get_interval_locs_from_reference(self, interval_ref,
+                                          drop_head, drop_tail):
         if interval_ref is None:
-            locs = (0, len(self._timeline) - 1)
-        elif isinstance(interval_ref, Period):
-            locs = (self._locate(interval_ref.start_time),
-                    self._locate(interval_ref.end_time))
+            locs = [_Location(0, LOC_WITHIN),
+                    _Location(len(self._timeline) - 1, LOC_WITHIN)]
+        elif hasattr(interval_ref, '__getitem__') and len(interval_ref)>=2 \
+                and not isinstance(interval_ref, str):
+            locs = [self._locate(interval_ref[0]), self._locate(interval_ref[1])]
         else:
-            if not hasattr(interval_ref, '__getitem__') or len(interval_ref)<2:
-                raise TypeError('Interval reference must be list-like '
-                                'of two values '
-                                'unless period or length kwarg is provided')
-            locs = (self._locate(interval_ref[0]), self._locate(interval_ref[1]))
-        return locs
+            raise TypeError("Could not get interval bounds from the provided "
+                            "reference. Expected a sequence of two "
+                            "Timestamp-like or None. Received {}".
+                            format(interval_ref))
+        return self._strip_interval_locs(locs, drop_head, drop_tail)
 
-    def _get_interval_locs_by_length(self, start_ref, length):
+
+    def _get_interval_locs_by_length(self, start_ref, length,
+                                     drop_head, drop_tail):
         if not isinstance(length, int):
             raise TypeError('Interval length = {}: expected integer '
                             'got {}. If you are not using length parameter, '
@@ -409,23 +472,39 @@ class Timeboard:
         if length == 0:
             return self._handle_void_interval('Interval length cannot be zero')
         loc0 = self._locate(start_ref)
-        if loc0 >= 0:
-            return sorted((loc0, loc0 + length - int(copysign(1, length))))
-        else:
-            return loc0, loc0
+        if loc0.index is None:
+            return [loc0, loc0]
+        indices = sorted([loc0.index,
+                         loc0.index + length - int(copysign(1,length))])
+        return self._strip_interval_locs(
+                    [_Location(indices[0], LOC_WITHIN),
+                     _Location(indices[1], LOC_WITHIN)],
+                    drop_head, drop_tail)
 
-    def _get_interval_locs_by_period(self, period_ref, period_freq):
-        p = Period(period_ref, freq=period_freq)
-        return self._locate(p.start_time), self._locate(p.end_time)
+    def _get_interval_locs_by_period(self, period_ref, period_freq,
+                                     clip_period, drop_head, drop_tail):
+        p = get_period(period_ref, freq=period_freq)
+        locs = [self._locate(p.start_time), self._locate(p.end_time)]
+        result0 = locs[0].index
+        result1 = locs[1].index
+        if clip_period:
+            if locs[0].where == OOB_LEFT and locs[1].where != OOB_LEFT:
+                result0 = 0
+                drop_head = False
+            if locs[1].where == OOB_RIGHT and locs[0].where != OOB_RIGHT:
+                result1 = len(self._timeline) - 1
+                drop_tail = False
+        return self._strip_interval_locs(
+                    [_Location(result0, locs[0].where),
+                     _Location(result1, locs[1].where)],
+                     drop_head, drop_tail)
 
-    def _strip_interval_locs(self, locs, closed):
-        if closed not in ['00', '01', '10', '11']:
-            raise ValueError("Unacceptable 'closed' parameter")
-        drop_head = closed[0] == '0'
-        drop_tail = closed[1] == '0'
-        result = locs
-        if drop_head:
-            result = (result[0] + 1, result[1])
-        if drop_tail:
-            result = (result[0], result[1] - 1)
-        return result
+    def _strip_interval_locs(self, locs, drop_head, drop_tail):
+        result0 = locs[0].index
+        result1 = locs[1].index
+        if drop_head and locs[0].index is not None:
+            result0 += 1
+        if drop_tail and locs[1].index is not None:
+            result1 -= 1
+        return [_Location(result0, locs[0].where),
+                _Location(result1, locs[1].where)]
