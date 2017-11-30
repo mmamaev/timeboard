@@ -1,43 +1,23 @@
-from itertools import product
+from .calendarbase import CalendarBase
 from ..core import get_timestamp
-from timeboard import Timeboard, Organizer, OutOfBoundsError
+from ..timeboard import Organizer
+from itertools import product
 
-CALENDAR_LIMITS = (get_timestamp('01 Jan 2005'),
-                   get_timestamp('31 Dec 2018'))
-
-def week8x5_limits():
-    return CALENDAR_LIMITS
-
-def _check_limits(start, end):
-    if not (CALENDAR_LIMITS[0] <= start <= CALENDAR_LIMITS[1] and
-                        CALENDAR_LIMITS[0] <= end <= CALENDAR_LIMITS[1]):
-        raise OutOfBoundsError("Calendar limits are out of range"
-                               " [{},{}]".format(*CALENDAR_LIMITS))
 
 def holidays(start_year, end_year, work_on_dec31):
-    holidays = ['01 Jan', '02 Jan', '03 Jan', '04 Jan', '05 Jan',
-                '06 Jan', '07 Jan', '23 Feb', '08 Mar', '01 May',
-                '09 May', '12 Jun', '04 Nov']
+    dates = ['01 Jan', '02 Jan', '03 Jan', '04 Jan', '05 Jan',
+             '06 Jan', '07 Jan', '23 Feb', '08 Mar', '01 May',
+             '09 May', '12 Jun', '04 Nov']
     if not work_on_dec31:
-        holidays.append('31 Dec')
+        dates.append('31 Dec')
     years = range(start_year, end_year + 1)
-    return {"{} {}".format(day, year) : 0
-            for day, year in product(holidays, years)}
+    return {"{} {}".format(day, year): 0
+            for day, year in product(dates, years)}
 
-def week8x5_amendments(start=CALENDAR_LIMITS[0],
-                       end=CALENDAR_LIMITS[1],
-                       custom_amendments=None,
-                       work_on_dec31=True, short_eves=True):
 
-    start_ts = get_timestamp(start)
-    end_ts = get_timestamp(end)
-    _check_limits(start_ts, end_ts)
-
-    if short_eves:
-        x = 7
-    else:
-        x = 8
-    amendments = {
+def changes(eve_hours):
+    x = eve_hours
+    return {
         '10 Jan 2005': 0, '22 Feb 2005': x, '05 Mar 2005': x, '07 Mar 2005': 0,
         '02 May 2005': 0, '10 May 2005': 0, '14 May 2005': 8, '13 Jun 2005': 0,
         '03 Nov 2005': x,
@@ -82,23 +62,34 @@ def week8x5_amendments(start=CALENDAR_LIMITS[0],
         '31 Dec 2018': 0
     }
 
-    amendments.update(holidays(start_ts.year, end_ts.year, work_on_dec31))
-    amendments = { k: v for k, v in amendments.items()
-                   if start_ts <= get_timestamp(k) <= end_ts }
-    if custom_amendments is not None:
-        amendments.update(custom_amendments)
 
-    return amendments
+class Week8x5(CalendarBase):
 
-def week8x5(start=CALENDAR_LIMITS[0], end=CALENDAR_LIMITS[1],
-            custom_amendments=None,
-            work_on_dec31=True, short_eves=True):
+    @classmethod
+    def parameters(cls):
+        return {
+            'base_unit_freq': 'D',
+            'start': get_timestamp('01 Jan 2005'),
+            'end': get_timestamp('31 Dec 2018'),
+            'layout': Organizer(split_by='W', structure=[[8, 8, 8, 8, 8, 0, 0]])
+        }
 
-    base_unit_freq='D'
-    week = Organizer(split_by='W', structure=[[8,8,8,8,8,0,0]])
-    amendments = week8x5_amendments(start, end,
-                                    custom_amendments,
-                                    work_on_dec31, short_eves)
+    @classmethod
+    def amendments(cls, custom_start=None, custom_end=None,
+                   custom_amendments=None,
+                   work_on_dec31=True, short_eves=True):
 
-    return Timeboard(base_unit_freq=base_unit_freq, start=start, end=end,
-                     layout=week, amendments=amendments)
+        start, end = cls._get_bounds(custom_start, custom_end)
+
+        if short_eves:
+            eve_hours = 7
+        else:
+            eve_hours = 8
+        result = changes(eve_hours)
+        result.update(holidays(start.year, end.year, work_on_dec31))
+        result = {k: v for k, v in result.items()
+                      if start <= get_timestamp(k) <= end}
+        if custom_amendments is not None:
+            result.update(custom_amendments)
+
+        return result
