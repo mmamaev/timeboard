@@ -78,7 +78,7 @@ class Workshift(object):
             return self.start_time
 
     def __repr__(self):
-        return "Workshift(tb, {})\ntb={}".format(self._loc, self._tb)
+        return "Workshift(tb, {!r})\ntb={!r}".format(self._loc, self._tb)
 
     def __str__(self):
         duration_str = ''
@@ -179,7 +179,7 @@ class Workshift(object):
         while i < len_idx and idx[i] < self._loc:
             i += 1
 
-        if i == len_idx or i + steps < 0 or i+ steps >= len_idx:
+        if i == len_idx or i + steps < 0 or i + steps >= len_idx:
             return self._tb._handle_out_of_bounds()
 
         return Workshift(self._tb, idx[i + steps])
@@ -274,6 +274,3 @@ class Workshift(object):
             return NotImplemented
         else:
             return NotImplemented
-
-
-

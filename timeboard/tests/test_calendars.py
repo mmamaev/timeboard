@@ -1,16 +1,53 @@
-import timeboard.calendars.RU as RU
+from timeboard.calendars.calendarbase import CalendarBase
 from timeboard.exceptions import OutOfBoundsError
+from timeboard.core import get_period
+from pandas import Timedelta
+import timeboard.calendars.RU as RU
+
 import datetime
 import pytest
 
-class TestCalendarsRU:
+class TestCalendarBase(object):
+    def test_calendar_base(self):
+        assert CalendarBase.amendments() == {}
+        start = CalendarBase.parameters()['start']
+        end = CalendarBase.parameters()['end']
+        freq = CalendarBase.parameters()['base_unit_freq']
+        clnd = CalendarBase()
+        assert clnd.start_time == get_period(start, freq=freq).start_time
+        assert clnd.end_time == get_period(end, freq=freq).end_time
+        delta = end - start
+        assert clnd.get_interval().count() == delta.components.days + 1
+
+    def test_calendar_base_custom_limits(self):
+        clnd = CalendarBase('01 Jan 2017', '31 Dec 2018')
+        assert clnd.get_interval().count() == 365*2
+
+    def test_calendar_base_custom_amds(self):
+        clnd = CalendarBase('01 Jan 2017', '31 Dec 2018',
+                            {'01 Mar 2017': 0,
+                             '01 Mar 2019': 0})
+        assert clnd.get_interval().count() == 365 * 2 - 1
+
+    def test_calendat_base_OOB(self):
+        start = CalendarBase.parameters()['start']
+        end = CalendarBase.parameters()['end']
+        with pytest.raises(OutOfBoundsError):
+            CalendarBase(start-Timedelta(days=1))
+        with pytest.raises(OutOfBoundsError):
+            CalendarBase(custom_end=end+Timedelta(days=1))
+
+
+class TestCalendarsRU(object):
 
     def test_calendar_RU_week8x5(self):
 
+        start = RU.Week8x5.parameters()['start']
+        end = RU.Week8x5.parameters()['end']
+        freq = RU.Week8x5.parameters()['base_unit_freq']
         clnd = RU.Week8x5()
-        assert clnd.start_time == datetime.datetime(2005, 01, 01, 0, 0, 0)
-        assert clnd.end_time > datetime.datetime(2018, 12, 31, 23, 59, 59)
-        assert clnd.end_time < datetime.datetime(2019, 01, 01, 0, 0, 0)
+        assert clnd.start_time == get_period(start, freq=freq).start_time
+        assert clnd.end_time == get_period(end, freq=freq).end_time
 
         bdays_in_year = {
             2005: 248, 2006: 248, 2007: 249,

@@ -50,15 +50,16 @@ def _skiperator(values, direction='forward', skip=0):
     def make_counter():
         nonlocal_vars = {'iters': 0}
 
-        def counter(_):
+        def _counter(_):
             flag = nonlocal_vars['iters'] < skip
             nonlocal_vars['iters'] += 1
             return flag
 
-        return counter
+        return _counter
 
     pattern = values
-    if direction == 'reverse': pattern = values[::-1]
+    if direction == 'reverse':
+        pattern = values[::-1]
     counter = make_counter()
     return dropwhile(counter, cycle(pattern))
 
@@ -79,7 +80,7 @@ def _check_splitby_freq(base_unit_freq, split_by):
     # TODO: add support of freq multiplicators, i.e. (D,4D) or (2D,4D)
     #       is_subperiod function does not support this
     return bool(
-        pd.tseries.frequencies.is_subperiod(base_unit_freq,split_by)
+        pd.tseries.frequencies.is_subperiod(base_unit_freq, split_by)
         # some combinations of arguments result in is_subperiod function
         # returning nothing (NoneType)
         )
@@ -97,7 +98,7 @@ def _to_iterable(x):
         return [x]
 
 
-class _Frame(pd.PeriodIndex) :
+class _Frame(pd.PeriodIndex):
     """Ordered sequence of uniform periods of time.
     
     `_Frame` object implements the structure of time in timeboard and 
@@ -136,13 +137,13 @@ class _Frame(pd.PeriodIndex) :
     then the frame will contain only one element, this base unit.
     Frame must contain at least one element. Empty frames are not allowed. 
     """
-    def __new__ (cls, base_unit_freq, start, end) :
+    def __new__(cls, base_unit_freq, start, end):
         frame = super(_Frame, cls).__new__(cls, start=start, end=end,
                                            freq=base_unit_freq)
         if len(frame) == 0:
-            raise VoidIntervalError('Empty frame not allowed '
-                  '(make sure the start time precedes the end time)')
-        frame._base_unit_freq=base_unit_freq
+            raise VoidIntervalError("Empty frame not allowed "
+                "(make sure the start time precedes the end time)")
+        frame._base_unit_freq = base_unit_freq
         return frame
 
     @property
@@ -194,20 +195,19 @@ class _Frame(pd.PeriodIndex) :
 
         start_positions = split_positions[:]
         start_positions.insert(0, span_first)
-        end_positions = map(lambda x:x-1, split_positions)
+        end_positions = map(lambda x: x-1, split_positions)
         end_positions.append(span_last)
 
         return zip(start_positions, end_positions)
 
     def check_span(self, span_first, span_last):
-        if not ( isinstance(span_first, int) and
-                 isinstance(span_last, int) ):
+        if not (isinstance(span_first, int) and isinstance(span_last, int)):
             # Guard against Python 2 which is ok to compare strings and
             # integers, i.e. "20 Feb 2017" > 60 evaluates to True
             raise TypeError("Span boundaries must be of type integer")
         if span_first < 0 or span_last < 0:
             raise OutOfBoundsError("Span boundaries must be non-negative")
-        if span_first > len(self) or span_last> len(self):
+        if span_first > len(self) or span_last > len(self):
             raise OutOfBoundsError("Span not within frame")
         if span_first > span_last:
             raise VoidIntervalError("Span cannot be empty")
@@ -303,10 +303,11 @@ class _Frame(pd.PeriodIndex) :
         """
         # TODO: add support of freq multiplicators, i.e. (D by 4D) or (2D by 4D)
         # TODO: reason about freq multiplicators of anchored freqs
-        if not _check_splitby_freq(self._base_unit_freq, split_by) :
+        if not _check_splitby_freq(self._base_unit_freq, split_by):
             raise UnsupportedPeriodError('Ambiguous organizing: '
-                             '{} is not a subperiod of {}'.format(
-                             self._base_unit_freq, split_by))
+                                         '{} is not a subperiod of {}'
+                                         .format(self._base_unit_freq,
+                                                 split_by))
         self.check_span(span_first, span_last)
         span_start_ts = self[span_first].start_time
         span_end_ts = self[span_last].end_time
@@ -318,7 +319,8 @@ class _Frame(pd.PeriodIndex) :
                                  start=stencil.start_time,
                                  end=span_start_ts)
             # TODO: amend use of difference without recast to pd.PeriodIndex
-            skipped_units_before = len(pd.PeriodIndex(left_dangle).difference(self[span_first:]))
+            skipped_units_before = len(pd.PeriodIndex(left_dangle).
+                                       difference(self[span_first:]))
         else:
             skipped_units_before = 0
 
@@ -326,7 +328,8 @@ class _Frame(pd.PeriodIndex) :
             right_dangle = _Frame(base_unit_freq=self._base_unit_freq,
                                   start=span_start_ts,
                                   end=stencil.end_time)
-            skipped_units_after = len(pd.PeriodIndex(right_dangle).difference(self[:span_last + 1]))
+            skipped_units_after = len(pd.PeriodIndex(right_dangle).
+                                      difference(self[:span_last + 1]))
         else:
             skipped_units_after = 0
 
@@ -390,7 +393,7 @@ class _Subframe:
     
     Attributes
     ----------
-    Same as parameters.
+    Same as parameters. The attributes are mutable.
     """
     def __init__(self, first, last, skip_left=0, skip_right=0):
         self.first = first
@@ -458,7 +461,6 @@ class _Timeline(pd.Series):
         self._base_unit_freq = base_unit_freq
         self._frame = f
 
-
     @property
     def frame(self):
         return self._frame
@@ -471,7 +473,7 @@ class _Timeline(pd.Series):
     def end_time(self):
         return self._frame.end_time
 
-    def reset(self, value = pd.np.nan):
+    def reset(self, value=pd.np.nan):
         """Set all workshift labels on the timeline to the specified value.
         
         Parameters
@@ -524,7 +526,7 @@ class _Timeline(pd.Series):
         ----
         Nothing is returned; the timeline is modified in-place.
         """
-        amendments_located={}
+        amendments_located = {}
         for (point_in_time, value) in amendments.iteritems():
             try:
                 loc = self.frame.get_loc(point_in_time)
@@ -598,11 +600,11 @@ class _Timeline(pd.Series):
         ----
         Nothing is returned; the timeline is modified in-place.
         """
-        # TODO: introduce concept of workshifts of varied length (>1 BU per workshift
-        # TODO: timeline will contain workshiftd, not base units
-        if span_first is None :
+        #TODO: introduce concept of workshifts of varied length (>1 BU per workshift
+        #TODO: timeline will contain workshifts, not base units
+        if span_first is None:
             span_first = 0
-        if span_last is None :
+        if span_last is None:
             span_last = len(self) - 1
         subframe_seq = []
         if organizer.split_by is not None:
@@ -672,7 +674,7 @@ class Organizer(object):
     approach applies for pattern when setting workshift labels.
     """
     def __init__(self, split_by=None, split_at=None, structure=None):
-        if (split_by is None) == (split_at is None) :
+        if (split_by is None) == (split_at is None):
             raise ValueError("One and only one of 'split_by' or 'split_at' "
                              "must be specified ")
         if not isinstance(structure, Iterable):
@@ -695,8 +697,7 @@ class Organizer(object):
 
     def __repr__(self):
         if self.split_by is not None:
-            s = "split_by={}".format(self.split_by)
+            s = "split_by={!r}".format(self.split_by)
         else:
-            s = "split_at={}".format(self.split_at)
-        return "Organizer({}, structure={})".format(s, self.structure)
-
+            s = "split_at={!r}".format(self.split_at)
+        return "Organizer({}, structure={!r})".format(s, self.structure)

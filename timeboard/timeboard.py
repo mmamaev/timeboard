@@ -2,7 +2,7 @@ from .core import _Timeline, Organizer, get_period, get_timestamp
 from .workshift import Workshift
 from .interval import Interval
 from .exceptions import OutOfBoundsError, VoidIntervalError
-from collections import Iterable, namedtuple
+from collections import Iterable, Sequence, namedtuple
 from math import copysign
 import warnings
 
@@ -10,7 +10,8 @@ OOB_LEFT = -911
 OOB_RIGHT = -119
 LOC_WITHIN = 0
 
-_Location = namedtuple('_Location',['index', 'where'])
+_Location = namedtuple('_Location', ['index', 'where'])
+
 
 class Timeboard(object):
     """Your customized calendar.
@@ -98,11 +99,11 @@ class Timeboard(object):
     Organizer - defines rules for setting up timeline's layout
     """
     def __init__(self, base_unit_freq, start, end, layout, amendments=None,
-                 selector=None, workshifts_ref='start'):
+                 selector=None, workshift_ref='start'):
         if isinstance(layout, Organizer):
             org = layout
-        elif isinstance(layout, Iterable):
-            if len(layout)==1 and isinstance(layout[0],Organizer):
+        elif isinstance(layout, Sequence):
+            if len(layout) == 1 and isinstance(layout[0], Organizer):
                 warnings.warn("Received 'layout' as an Organizer wrapped in "
                               "a list. Probably you do not want a list here.",
                               SyntaxWarning)
@@ -113,7 +114,7 @@ class Timeboard(object):
                             "or an instance of Organizer")
         if amendments is None:
             amendments = {}
-        if not hasattr(amendments, 'iteritems') :
+        if not hasattr(amendments, 'iteritems'):
             raise TypeError("`amendments` do not look like a dictionary: "
                             "`iteritems` method is needed but not found.")
         self._custom_selector = selector
@@ -121,8 +122,8 @@ class Timeboard(object):
         self._timeline.organize(org)
         self._timeline.amend(amendments)
         self._base_unit_freq = base_unit_freq
-        self._workshift_ref = workshifts_ref
-        self._repr = "Timeboard('{}', {}, {}, {})"\
+        self._workshift_ref = workshift_ref
+        self._repr = "Timeboard({!r}, {!r}, {!r}, {!r})"\
                      .format(base_unit_freq, start, end, layout)
 
         #TODO: think more about indexing and fast lookups
@@ -166,7 +167,7 @@ class Timeboard(object):
             return bool(x)
 
         if self._custom_selector is not None:
-           return self._custom_selector
+            return self._custom_selector
         else:
             return default_selector
 
@@ -203,12 +204,12 @@ class Timeboard(object):
 
         try:
             loc = self._timeline.frame.get_loc(pit_ts)
-            if loc <0:
+            if loc < 0:
                 raise RuntimeError("_Frame.get_loc returned negative {}"
                                    " for PiT {}".format(loc, point_in_time))
             return _Location(loc, LOC_WITHIN)
         except KeyError:
-            if  pit_ts < self._timeline.frame.start_time:
+            if pit_ts < self._timeline.frame.start_time:
                 return _Location(None, OOB_LEFT)
             elif pit_ts > self._timeline.frame.end_time:
                 return _Location(None, OOB_RIGHT)
@@ -229,7 +230,6 @@ class Timeboard(object):
         else:
             message = msg
         raise VoidIntervalError(message)
-
 
     def get_workshift(self, point_in_time):
         """Find workshift by timestamp.
@@ -264,7 +264,6 @@ class Timeboard(object):
             return self._handle_out_of_bounds()
         else:
             return Workshift(self, loc.index)
-
 
     def get_interval(self, interval_ref=None, length=None, period=None,
                      clip_period=True, closed='11'):
@@ -305,6 +304,7 @@ class Timeboard(object):
         - Create an interval aligned with a calendar period. Specify a 
         point in time within the period and a calendar frequency of the period 
         (i.e. 'M' for month). 
+        
         The interval is created only if the boundaries of the calendar period 
         are aligned with workshift boundaries, that is, no workshift has its 
         parts located both within and outside the calendar period.
@@ -323,6 +323,8 @@ class Timeboard(object):
             A pandas-compatible frequency defining a calendar period (i.e. 
             'M' for month).
         length : parameter must be omitted
+        clip_period : bool, optional (default True)
+            If True, clip a calendar period at the bound(s) of the timeline.
         
         - Create an interval from a pandas Period object. The same restriction 
         is applied as with the previous technique.
@@ -332,6 +334,8 @@ class Timeboard(object):
         interval_ref : pandas.Period
         length : parameter must be omitted
         period : parameter must be omitted
+        clip_period : bool, optional (default True)
+            If True, clip a calendar period at the bound(s) of the timeline.
         
         - Create the interval that spans the entire timeline.
         
@@ -344,9 +348,6 @@ class Timeboard(object):
         
         Other Parameters
         ----------------
-        clip_period : bool, optional (default True)
-            Only when defining the interval with a calendar period: if True, 
-            clip a calendar period at the bound(s) of the timeline.
         closed : {'11', '01', '10', '00'}, optional (default '11')
             Interpret the interval definition as closed ('11'), half-open 
             ('01' or '10'), or open ('00'). The symbol of zero indicates 
@@ -407,8 +408,8 @@ class Timeboard(object):
                 except:
                     raise TypeError('Could not interpret the provided interval '
                                     'reference. Expected a sequence of two '
-                                    'Timestamp-like, or a Period-like, or None. '
-                                    'Received: {}'.format(interval_ref))
+                                    'Timestamp-like, or a Period-like, or None.'
+                                    ' Received: {}'.format(interval_ref))
                 else:
                     locs = self._get_interval_locs_by_period(
                         p, None, clip_period, drop_head, drop_tail)
@@ -422,7 +423,6 @@ class Timeboard(object):
         else:
             raise TypeError("Unacceptable combination of interval reference "
                             "and 'length' or 'period' parameters")
-
 
         if locs[0].index is None and locs[1].index is None:
             if clip_period and locs[0].where > locs[1].where:
@@ -452,16 +452,16 @@ class Timeboard(object):
         if interval_ref is None:
             locs = [_Location(0, LOC_WITHIN),
                     _Location(len(self._timeline) - 1, LOC_WITHIN)]
-        elif hasattr(interval_ref, '__getitem__') and len(interval_ref)>=2 \
+        elif hasattr(interval_ref, '__getitem__') and len(interval_ref) >= 2 \
                 and not isinstance(interval_ref, str):
-            locs = [self._locate(interval_ref[0]), self._locate(interval_ref[1])]
+            locs = [self._locate(interval_ref[0]),
+                    self._locate(interval_ref[1])]
         else:
             raise TypeError("Could not get interval bounds from the provided "
                             "reference. Expected a sequence of two "
                             "Timestamp-like or None. Received {}".
                             format(interval_ref))
         return self._strip_interval_locs(locs, drop_head, drop_tail)
-
 
     def _get_interval_locs_by_length(self, start_ref, length,
                                      drop_head, drop_tail):
@@ -476,7 +476,7 @@ class Timeboard(object):
         if loc0.index is None:
             return [loc0, loc0]
         indices = sorted([loc0.index,
-                         loc0.index + length - int(copysign(1,length))])
+                         loc0.index + length - int(copysign(1, length))])
         return self._strip_interval_locs(
                     [_Location(indices[0], LOC_WITHIN),
                      _Location(indices[1], LOC_WITHIN)],
@@ -496,9 +496,9 @@ class Timeboard(object):
                 result1 = len(self._timeline) - 1
                 drop_tail = False
         return self._strip_interval_locs(
-                    [_Location(result0, locs[0].where),
-                     _Location(result1, locs[1].where)],
-                     drop_head, drop_tail)
+                                         [_Location(result0, locs[0].where),
+                                          _Location(result1, locs[1].where)],
+                                         drop_head, drop_tail)
 
     def _strip_interval_locs(self, locs, drop_head, drop_tail):
         result0 = locs[0].index

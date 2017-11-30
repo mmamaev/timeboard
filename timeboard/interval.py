@@ -56,8 +56,8 @@ class Interval(object):
                                 'Workshift, received {}'.
                                 format(bound, type(bound)))
             if not 0 <= loc < len(timeboard._timeline):
-                raise OutOfBoundsError("Interval bound {} is outside timeboard {}".
-                                       format(bound, timeboard))
+                raise OutOfBoundsError("Interval bound {} is outside timeboard "
+                                       "{}".format(bound, timeboard))
             return loc
 
         if not hasattr(bounds, '__getitem__'):
@@ -89,21 +89,21 @@ class Interval(object):
 
     def _find_my_bounds_in_idx(self, idx):
         #TODO: optimize this search
-        left_bound=0
+        left_bound = 0
         len_idx = len(idx)
         while left_bound < len_idx and idx[left_bound] < self._loc[0]:
             left_bound += 1
         if left_bound == len_idx:
-            return (None, None)
+            return None, None
         right_bound = len(idx) - 1
         while right_bound >= left_bound and idx[right_bound] > self._loc[1]:
             right_bound -= 1
         if right_bound < left_bound:
-            return (None, None)
-        return (left_bound, right_bound)
+            return None, None
+        return left_bound, right_bound
 
     def __repr__(self):
-        return "Interval(tb, {})\ntb={}".format(self._loc, self._tb)
+        return "Interval(tb, {!r})\ntb={!r}".format(self._loc, self._tb)
 
     def __str__(self):
         return "Interval of '{}': {} -> {}" \
@@ -300,11 +300,13 @@ class Interval(object):
 
         result = 0.0
         ivl_units_in_1st_period = self._tb.get_interval(
-            (ivl_duty_start_ts, period_index[0].end_time), clip_period=False).count(duty=duty)
+            (ivl_duty_start_ts, period_index[0].end_time),
+            clip_period=False).count(duty=duty)
         result += float(ivl_units_in_1st_period) / len_of_1st_period
 
         ivl_units_in_last_period = self._tb.get_interval(
-            (period_index[-1].start_time, ivl_duty_end_ts), clip_period=False).count(duty=duty)
+            (period_index[-1].start_time, ivl_duty_end_ts),
+            clip_period=False).count(duty=duty)
         len_of_last_period = self._tb.get_interval(
             (period_index[-1].start_time, period_index[-1].end_time),
             clip_period=False).count(duty=duty)
@@ -315,7 +317,7 @@ class Interval(object):
 
             def duty_is_present(p):
                 return self._tb.get_interval((p.start_time, p.end_time),
-                                             clip_period=False).count(duty=duty) > 0
+                    clip_period=False).count(duty=duty) > 0
 
             result += sum(map(duty_is_present, period_index[1:-1]))
 
