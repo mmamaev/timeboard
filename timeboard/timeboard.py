@@ -97,7 +97,7 @@ class Timeboard(object):
     --------
     Organizer - defines rules for setting up timeline's layout
     """
-    def __init__(self, base_unit_freq, start, end, layout, amendments={},
+    def __init__(self, base_unit_freq, start, end, layout, amendments=None,
                  selector=None, workshifts_ref='start'):
         if isinstance(layout, Organizer):
             org = layout
@@ -111,7 +111,8 @@ class Timeboard(object):
             raise TypeError("`layout` must be either an iterable "
                             "representing a pattern, "
                             "or an instance of Organizer")
-
+        if amendments is None:
+            amendments = {}
         if not hasattr(amendments, 'iteritems') :
             raise TypeError("`amendments` do not look like a dictionary: "
                             "`iteritems` method is needed but not found.")
