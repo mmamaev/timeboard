@@ -537,8 +537,8 @@ class _Timeline(pd.Series):
                 else:
                     continue
             if loc in amendments_located:
-                raise KeyError("Amendments contain duplicate reference to "
-                               "workshift {}".format(loc))
+                raise KeyError("Amendments key '{}' is a duplicate reference "
+                               "to workshift {}".format(point_in_time, loc))
             amendments_located[loc] = value
 
         self.iloc[amendments_located.keys()] = amendments_located.values()

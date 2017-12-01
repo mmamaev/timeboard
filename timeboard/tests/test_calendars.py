@@ -20,13 +20,17 @@ class TestCalendarBase(object):
         assert clnd.get_interval().count() == delta.components.days + 1
 
     def test_calendar_base_custom_limits(self):
-        clnd = CalendarBase('01 Jan 2017', '31 Dec 2018')
+        clnd = CalendarBase(custom_start='01 Jan 2017',
+                            custom_end='31 Dec 2018')
         assert clnd.get_interval().count() == 365*2
 
     def test_calendar_base_custom_amds(self):
-        clnd = CalendarBase('01 Jan 2017', '31 Dec 2018',
-                            {'01 Mar 2017': 0,
-                             '01 Mar 2019': 0})
+        clnd = CalendarBase(custom_start='01 Jan 2017',
+                            custom_end='31 Dec 2018',
+                            custom_amendments={
+                                '01 Mar 2017': 0,
+                                '01 Mar 2019': 0}
+                            )
         assert clnd.get_interval().count() == 365 * 2 - 1
 
     def test_calendat_base_OOB(self):
@@ -89,13 +93,47 @@ class TestCalendarsRU(object):
         clnd = RU.Week8x5(short_eves=False)
         assert clnd('22 Feb 2017').label == 8
 
-    def test_calendar_RU_week8x5_custome_amds(self):
-        clnd = RU.Week8x5(custom_amendments={'22 Feb 2017':0,
-                                             '23 Feb 2017':8})
+    def test_calendar_RU_week8x5_custom_amds(self):
+        clnd = RU.Week8x5(custom_amendments={'22 Feb 2017': 0,
+                                             '23 Feb 2017': 8})
         assert clnd('21 Feb 2017').is_on_duty
         assert clnd('22 Feb 2017').is_off_duty
         assert clnd('23 Feb 2017').is_on_duty
         assert clnd('24 Feb 2017').is_off_duty
+        assert clnd('01 May 2017').is_off_duty
+
+    def test_calendar_RU_week8x5_custom_amds_ambiguous(self):
+        # custom_amendments should stick to the same key format as
+        # pre-configured amendments. We cannot silently fix the format
+        # because we do not know whether different keys
+        # refer to the same base unit until the timeline is created.
+        with pytest.raises(KeyError):
+            RU.Week8x5(custom_amendments={'22 Feb 2017 13:00': 0,
+                                          '23 Feb 2017 15:00': 8})
+
+
+    def test_calendar_RU_week8x5_only_custom_amds(self):
+        clnd = RU.Week8x5(only_custom_amendments=True,
+                          custom_amendments={'22 Feb 2017': 0,
+                                             '23 Feb 2017': 8})
+        assert clnd('21 Feb 2017').is_on_duty
+        assert clnd('22 Feb 2017').is_off_duty
+        assert clnd('23 Feb 2017').is_on_duty
+        assert clnd('24 Feb 2017').is_on_duty
+        assert clnd('01 May 2017').is_on_duty
+
+
+    def test_calendar_RU_week8x5_no_amds(self):
+        clnd = RU.Week8x5(do_not_amend=True,
+                          only_custom_amendments=True,
+                          custom_amendments={'22 Feb 2017': 0,
+                                             '23 Feb 2017': 8}
+                          )
+        assert clnd('21 Feb 2017').is_on_duty
+        assert clnd('22 Feb 2017').is_on_duty
+        assert clnd('23 Feb 2017').is_on_duty
+        assert clnd('24 Feb 2017').is_on_duty
+        assert clnd('01 May 2017').is_on_duty
 
     def test_calendar_RU_week8x5_select_years(self):
 

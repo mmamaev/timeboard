@@ -64,6 +64,67 @@ def changes(eve_hours):
 
 
 class Week8x5(CalendarBase):
+    """Russian business calendar for 5 days x 8 hours working week.
+    
+    Workshifts are calendar days. Workshift labels are number of working hours
+    per day: 0 for days off, 8 for regular business days, 7 for some pre- or 
+    post-holidays business days (see also `short_eves` parameter).
+    
+    Parameters
+    ----------
+    custom_start : Timestamp-like, optional
+        Point in time referring to the first base unit of the calendar; must 
+        be within the calendar span set by `parameters`. By default the 
+        calendar starts with the base unit referred to by 'start' element of 
+        `Week8x5.parameters()`.
+    custom_end : Timestamp-like, optional
+        Point in time referring to the last base unit of the calendar; must 
+        be within the calendar span set by `parameters`. By default the 
+        calendar ends with the base unit referred to by 'end' element of 
+        `Week8x5.parameters()`.
+    do_not_amend : bool, optional (default False)
+        If set to True, the calendar is created without any amendments.
+    only_custom_amendments : bool, optional (default False)
+        If set to True, only amendments from `custom_amendments` are applied 
+        to the calendar.
+    custom_amendments : dict-like
+        The alternative amendments if `only_custom_amendments` is true. 
+        Otherwise `custom_amedments` are used to update pre-configured 
+        amendments (add missing keys, override existing keys).
+    work_on_dec31 : bool, optional (default True) 
+        If false, the December 31 is always considered a holiday. Otherwise (
+        by default) use the official status of each December 31.
+    short_eves : bool, optional (default True)
+        If false, consider all business days having 8 working hours. 
+        Otherwise (by default) use the official reduction to 7 working hours 
+        on some pre- or post-holiday business days.
+        
+    Raises
+    ------
+    OutOfBoundsError
+        If `custom_start` or `custom_end` fall outside the calendar span 
+        set by `parameters`
+    
+    Returns
+    -------
+    Timeboard
+    
+    Examples
+    --------
+    import timeboard.calendars.RU as RU
+    
+    #create a timeboard with official business calendar
+    clnd = RU.Week8x5()
+    
+    #inspect calendar parameters
+    parameters_dict = RU.Week8x5.parameters()
+    
+    #inspect calendar amendments
+    amendments_dict = RU.Week8x5.amendments(**kwargs)
+    
+    #create a calendar with customized span and/or amendments
+    clnd = RU.Week8x5(**kwargs)
+    """
 
     @classmethod
     def parameters(cls):
