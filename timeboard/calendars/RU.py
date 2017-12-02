@@ -90,7 +90,10 @@ class Week8x5(CalendarBase):
     custom_amendments : dict-like
         The alternative amendments if `only_custom_amendments` is true. 
         Otherwise `custom_amedments` are used to update pre-configured 
-        amendments (add missing keys, override existing keys).
+        amendments (add missing keys, override existing keys). In this case 
+        `custom_amendments` keys must represent either a date or a timestamp 
+        of 00:00:00 of a date. (Any of '23.02.2017', '23 Feb 2017', '23 Feb 
+        2017 00:00' are ok, but '23 Feb 2017 12:00' wil raise KeyError.)
     work_on_dec31 : bool, optional (default True) 
         If false, the December 31 is always considered a holiday. Otherwise (
         by default) use the official status of each December 31.
@@ -148,9 +151,10 @@ class Week8x5(CalendarBase):
             eve_hours = 8
         result = changes(eve_hours)
         result.update(holidays(start.year, end.year, work_on_dec31))
-        result = {k: v for k, v in result.items()
-                      if start <= get_timestamp(k) <= end}
+        result = {get_timestamp(k): v for k, v in result.items()
+                  if start <= get_timestamp(k) <= end}
         if custom_amendments is not None:
-            result.update(custom_amendments)
+            result.update({get_timestamp(k): v for k, v in
+                           custom_amendments.items()})
 
         return result

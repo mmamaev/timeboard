@@ -94,8 +94,8 @@ class TestCalendarsRU(object):
         assert clnd('22 Feb 2017').label == 8
 
     def test_calendar_RU_week8x5_custom_amds(self):
-        clnd = RU.Week8x5(custom_amendments={'22 Feb 2017': 0,
-                                             '23 Feb 2017': 8})
+        clnd = RU.Week8x5(custom_amendments={'22 Feb 2017 00:00': 0,
+                                             '23.02.2017': 8})
         assert clnd('21 Feb 2017').is_on_duty
         assert clnd('22 Feb 2017').is_off_duty
         assert clnd('23 Feb 2017').is_on_duty
@@ -103,8 +103,8 @@ class TestCalendarsRU(object):
         assert clnd('01 May 2017').is_off_duty
 
     def test_calendar_RU_week8x5_custom_amds_ambiguous(self):
-        # custom_amendments should stick to the same key format as
-        # pre-configured amendments. We cannot silently fix the format
+        # custom_amendments keys should stick to the same timestamp reference as
+        # pre-configured amendments. We cannot match the duplicates
         # because we do not know whether different keys
         # refer to the same base unit until the timeline is created.
         with pytest.raises(KeyError):
