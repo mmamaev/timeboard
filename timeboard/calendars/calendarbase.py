@@ -1,7 +1,135 @@
 from ..exceptions import OutOfBoundsError
-from ..core import get_timestamp
+from ..core import get_timestamp, get_period
 from ..timeboard import Timeboard
+from pandas import PeriodIndex
+import datetime
 
+
+def nth_weekday_of_month(year, dates_to_seek, label=0, errors='ignore'):
+    """Calculate holiday dates anchored to n-th weekday of a month
+    
+    This function is to be used to build a (part of) `amendments` dictionary 
+    for a day-based calendar.
+    
+    Parameters
+    ----------
+    year : int
+    dates_to_seek : iterable of tuples (month, weekday, n, [shift])
+        month : int 1..12 (January is 1)
+        weekday : int 1..7 (Monday is 1)
+        n : int -5..5 (n=1 the for first weekday in the month, n=-1 for the 
+        last. n=0 is not allowed)
+        shift: int, optional - number of days to add to the found weekday
+    label : optional (default 0)
+    errors : {'ignore', 'raise'}, optional (default 'ignore')
+        What to do if the requested date does not exist (i.e. there are less 
+        than n such weekdays in the month).
+        
+    Raises
+    ------
+    OutOfBoundsError
+        If the requested date does not exist and `errors='raise'`
+        
+    Returns
+    -------
+    dict 
+        Dictionary suitable for `amendments` parameter of Timeboard with 
+        `base_unit_freq='D'`. The keys are timestamps. The values of the 
+        dictionary are set to the value of `label`.
+    """
+    months = PeriodIndex(start=datetime.date(year, 1, 1),
+                           end=datetime.date(year, 12, 31), freq='M')
+    weekday_freq = {1: 'W-SUN', 2: 'W-MON', 3: 'W-TUE', 4: 'W-WED',
+                    5: 'W-THU', 6: 'W-FRI', 7: 'W-SAT'}
+    amendments = {}
+    for date_tuple in dates_to_seek:
+        month, weekday, n = date_tuple[0:3]
+        assert month in range(1, 13)
+        assert weekday in range(1, 8)
+        assert n in range(1, 6) or n in range(-5, 0)
+        try:
+            shift = date_tuple[3]
+        except IndexError:
+            shift = 0
+        if n > 0: n -= 1
+        weeks = PeriodIndex(start=months[month - 1].start_time,
+                            end=months[month - 1].end_time,
+                            freq=weekday_freq[weekday])
+        if weeks[0].start_time < months[month - 1].start_time:
+            weeks = weeks[1:]
+        try:
+            week_starting_on_our_day = weeks[n]
+        except IndexError:
+            if errors == 'raise':
+                raise OutOfBoundsError("There is no valid  date for "
+                                       "year={}, month-{}, weekday={}, n={}.".
+                                       format(year, month, weekday, n))
+        else:
+            amendments[week_starting_on_our_day.start_time +
+                       datetime.timedelta(days=shift)] = label
+
+    return amendments
+
+def extend_weekends(amendments, add='nearest', label=None):
+    """Make Monday of Friday a day off if a holidays falls on the weekend
+    
+    This function is to be used to update a (part of) `amendments` dictionary 
+    for a day-based calendar.
+    
+    Parameters
+    ----------
+    amendments: dict
+    add : {'previous', 'next', 'nearest'}, optional (default 'nearest')
+        Which weekday to make a day off: a weekday preceding the weekend, 
+        a weekday following the weekend, or a weekday nearest to the holiday.
+    label : optional (default None)
+    
+    Returns
+    -------
+    dict
+        Updated `amendments` dictionary with new days off, if any. The keys 
+        are timestamps (both for the old and the new elements.) The values 
+        of the newly added days are set to the value of `label` if given;
+        otherwise the label of the corresponding holiday is used.
+    
+    """
+
+    def _check_label(dictionary, key, label):
+        if key in dictionary and dictionary[key] != label:
+            raise ValueError("Ambiguous label for day {}".format(key.date()))
+
+    assert add in ['previous', 'next', 'nearest']
+    amendments = {get_timestamp(k): v for k, v in amendments.items()}
+    added_holidays = {}
+    for holiday in amendments.keys():
+        day_of_week = holiday.weekday()
+        if day_of_week not in [5, 6]:
+            continue
+        if label is None:
+            _label = amendments[holiday]
+        else:
+            _label = label
+        if day_of_week == 5:  # Saturday
+            if add == 'previous' or add == 'nearest':
+                new_day = holiday - datetime.timedelta(days=1)
+                _check_label(added_holidays, new_day, _label)
+                added_holidays[new_day] = _label
+            else:
+                new_day = holiday + datetime.timedelta(days=2)
+                _check_label(added_holidays, new_day, _label)
+                added_holidays[new_day] = _label
+        elif day_of_week == 6:  # Sunday
+            if add == 'next' or add == 'nearest':
+                new_day = holiday + datetime.timedelta(days=1)
+                _check_label(added_holidays, new_day, _label)
+                added_holidays[new_day] = _label
+            else:
+                new_day = holiday - datetime.timedelta(days=2)
+                _check_label(added_holidays, new_day, _label)
+                added_holidays[new_day] = _label
+
+    amendments.update(added_holidays)
+    return amendments
 
 class CalendarBase(object):
     """Template for pre-configured calendars.

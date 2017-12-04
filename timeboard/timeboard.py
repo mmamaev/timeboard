@@ -4,6 +4,7 @@ from .interval import Interval
 from .exceptions import OutOfBoundsError, VoidIntervalError
 from collections import Iterable, Sequence, namedtuple
 from math import copysign
+from numpy import nonzero
 import warnings
 
 OOB_LEFT = -911
@@ -126,14 +127,9 @@ class Timeboard(object):
         self._repr = "Timeboard({!r}, {!r}, {!r}, {!r})"\
                      .format(base_unit_freq, start, end, layout)
 
-        #TODO: think more about indexing and fast lookups
-        self._on_duty_idx = []
-        self._off_duty_idx = []
-        for i, ws in enumerate(self._timeline):
-            if self.selector(ws):
-                self._on_duty_idx.append(i)
-            else:
-                self._off_duty_idx.append(i)
+        on_duty_bool_index = self._timeline.apply(self.selector)
+        self._on_duty_idx = nonzero(on_duty_bool_index)[0]
+        self._off_duty_idx = nonzero(~on_duty_bool_index)[0]
 
     def __repr__(self):
         return self._repr

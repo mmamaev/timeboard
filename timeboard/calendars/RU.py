@@ -1,5 +1,5 @@
 from .calendarbase import CalendarBase
-from ..core import get_timestamp
+from ..core import get_timestamp, get_period
 from ..timeboard import Organizer
 from itertools import product
 
@@ -11,13 +11,13 @@ def holidays(start_year, end_year, work_on_dec31):
     if not work_on_dec31:
         dates.append('31 Dec')
     years = range(start_year, end_year + 1)
-    return {"{} {}".format(day, year): 0
+    return {get_timestamp("{} {}".format(day, year)): 0
             for day, year in product(dates, years)}
 
 
 def changes(eve_hours):
     x = eve_hours
-    return {
+    dates = {
         '10 Jan 2005': 0, '22 Feb 2005': x, '05 Mar 2005': x, '07 Mar 2005': 0,
         '02 May 2005': 0, '10 May 2005': 0, '14 May 2005': 8, '13 Jun 2005': 0,
         '03 Nov 2005': x,
@@ -59,8 +59,9 @@ def changes(eve_hours):
         '08 Jan 2018': 0, '22 Feb 2018': x, '07 Mar 2018': x, '09 Mar 2018': 0,
         '28 Apr 2018': x, '30 Apr 2018': 0, '02 May 2018': 0, '08 May 2018': x,
         '09 Jun 2018': x, '11 Jun 2018': 0, '05 Nov 2018': 0, '29 Dec 2018': x,
-        '31 Dec 2018': 0
-    }
+        '31 Dec 2018': 0 }
+
+    return {get_timestamp(k): v for k, v in dates.items()}
 
 
 class Week8x5(CalendarBase):
@@ -151,10 +152,11 @@ class Week8x5(CalendarBase):
             eve_hours = 8
         result = changes(eve_hours)
         result.update(holidays(start.year, end.year, work_on_dec31))
-        result = {get_timestamp(k): v for k, v in result.items()
-                  if start <= get_timestamp(k) <= end}
         if custom_amendments is not None:
-            result.update({get_timestamp(k): v for k, v in
-                           custom_amendments.items()})
+            freq = cls.parameters()['base_unit_freq']
+            result.update(
+                {get_period(k, freq=freq).start_time: v
+                 for k, v in custom_amendments.items()}
+            )
 
         return result

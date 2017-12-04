@@ -97,8 +97,9 @@ class TestWorkshiftConstructor(object):
 
     def test_direct_workshift_constructor_with_bad_loc(self):
         clnd = tb_12_days()
-        with pytest.raises(OutOfBoundsError):
-            Workshift(clnd, -1)
+        #with pytest.raises(OutOfBoundsError):
+        assert Workshift(clnd, -1).ref == datetime.datetime(2017, 1, 12, 0,
+                                                            0, 0)
         with pytest.raises(OutOfBoundsError):
             Workshift(clnd, 500000000)
         with pytest.raises(TypeError):

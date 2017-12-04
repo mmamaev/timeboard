@@ -69,8 +69,8 @@ class TestTBConstructor(object):
         selector = clnd.selector
         assert selector(clnd._timeline[1])
         assert map(selector, clnd._timeline) == [False, True] * 6
-        assert clnd._on_duty_idx == [1, 3, 5, 7, 9, 11]
-        assert clnd._off_duty_idx == [0, 2, 4, 6, 8, 10]
+        assert (clnd._on_duty_idx == [1, 3, 5, 7, 9, 11]).all()
+        assert (clnd._off_duty_idx == [0, 2, 4, 6, 8, 10]).all()
 
     def test_tb_constructor_trivial_custom_selector(self):
 
@@ -84,8 +84,8 @@ class TestTBConstructor(object):
         selector = clnd.selector
         assert not selector(clnd._timeline[1])
         assert map(selector, clnd._timeline) == [False, False, False, True] * 3
-        assert clnd._on_duty_idx == [3, 7, 11]
-        assert clnd._off_duty_idx == [0, 1, 2, 4, 5, 6, 8, 9, 10]
+        assert (clnd._on_duty_idx == [3, 7, 11]).all()
+        assert (clnd._off_duty_idx == [0, 1, 2, 4, 5, 6, 8, 9, 10]).all()
 
 
 class TestTBConstructorWithOrgs:

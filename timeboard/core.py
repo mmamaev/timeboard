@@ -4,6 +4,7 @@ from .exceptions import (OutOfBoundsError,
 import pandas as pd
 from itertools import cycle, dropwhile
 from collections import Iterable
+#import timeit
 
 
 def get_timestamp(arg):
@@ -137,13 +138,18 @@ class _Frame(pd.PeriodIndex):
     then the frame will contain only one element, this base unit.
     Frame must contain at least one element. Empty frames are not allowed. 
     """
-    def __new__(cls, base_unit_freq, start, end):
+    def __new__(cls, base_unit_freq=None, start=None, end=None, **kwargs):
+        if base_unit_freq is not None :
+            _freq = base_unit_freq
+        else:
+            _freq = kwargs['freq']
+
         frame = super(_Frame, cls).__new__(cls, start=start, end=end,
-                                           freq=base_unit_freq)
+                                           freq=_freq)
         if len(frame) == 0:
             raise VoidIntervalError("Empty frame not allowed "
                 "(make sure the start time precedes the end time)")
-        frame._base_unit_freq = base_unit_freq
+        frame._base_unit_freq = _freq
         return frame
 
     @property
@@ -187,16 +193,26 @@ class _Frame(pd.PeriodIndex):
         If no usable points are found or `points_in_time` is empty,
         [(span_start, span_end)] is returned. 
         """
-
+        #timer0 = timeit.default_timer()
         self.check_span(span_first, span_last)
-        split_positions = filter(lambda x: span_first < x <= span_last,
-                                 map(self._get_loc_wrapper, points_in_time))
+        # TODO: SPEED UP.
+        # This comprehension takes 0.3s for 100 Years Standard Week 8x5
+        loc_list = [self._get_loc_wrapper(t) for t in points_in_time]
+        #timer1 = timeit.default_timer()
+        split_positions = filter(
+            lambda x: span_first < x <= span_last, loc_list)
+        #timer2 = timeit.default_timer()
         split_positions = sorted(list(set(split_positions)))
+        #timer3 = timeit.default_timer()
 
         start_positions = split_positions[:]
         start_positions.insert(0, span_first)
         end_positions = map(lambda x: x-1, split_positions)
         end_positions.append(span_last)
+        #timer4 = timeit.default_timer()
+        # print "_locate_subframe timers:\n\t1: {:.5f}\n\t2: {:.5f}\n\t3: {:.5f}"\
+        #       "\n\t4: {:.5f}".format(timer1-timer0, timer2-timer1,
+        #                              timer3-timer2, timer4-timer3)
 
         return zip(start_positions, end_positions)
 
@@ -246,8 +262,8 @@ class _Frame(pd.PeriodIndex):
         subframe_boundaries = self._locate_subframes(span_first,
                                                      span_last,
                                                      points_in_time)
-        subframes = map(lambda (first, last): _Subframe(first, last, 0, 0),
-                        subframe_boundaries)
+        subframes = [_Subframe(first, last, 0, 0)
+                     for first, last in subframe_boundaries]
         if not subframes:
             subframes = [_Subframe(span_first, span_last, 0, 0)]
         return subframes
@@ -315,25 +331,23 @@ class _Frame(pd.PeriodIndex):
                          start=span_start_ts,
                          end=span_end_ts)
         if stencil.start_time < span_start_ts:
-            left_dangle = _Frame(base_unit_freq=self._base_unit_freq,
-                                 start=stencil.start_time,
-                                 end=span_start_ts)
-            # TODO: amend use of difference without recast to pd.PeriodIndex
-            skipped_units_before = len(pd.PeriodIndex(left_dangle).
+            left_dangle = pd.PeriodIndex(freq=self._base_unit_freq,
+                                         start=stencil.start_time,
+                                         end=span_start_ts)
+            skipped_units_before = len(left_dangle.
                                        difference(self[span_first:]))
         else:
             skipped_units_before = 0
 
         if stencil.end_time > span_end_ts:
-            right_dangle = _Frame(base_unit_freq=self._base_unit_freq,
-                                  start=span_start_ts,
-                                  end=stencil.end_time)
-            skipped_units_after = len(pd.PeriodIndex(right_dangle).
+            right_dangle = pd.PeriodIndex(freq=self._base_unit_freq,
+                                          start=span_end_ts,
+                                          end=stencil.end_time)
+            skipped_units_after = len(right_dangle.
                                       difference(self[:span_last + 1]))
         else:
             skipped_units_after = 0
-
-        split_points = map(lambda x: x.start_time, stencil)
+        split_points = stencil.to_timestamp(how='start')
         subframes = self._create_subframes(span_first, span_last, split_points)
         subframes[0].skip_left = skipped_units_before
         subframes[-1].skip_right = skipped_units_after
@@ -402,7 +416,7 @@ class _Subframe:
         self.skip_right = skip_right
 
     def __repr__(self):
-        return "{}({},{},{},{])".format(self.__class__, self.first, self.last,
+        return "{}({},{},{},{})".format(self.__class__, self.first, self.last,
                                         self.skip_left, self.skip_right)
 
 
@@ -570,11 +584,19 @@ class _Timeline(pd.Series):
                                        direction='forward',
                                        skip=subframe.skip_left)
         # TODO: support both directions (set direction in Organizer?)
-        for i in range(subframe.first, subframe.last+1):
-            try:
-                self.iloc[i] = next(pattern_iterator)
-            except StopIteration:
-                raise IndexError('Timeline pattern exhausted since {}'.format(i))
+        if not pattern:
+            raise IndexError("Received empty pattern for {}".format(subframe))
+        self.iloc[subframe.first: subframe.last+1] = [
+            next(pattern_iterator)
+            for i in range(subframe.first, subframe.last+1)
+        ]
+
+        # THIS VERSION IS 100 TIMES SLOWER!!!
+        # for i in range(subframe.first, subframe.last+1):
+        #     try:
+        #         self.iloc[i] = next(pattern_iterator)
+        #     except StopIteration:
+        #         raise IndexError('Timeline pattern exhausted since {}'.format(i))
 
     def organize(self, organizer, span_first=None, span_last=None):
         """Set up a layout defined by organizer.
@@ -607,6 +629,7 @@ class _Timeline(pd.Series):
         if span_last is None:
             span_last = len(self) - 1
         subframe_seq = []
+        #timer0 = timeit.default_timer()
         if organizer.split_by is not None:
             subframe_seq = self.frame.do_split_by(span_first,
                                                   span_last,
@@ -615,9 +638,14 @@ class _Timeline(pd.Series):
             subframe_seq = self.frame.do_split_at(span_first,
                                                   span_last,
                                                   organizer.split_at)
-
+        #timer1 = timeit.default_timer()
+        #timer2 = None
+        # TODO: SPEED UP.
+        # This loop takes 0.7s for 100 Years Standard Week 8x5
         for subframe, layout in zip(subframe_seq,
                                     cycle(organizer.structure)):
+            #if timer2 is None: timer2 = timeit.default_timer()
+
             if isinstance(layout, Organizer):
                 self.organize(layout, subframe.first, subframe.last)
             elif isinstance(layout, Iterable):
@@ -627,6 +655,10 @@ class _Timeline(pd.Series):
                 raise TypeError('Organizer.layout may contain either '
                                 'patterns (iterables of values) or  '
                                 'other Organizers')
+        # timer3 = timeit.default_timer()
+        # print "organize ({},{})\n\tsplit: {:.5f}\n\tstructure init: {:.5f}" \
+        #     "\n\tstructure run: {:.5f}".format(span_first, span_last,
+        #                     timer1-timer0, timer2-timer1, timer3-timer2)
 
 
 class Organizer(object):

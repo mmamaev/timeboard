@@ -1,5 +1,6 @@
 from .exceptions import OutOfBoundsError
 from .core import get_period
+from numpy import searchsorted
 
 
 class Workshift(object):
@@ -50,13 +51,19 @@ class Workshift(object):
 
     def __init__(self, timeboard, location):
 
-        if not isinstance(location, int):
-            raise TypeError('Workshift location = {}: expected integer '
-                            'received '.format(location, type(location)))
-        if not 0 <= location <= len(timeboard._timeline):
+        try:
+            self._label = timeboard._timeline.iloc[location]
+        except TypeError:
+            raise TypeError('Workshift location = {}: expected integer-like '
+                            'received {}'.format(location, type(location)))
+        except IndexError:
             raise OutOfBoundsError("Workshift location {} "
                                    "is outside timeboard {}".
                                    format(location, timeboard))
+        # negative locations are not allowed? why?
+        # if location <0:
+        #     raise OutOfBoundsError("Received location={}. Negative location is "
+        #                            "not allowed.".format(location))
         self._tb = timeboard
         self._loc = location
 
@@ -91,8 +98,7 @@ class Workshift(object):
 
     @property
     def label(self):
-        # TODO: Refactor. This class has to know methods of Timeboard only
-        return self._tb._timeline.iloc[self._loc]
+        return self._label
 
     @property
     def is_on_duty(self):
@@ -173,11 +179,8 @@ class Workshift(object):
         elif duty == 'any':
             idx = range(len(self._tb._timeline))
 
-        # TODO: optimize this search
-        i = 0
         len_idx = len(idx)
-        while i < len_idx and idx[i] < self._loc:
-            i += 1
+        i = searchsorted(idx, self._loc)
 
         if i == len_idx or i + steps < 0 or i + steps >= len_idx:
             return self._tb._handle_out_of_bounds()
@@ -248,7 +251,7 @@ class Workshift(object):
         elif duty == 'any':
             idx = range(len(self._tb._timeline))
 
-        # TODO: Optimize this search
+        # TODO: Rewrite with searchsorted
         len_idx = len(idx)
         i = len_idx - 1
         while i >= 0 and idx[i] > self._loc:
