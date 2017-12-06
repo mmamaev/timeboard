@@ -90,11 +90,8 @@ class Week8x5(CalendarBase):
         to the calendar.
     custom_amendments : dict-like
         The alternative amendments if `only_custom_amendments` is true. 
-        Otherwise `custom_amedments` are used to update pre-configured 
-        amendments (add missing keys, override existing keys). In this case 
-        `custom_amendments` keys must represent either a date or a timestamp 
-        of 00:00:00 of a date. (Any of '23.02.2017', '23 Feb 2017', '23 Feb 
-        2017 00:00' are ok, but '23 Feb 2017 12:00' wil raise KeyError.)
+        Otherwise `custom_amendments` are used to update pre-configured 
+        amendments (add missing or override existing amendments). 
     work_on_dec31 : bool, optional (default True) 
         If false, the December 31 is always considered a holiday. Otherwise (
         by default) use the official status of each December 31.

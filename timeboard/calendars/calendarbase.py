@@ -3,10 +3,12 @@ from ..core import get_timestamp, get_period
 from ..timeboard import Timeboard
 from pandas import PeriodIndex
 import datetime
+from dateutil.easter import easter
+
 
 
 def nth_weekday_of_month(year, dates_to_seek, label=0, errors='ignore'):
-    """Calculate holiday dates anchored to n-th weekday of a month
+    """Calculate holiday dates anchored to n-th weekday of a month.
     
     This function is to be used to build a (part of) `amendments` dictionary 
     for a day-based calendar.
@@ -19,7 +21,8 @@ def nth_weekday_of_month(year, dates_to_seek, label=0, errors='ignore'):
         weekday : int 1..7 (Monday is 1)
         n : int -5..5 (n=1 the for first weekday in the month, n=-1 for the 
         last. n=0 is not allowed)
-        shift: int, optional - number of days to add to the found weekday
+        shift: int, optional - number of days to add to the found weekday, 
+        may be negative (default 0).
     label : optional (default 0)
     errors : {'ignore', 'raise'}, optional (default 'ignore')
         What to do if the requested date does not exist (i.e. there are less 
@@ -36,6 +39,13 @@ def nth_weekday_of_month(year, dates_to_seek, label=0, errors='ignore'):
         Dictionary suitable for `amendments` parameter of Timeboard with 
         `base_unit_freq='D'`. The keys are timestamps. The values of the 
         dictionary are set to the value of `label`.
+        
+    Example
+    -------
+    Create amendments for US Memorial Day and Labor Day in 2017
+    
+    >>> nth_weekday_of_month(2017, [(5, 1, -1), (9, 1, 1)])
+    {Timestamp('2017-05-29 00:00:00'): 0, Timestamp('2017-09-04 00:00:00'): 0}
     """
     months = PeriodIndex(start=datetime.date(year, 1, 1),
                            end=datetime.date(year, 12, 31), freq='M')
@@ -70,8 +80,8 @@ def nth_weekday_of_month(year, dates_to_seek, label=0, errors='ignore'):
 
     return amendments
 
-def extend_weekends(amendments, add='nearest', label=None):
-    """Make Monday of Friday a day off if a holidays falls on the weekend
+def extend_weekends(amendments, how='nearest', label=None, weekend=None):
+    """Make a weekday a day off if a holiday falls on the weekend.
     
     This function is to be used to update a (part of) `amendments` dictionary 
     for a day-based calendar.
@@ -79,10 +89,15 @@ def extend_weekends(amendments, add='nearest', label=None):
     Parameters
     ----------
     amendments: dict
-    add : {'previous', 'next', 'nearest'}, optional (default 'nearest')
+    how : {'previous', 'next', 'nearest'}, optional (default 'nearest')
         Which weekday to make a day off: a weekday preceding the weekend, 
         a weekday following the weekend, or a weekday nearest to the holiday.
+        If there is a tie with 'nearest', it works the same way as 'next'.
     label : optional (default None)
+    weekend: list, optional 
+        Weekdays constituting weekend, Monday is 0, Sunday is 6. Days must be 
+        consecutive: i.e. if weekend is on Sunday and Monday, weekend=[6,0], 
+        NOT weekend=[0,6]. By default weekend is Saturday and Sunday.
     
     Returns
     -------
@@ -92,43 +107,86 @@ def extend_weekends(amendments, add='nearest', label=None):
         of the newly added days are set to the value of `label` if given;
         otherwise the label of the corresponding holiday is used.
     
+    Notes
+    -----
+    If a weekday has been already declared a day off because of another holiday
+    taking place on the same weekend or it is a holiday by itself, the next 
+    weekday in the direction specified by `how` parameter will be made 
+    a day off. 
     """
-
-    def _check_label(dictionary, key, label):
-        if key in dictionary and dictionary[key] != label:
-            raise ValueError("Ambiguous label for day {}".format(key.date()))
-
-    assert add in ['previous', 'next', 'nearest']
+    assert how in ['previous', 'next', 'nearest']
+    if weekend is None:
+        weekend = [5, 6]  # Saturday and Sunday
     amendments = {get_timestamp(k): v for k, v in amendments.items()}
-    added_holidays = {}
-    for holiday in amendments.keys():
+    for holiday in sorted(amendments.keys()):
         day_of_week = holiday.weekday()
-        if day_of_week not in [5, 6]:
+        try:
+            loc_in_wend = weekend.index(day_of_week)
+        except ValueError:
             continue
         if label is None:
             _label = amendments[holiday]
         else:
             _label = label
-        if day_of_week == 5:  # Saturday
-            if add == 'previous' or add == 'nearest':
-                new_day = holiday - datetime.timedelta(days=1)
-                _check_label(added_holidays, new_day, _label)
-                added_holidays[new_day] = _label
+        if how == 'previous':
+            first_step = -(loc_in_wend+1)
+            step = -1
+        elif how == 'next':
+            first_step = len(weekend) - loc_in_wend
+            step = 1
+        elif how == 'nearest':
+            if loc_in_wend < len(weekend) / 2:
+                first_step = -(loc_in_wend + 1)
+                step = -1
             else:
-                new_day = holiday + datetime.timedelta(days=2)
-                _check_label(added_holidays, new_day, _label)
-                added_holidays[new_day] = _label
-        elif day_of_week == 6:  # Sunday
-            if add == 'next' or add == 'nearest':
-                new_day = holiday + datetime.timedelta(days=1)
-                _check_label(added_holidays, new_day, _label)
-                added_holidays[new_day] = _label
-            else:
-                new_day = holiday - datetime.timedelta(days=2)
-                _check_label(added_holidays, new_day, _label)
-                added_holidays[new_day] = _label
+                first_step = len(weekend) - loc_in_wend
+                step = 1
+        new_day = holiday + datetime.timedelta(days=first_step)
+        while new_day in amendments:
+            new_day += datetime.timedelta(days=step)
+        amendments[new_day] = _label
 
-    amendments.update(added_holidays)
+    return amendments
+
+def from_easter(year, shifts, easter_type='western', label=0):
+    """Calculate holiday dates anchored to Easter.
+
+    This function is to be used to build a (part of) `amendments` dictionary 
+    for a day-based calendar.
+
+    Parameters
+    ----------
+    year : int
+    shifts : iterable of int
+        List of holidays whose dates are to be found. The holidays are
+        denominated in their distance from Easter. For example,
+        -2 is Good Friday, 1 is Monday after Easter, 0 is Easter itself.
+    easter_type: {'western', 'orthodox'}, optional (default 'western')
+    label : optional (default 0)
+
+    Returns
+    -------
+    dict 
+        Dictionary suitable for `amendments` parameter of Timeboard with 
+        `base_unit_freq='D'`. The keys are timestamps. The values of the 
+        dictionary are set to the value of `label`.
+        
+    Example
+    -------
+    Create amendments for Good Friday and Easter Monday in 2017:
+    
+    >>> from_easter(2017, [-2, 1])
+    {Timestamp('2017-04-14 00:00:00'): 0, Timestamp('2017-04-17 00:00:00'): 0}
+    """
+    assert easter_type in ['western', 'orthodox']
+    if easter_type == 'western':
+        _easter_type = 3
+    elif easter_type == 'orthodox':
+        _easter_type = 2
+    easter_date = easter(year, _easter_type)
+    amendments = {
+        get_timestamp(easter_date + datetime.timedelta(days=shift)) : label
+        for shift in shifts}
     return amendments
 
 class CalendarBase(object):

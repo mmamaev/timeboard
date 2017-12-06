@@ -251,7 +251,7 @@ class Workshift(object):
         elif duty == 'any':
             idx = range(len(self._tb._timeline))
 
-        # TODO: Rewrite with searchsorted
+        # TODO: Optimize this search
         len_idx = len(idx)
         i = len_idx - 1
         while i >= 0 and idx[i] > self._loc:

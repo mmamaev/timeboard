@@ -23,15 +23,17 @@ def fed_holidays(start_year, end_year, exclusions=None, long_weekends=True,
     }
 
     if exclusions is None:
-        exclusions = []
+        exclusions = set()
+    else:
+        exclusions = set(exclusions)
     years = range(start_year, end_year + 1)
     days = [day for holiday, day in fed_holidays_fixed.items()
             if holiday not in exclusions]
 
-    amendments = {"{} {}".format(day, year): 0
+    amendments = {"{} {}".format(day, year): label
                   for day, year in product(days, years)}
     if long_weekends:
-        amendments = extend_weekends(amendments, add='nearest')
+        amendments = extend_weekends(amendments, how='nearest')
 
     floating_dates_to_seek = [date_tuple for holiday, date_tuple
                               in fed_holidays_floating.items()
@@ -43,7 +45,71 @@ def fed_holidays(start_year, end_year, exclusions=None, long_weekends=True,
     return amendments
 
 class Week8x5(CalendarBase):
+    """United States business calendar for 5 days x 8 hours working week.
 
+        The calendar takes into account the federal holidays. The Black 
+        Friday is also considered a holiday. Selected holidays can
+        be ignored by adding them to `exclusions`.
+        
+        Workshifts are calendar days. Workshift labels are number of working 
+        hours per day: 0 for days off, 8 for  business days.
+
+        Parameters
+        ----------
+        custom_start : Timestamp-like, optional
+            Point in time referring to the first base unit of the calendar; must 
+            be within the calendar span set by `parameters`. By default the 
+            calendar starts with the base unit referred to by 'start' element of 
+            `Week8x5.parameters()`.
+        custom_end : Timestamp-like, optional
+            Point in time referring to the last base unit of the calendar; must 
+            be within the calendar span set by `parameters`. By default the 
+            calendar ends with the base unit referred to by 'end' element of 
+            `Week8x5.parameters()`.
+        do_not_amend : bool, optional (default False)
+            If set to True, the calendar is created without any amendments.
+        only_custom_amendments : bool, optional (default False)
+            If set to True, only amendments from `custom_amendments` are applied 
+            to the calendar.
+        custom_amendments : dict-like
+            The alternative amendments if `only_custom_amendments` is true. 
+            Otherwise `custom_amendments` are used to update pre-configured 
+            amendments (add missing or override existing amendments). 
+        exclusions : set-like, optional 
+            Holidays to be ignored. The following values are accepted into 
+            the set: 'new_year', 'mlk', 'presidents', 'memorial',
+            'independence', 'labor', 'columbus', 'veterans', 'thanksgiving',
+            'black_friday', 'christmas'.
+        long_weekends : bool, optional (default True)
+            If false, do not extend weekends if a holiday falls on Saturday or
+            Sunday.
+
+        Raises
+        ------
+        OutOfBoundsError
+            If `custom_start` or `custom_end` fall outside the calendar span 
+            set by `parameters`
+
+        Returns
+        -------
+        Timeboard
+
+        Examples
+        --------
+        import timeboard.calendars.US as US
+
+        #create a timeboard with official business calendar
+        clnd = US.Week8x5()
+
+        #inspect calendar parameters
+        parameters_dict = US.Week8x5.parameters()
+
+        #inspect calendar amendments
+        amendments_dict = US.Week8x5.amendments(**kwargs)
+
+        #create a calendar with customized span and/or amendments
+        clnd = US.Week8x5(**kwargs)
+        """
     @classmethod
     def parameters(cls):
         return {
