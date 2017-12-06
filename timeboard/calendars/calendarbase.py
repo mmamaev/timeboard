@@ -1,10 +1,9 @@
 from ..exceptions import OutOfBoundsError
-from ..core import get_timestamp, get_period
+from ..core import get_timestamp
 from ..timeboard import Timeboard
 from pandas import PeriodIndex
 import datetime
 from dateutil.easter import easter
-
 
 
 def nth_weekday_of_month(year, dates_to_seek, label=0, errors='ignore'):
@@ -48,7 +47,7 @@ def nth_weekday_of_month(year, dates_to_seek, label=0, errors='ignore'):
     {Timestamp('2017-05-29 00:00:00'): 0, Timestamp('2017-09-04 00:00:00'): 0}
     """
     months = PeriodIndex(start=datetime.date(year, 1, 1),
-                           end=datetime.date(year, 12, 31), freq='M')
+                         end=datetime.date(year, 12, 31), freq='M')
     weekday_freq = {1: 'W-SUN', 2: 'W-MON', 3: 'W-TUE', 4: 'W-WED',
                     5: 'W-THU', 6: 'W-FRI', 7: 'W-SAT'}
     amendments = {}
@@ -61,7 +60,8 @@ def nth_weekday_of_month(year, dates_to_seek, label=0, errors='ignore'):
             shift = date_tuple[3]
         except IndexError:
             shift = 0
-        if n > 0: n -= 1
+        if n > 0:
+            n -= 1
         weeks = PeriodIndex(start=months[month - 1].start_time,
                             end=months[month - 1].end_time,
                             freq=weekday_freq[weekday])
@@ -79,6 +79,7 @@ def nth_weekday_of_month(year, dates_to_seek, label=0, errors='ignore'):
                        datetime.timedelta(days=shift)] = label
 
     return amendments
+
 
 def extend_weekends(amendments, how='nearest', label=None, weekend=None):
     """Make a weekday a day off if a holiday falls on the weekend.
@@ -148,6 +149,7 @@ def extend_weekends(amendments, how='nearest', label=None, weekend=None):
 
     return amendments
 
+
 def from_easter(year, shifts, easter_type='western', label=0):
     """Calculate holiday dates anchored to Easter.
 
@@ -185,9 +187,10 @@ def from_easter(year, shifts, easter_type='western', label=0):
         _easter_type = 2
     easter_date = easter(year, _easter_type)
     amendments = {
-        get_timestamp(easter_date + datetime.timedelta(days=shift)) : label
+        get_timestamp(easter_date + datetime.timedelta(days=shift)): label
         for shift in shifts}
     return amendments
+
 
 class CalendarBase(object):
     """Template for pre-configured calendars.

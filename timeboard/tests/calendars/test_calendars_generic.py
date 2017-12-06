@@ -5,6 +5,7 @@ from timeboard.core import get_period, get_timestamp
 from pandas import Timedelta
 import pytest
 
+
 class TestCalendarUtils(object):
 
     def test_nth_weekday_positive(self):
@@ -201,6 +202,7 @@ class TestCalendarUtils(object):
                    easter_type='orthodox') == {get_timestamp('30 Apr 2000'): 0}
         assert from_easter(2000, []) == {}
 
+
 class TestCalendarBase(object):
     def test_calendar_base(self):
         assert CalendarBase.amendments() == {}
@@ -234,10 +236,3 @@ class TestCalendarBase(object):
             CalendarBase(start-Timedelta(days=1))
         with pytest.raises(OutOfBoundsError):
             CalendarBase(custom_end=end+Timedelta(days=1))
-
-
-
-
-
-
-

@@ -16,7 +16,7 @@ class TestOrganizerConstructor(object):
 
     def test_organizer_constructor_splitby(self):
         org = Organizer(split_by='W', structure=[1, 2, 3])
-        assert org.split_by == 'W'
+        assert org.split_by.split_freq == 'W'
         assert org.split_at is None
         assert org.structure == [1, 2, 3]
 

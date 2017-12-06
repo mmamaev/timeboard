@@ -3,7 +3,7 @@ from .exceptions import (OutOfBoundsError,
                          UnsupportedPeriodError)
 import pandas as pd
 from itertools import cycle, dropwhile
-from collections import Iterable
+from collections import Iterable, namedtuple
 #import timeit
 
 
@@ -283,9 +283,10 @@ class _Frame(pd.PeriodIndex):
             Index of the first element of the span in the frame.
         span_last: int>=0
             Index of the last element of the span in the frame.
-        split_by: str
-            Pandas-compatible calendar frequency; accepts same values as 
-            `base_unit_freq` of timeline (timeboard). 
+        split_by: Splitter
+            *** Currently only Splitter.split_by_freq is used which is
+            a pandas-compatible calendar frequency; accepts same values as 
+            `base_unit_freq` of timeline (timeboard). *** 
         
         Raises
         ------
@@ -319,6 +320,8 @@ class _Frame(pd.PeriodIndex):
         """
         # TODO: add support of freq multiplicators, i.e. (D by 4D) or (2D by 4D)
         # TODO: reason about freq multiplicators of anchored freqs
+        # this line is a patch to support split_by is a trivial Splitter object
+        split_by = split_by.split_freq
         if not _check_splitby_freq(self._base_unit_freq, split_by):
             raise UnsupportedPeriodError('Ambiguous organizing: '
                                          '{} is not a subperiod of {}'
@@ -712,6 +715,9 @@ class Organizer(object):
         if not isinstance(structure, Iterable):
             raise TypeError("structure parameter must be iterable")
         self._split_by = split_by
+        self._split_at = split_at
+        if split_by is not None and not isinstance(split_by, Splitter):
+            self._split_by = Splitter(split_by)
         self._split_at = _to_iterable(split_at)
         self._structure = structure
 
@@ -733,3 +739,29 @@ class Organizer(object):
         else:
             s = "split_at={!r}".format(self.split_at)
         return "Organizer({}, structure={!r})".format(s, self.structure)
+
+
+_SplitterBase = namedtuple('Splitter', 'split_freq multiplier ticks')
+class Splitter(_SplitterBase):
+    """Container class defining how to partition a timeline.
+
+    *** Only trivial split by a frequency is currently implemented ***
+
+    Parameters
+    ----------
+    split_freq : str
+        Pandas-compatible calendar frequency; accepts same values as 
+        `base_unit_freq` of timeline (timeboard).
+    multiplier : int
+        Not implemented
+    ticks : iterable
+        Not implemented
+
+    Attributes
+    ----------
+    Same as parameters.
+    """
+    __slots__ = ()
+
+    def __new__(cls, split_freq, multiplier=1, ticks=None):
+        return super(Splitter, cls).__new__(cls, split_freq, multiplier, ticks)
