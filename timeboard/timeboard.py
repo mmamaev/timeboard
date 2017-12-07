@@ -69,11 +69,12 @@ class Timeboard(object):
         Function which takes one argument - label of a workshift. Returns 
         True if this is an on-duty workshift, returns False otherwise. Default 
         selector function returns `bool(label)`.
-    workshift_ref : {'start' | 'end'}, optional (default 'start')
-        Define what point in time will be used to represent a workshift 
-        (the respective point in time will be recorded in `ref` attribute of
-        a workshift). Available options: 'start' to use the start 
-        time of the workshift, 'end' to use the end time. 
+    workshift_ts : {'start' | 'end'}, optional (default 'start')
+        Define what point in time will be used to represent a workshift. 
+        The respective point in time will be returned by `to_timestamp{}`
+        method of a workshift or by calling `get_timestamp` on a workshift. 
+        Available  options: 'start' to use the start time of the workshift, 
+        'end' to use the end time. 
     
     Raises
     ------
@@ -92,7 +93,7 @@ class Timeboard(object):
         When the first workshift of the timeboard starts.
     end_time : Timestamp
         When the last workshift of the timeboard ends.
-    workshift_ref
+    workshift_ts
     selector : function
         
     See also
@@ -100,7 +101,7 @@ class Timeboard(object):
     Organizer - defines rules for setting up timeline's layout
     """
     def __init__(self, base_unit_freq, start, end, layout, amendments=None,
-                 selector=None, workshift_ref='start'):
+                 selector=None, workshift_ts='start'):
         if isinstance(layout, Organizer):
             org = layout
         elif isinstance(layout, Sequence):
@@ -123,7 +124,7 @@ class Timeboard(object):
         self._timeline.organize(org)
         self._timeline.amend(amendments)
         self._base_unit_freq = base_unit_freq
-        self._workshift_ref = workshift_ref
+        self._workshift_ts = workshift_ts
         self._repr = "Timeboard({!r}, {!r}, {!r}, {!r})"\
                      .format(base_unit_freq, start, end, layout)
 
@@ -153,8 +154,8 @@ class Timeboard(object):
         return self._timeline.end_time
 
     @property
-    def workshift_ref(self):
-        return self._workshift_ref
+    def workshift_ts(self):
+        return self._workshift_ts
 
     @property
     def selector(self):

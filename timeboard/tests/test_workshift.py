@@ -2,6 +2,7 @@ import timeboard as tb
 from timeboard.workshift import Workshift
 from timeboard.exceptions import OutOfBoundsError
 from timeboard.timeboard import _Location, LOC_WITHIN, OOB_LEFT, OOB_RIGHT
+from timeboard.core import get_timestamp
 
 import datetime
 import pytest
@@ -98,8 +99,8 @@ class TestWorkshiftConstructor(object):
     def test_direct_workshift_constructor_with_bad_loc(self):
         clnd = tb_12_days()
         #with pytest.raises(OutOfBoundsError):
-        assert Workshift(clnd, -1).ref == datetime.datetime(2017, 1, 12, 0,
-                                                            0, 0)
+        assert get_timestamp(Workshift(clnd, -1)) == \
+                   datetime.datetime(2017, 1, 12, 0, 0, 0)
         with pytest.raises(OutOfBoundsError):
             Workshift(clnd, 500000000)
         with pytest.raises(TypeError):

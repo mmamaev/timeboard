@@ -27,10 +27,6 @@ class Workshift(object):
         When the workshift starts.
     end_time : Timestamp
         When the workshift ends.
-    ref : Timestamp
-        The characteristic time used to represent the workshift. The rule to
-        calculate `ref` is defined by `workshift_ref` parameter of the 
-        timeboard.
     duration : int (>0)
         Number of base unit making up the workshift.
     label
@@ -77,9 +73,17 @@ class Workshift(object):
         # TODO: Refactor. This class has to know methods of Timeboard only
         return self._tb._timeline.frame[self._loc].end_time
 
-    @property
-    def ref(self):
-        if self._tb.workshift_ref == 'end':
+    def to_timestamp(self):
+        """The characteristic time used to represent the workshift. 
+        
+        The rule to calculate the timestamp is defined by `workshift_ts` 
+        parameter of the timeboard.
+        
+        Returns
+        -------
+        Timestamp
+        """
+        if self._tb.workshift_ts == 'end':
             return self.end_time
         else:
             return self.start_time
@@ -94,7 +98,7 @@ class Workshift(object):
         return "Workshift '{}{}' at {}".\
                 format(duration_str,
                        self._tb.base_unit_freq,
-                       get_period(self.ref, freq=self._tb.base_unit_freq))
+                       get_period(self.to_timestamp, freq=self._tb.base_unit_freq))
 
     @property
     def label(self):
