@@ -1,3 +1,4 @@
+from __future__ import division
 from .exceptions import (OutOfBoundsError,
                          VoidIntervalError,
                          UnsupportedPeriodError)
@@ -106,8 +107,9 @@ class Interval(object):
         return "Interval(tb, {!r})\ntb={!r}".format(self._loc, self._tb)
 
     def __str__(self):
-        return "Interval of '{}': {} -> {}" \
-                .format(self._tb.base_unit_freq,
+        return "Interval of {}'{}': {} -> {}" \
+                .format(self.length,
+                        self._tb.base_unit_freq,
                         str(get_period(self.start_time,
                                        freq=self._tb.base_unit_freq)),
                         str(get_period(self.end_time,
@@ -296,13 +298,13 @@ class Interval(object):
 
         if ivl_duty_end_ts <= period_index[0].end_time:
             ivl_units_in_only_period = self.count(duty=duty)
-            return float(ivl_units_in_only_period) / len_of_1st_period
+            return ivl_units_in_only_period / len_of_1st_period
 
         result = 0.0
         ivl_units_in_1st_period = self._tb.get_interval(
             (ivl_duty_start_ts, period_index[0].end_time),
             clip_period=False).count(duty=duty)
-        result += float(ivl_units_in_1st_period) / len_of_1st_period
+        result += ivl_units_in_1st_period / len_of_1st_period
 
         ivl_units_in_last_period = self._tb.get_interval(
             (period_index[-1].start_time, ivl_duty_end_ts),
@@ -310,7 +312,7 @@ class Interval(object):
         len_of_last_period = self._tb.get_interval(
             (period_index[-1].start_time, period_index[-1].end_time),
             clip_period=False).count(duty=duty)
-        result += float(ivl_units_in_last_period) / len_of_last_period
+        result += ivl_units_in_last_period / len_of_last_period
 
         full_periods_in_ivl = len(period_index) - 2
         if full_periods_in_ivl > 0:

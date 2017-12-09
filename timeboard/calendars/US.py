@@ -44,7 +44,7 @@ def fed_holidays(start_year, end_year, exclusions=None, long_weekends=True,
 
     return amendments
 
-class Week8x5(CalendarBase):
+class Weekly8x5(CalendarBase):
     """United States business calendar for 5 days x 8 hours working week.
 
         The calendar takes into account the federal holidays. The Black 
@@ -60,12 +60,12 @@ class Week8x5(CalendarBase):
             Point in time referring to the first base unit of the calendar; must 
             be within the calendar span set by `parameters`. By default the 
             calendar starts with the base unit referred to by 'start' element of 
-            `Week8x5.parameters()`.
+            `Weekly8x5.parameters()`.
         custom_end : Timestamp-like, optional
             Point in time referring to the last base unit of the calendar; must 
             be within the calendar span set by `parameters`. By default the 
             calendar ends with the base unit referred to by 'end' element of 
-            `Week8x5.parameters()`.
+            `Weekly8x5.parameters()`.
         do_not_amend : bool, optional (default False)
             If set to True, the calendar is created without any amendments.
         only_custom_amendments : bool, optional (default False)
@@ -99,16 +99,16 @@ class Week8x5(CalendarBase):
         import timeboard.calendars.US as US
 
         #create a timeboard with official business calendar
-        clnd = US.Week8x5()
+        clnd = US.Weekly8x5()
 
         #inspect calendar parameters
-        parameters_dict = US.Week8x5.parameters()
+        parameters_dict = US.Weekly8x5.parameters()
 
         #inspect calendar amendments
-        amendments_dict = US.Week8x5.amendments(**kwargs)
+        amendments_dict = US.Weekly8x5.amendments(**kwargs)
 
         #create a calendar with customized span and/or amendments
-        clnd = US.Week8x5(**kwargs)
+        clnd = US.Weekly8x5(**kwargs)
         """
     @classmethod
     def parameters(cls):

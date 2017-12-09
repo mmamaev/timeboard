@@ -21,7 +21,7 @@ class TestCalendarUtils(object):
             (5, 1, 5):  get_timestamp('29 May 2017'),
         }
         result = nth_weekday_of_month(2017, date_tuples_2017.keys(), label=5)
-        valid_dates = filter(lambda x: x is not None, date_tuples_2017.values())
+        valid_dates = [x for x in  date_tuples_2017.values() if x is not None]
         assert sorted(result.keys()) == sorted(valid_dates)
         assert result.values().count(5) == len(result)
 
@@ -37,7 +37,7 @@ class TestCalendarUtils(object):
             (5, 1, -5):  get_timestamp('01 May 2017'),
         }
         result = nth_weekday_of_month(2017, date_tuples_2017.keys(), label=5)
-        valid_dates = filter(lambda x: x is not None, date_tuples_2017.values())
+        valid_dates = [x for x in  date_tuples_2017.values() if x is not None]
         assert sorted(result.keys()) == sorted(valid_dates)
         assert result.values().count(5) == len(result)
 
@@ -48,7 +48,7 @@ class TestCalendarUtils(object):
             (12, 5, 1, -2): get_timestamp('29 Nov 2017')
         }
         result = nth_weekday_of_month(2017, date_tuples_2017.keys())
-        valid_dates = filter(lambda x: x is not None, date_tuples_2017.values())
+        valid_dates = [x for x in  date_tuples_2017.values() if x is not None]
         assert sorted(result.keys()) == sorted(valid_dates)
         assert result.values().count(0) == len(result)
 

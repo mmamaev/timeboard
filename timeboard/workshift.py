@@ -1,3 +1,4 @@
+from __future__ import division
 from .exceptions import OutOfBoundsError
 from .core import get_period
 from numpy import searchsorted
@@ -88,6 +89,10 @@ class Workshift(object):
         else:
             return self.start_time
 
+    def to_period(self):
+        """Present workshift as a period with base unit frequency"""
+        return get_period(self.to_timestamp(), freq=self._tb.base_unit_freq)
+
     def __repr__(self):
         return "Workshift(tb, {!r})\ntb={!r}".format(self._loc, self._tb)
 
@@ -98,7 +103,8 @@ class Workshift(object):
         return "Workshift '{}{}' at {}".\
                 format(duration_str,
                        self._tb.base_unit_freq,
-                       get_period(self.to_timestamp, freq=self._tb.base_unit_freq))
+                       get_period(self.to_timestamp(),
+                                  freq=self._tb.base_unit_freq))
 
     @property
     def label(self):

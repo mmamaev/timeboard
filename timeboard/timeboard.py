@@ -1,3 +1,4 @@
+from __future__ import division
 from .core import _Timeline, Organizer, get_period, get_timestamp
 from .workshift import Workshift
 from .interval import Interval
@@ -116,9 +117,9 @@ class Timeboard(object):
                             "or an instance of Organizer")
         if amendments is None:
             amendments = {}
-        if not hasattr(amendments, 'iteritems'):
+        if not hasattr(amendments, 'items'):
             raise TypeError("`amendments` do not look like a dictionary: "
-                            "`iteritems` method is needed but not found.")
+                            "`items` method is needed but not found.")
         self._custom_selector = selector
         self._timeline = _Timeline(base_unit_freq, start, end)
         self._timeline.organize(org)
@@ -168,9 +169,19 @@ class Timeboard(object):
         else:
             return default_selector
 
-    def __call__(self, arg):
-        """A wrapper of `get_workshift()`."""
-        return self.get_workshift(arg)
+    def __call__(self, *args, **kwargs):
+        """A wrapper of `get_workshift()` or `get_interval()`."""
+        if len(args) == 1 and len(kwargs) == 0:
+            try:
+                return self.get_workshift(args[0])
+            except OutOfBoundsError:
+                raise
+            except:
+                pass
+        try:
+            return self.get_interval(*args, **kwargs)
+        except:
+            raise
 
     def _locate(self, point_in_time):
         """Find base unit by timestamp

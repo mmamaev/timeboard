@@ -221,6 +221,9 @@ class TestIntervalConstructorWithTS:
         assert ivl.length == 7
         assert not ivl.is_void
 
+        ivlx = clnd(('02 Jan 2017 15:00', '08 Jan 2017 15:00'))
+        assert ivlx._loc == ivl._loc
+
 
     def test_interval_constructor_with_two_ts_open_ended(self):
         clnd = tb_12_days()
@@ -228,6 +231,10 @@ class TestIntervalConstructorWithTS:
                                 closed='11')
         assert ivl._loc == (2,8)
         assert ivl.length == 7
+
+        ivlx = clnd(('02 Jan 2017 15:00', '08 Jan 2017 15:00'), closed='11')
+        assert ivlx._loc == ivl._loc
+
         ivl = clnd.get_interval(('02 Jan 2017 15:00', '08 Jan 2017 15:00'),
                                 closed='01')
         assert ivl._loc == (3,8)
@@ -258,6 +265,8 @@ class TestIntervalConstructorWithTS:
             clnd.get_interval(('02 Jan 2017 15:00', '02 Jan 2017 15:00'),
                               closed='01')
         with pytest.raises(VoidIntervalError):
+            clnd(('02 Jan 2017 15:00', '02 Jan 2017 15:00'), closed='01')
+        with pytest.raises(VoidIntervalError):
             clnd.get_interval(('02 Jan 2017 15:00', '02 Jan 2017 15:00'),
                               closed='10')
         with pytest.raises(VoidIntervalError):
@@ -274,6 +283,9 @@ class TestIntervalConstructorWithTS:
             ivl = clnd.get_interval(('02 Jan 2017 15:00', '13 Jan 2017 15:00'))
         with pytest.raises(OutOfBoundsError):
             clnd.get_interval(('02 Jan 2017 15:00', '13 Jan 2017 15:00'),
+                              clip_period=False)
+        with pytest.raises(OutOfBoundsError):
+            clnd(('02 Jan 2017 15:00', '13 Jan 2017 15:00'),
                               clip_period=False)
         with pytest.raises(OutOfBoundsError):
             ivl = clnd.get_interval(('30 Dec 2016 15:00', '08 Jan 2017 15:00'))
@@ -324,6 +336,8 @@ class TestIntervalConstructorWithTS:
         clnd = tb_12_days()
         with pytest.raises(VoidIntervalError):
             clnd.get_interval(('08 Jan 2017 15:00', '02 Jan 2017 15:00'))
+        with pytest.raises(VoidIntervalError):
+            clnd(('08 Jan 2017 15:00', '02 Jan 2017 15:00'))
 
 class TestIntervalConstructorDefault:
 
@@ -371,6 +385,9 @@ class TestIntervalConstructorOtherWays:
         assert ivl.length == 7
         assert not ivl.is_void
 
+        ivlx = clnd('02 Jan 2017 15:00', period='W')
+        assert ivlx._loc == ivl._loc
+
     def test_interval_constructor_with_OOB_period(self):
         clnd = tb_12_days()
         #period is defined by good ts but extends beyond the left bound of clnd
@@ -378,6 +395,9 @@ class TestIntervalConstructorOtherWays:
         assert ivl._loc == (0, 1)
         with pytest.raises(OutOfBoundsError):
             clnd.get_interval('01 Jan 2017 15:00', period='W',
+                              clip_period=False)
+        with pytest.raises(OutOfBoundsError):
+            clnd('01 Jan 2017 15:00', period='W',
                               clip_period=False)
         #same period defined by outside ts
         ivl = clnd.get_interval('26 Dec 2016 15:00', period='W')
@@ -406,6 +426,8 @@ class TestIntervalConstructorOtherWays:
         with pytest.raises(ValueError):
             clnd.get_interval('02 Jan 2017 15:00', period='bad_period')
         with pytest.raises(ValueError):
+            clnd('02 Jan 2017 15:00', period='bad_period')
+        with pytest.raises(ValueError):
             clnd.get_interval('bad_timestamp', period='W')
 
     def test_interval_constructor_with_length(self):
@@ -417,6 +439,9 @@ class TestIntervalConstructorOtherWays:
         assert ivl._loc == (2,8)
         assert ivl.length == 7
         assert not ivl.is_void
+
+        ivlx = clnd('02 Jan 2017 15:00', length=7)
+        assert ivlx._loc == ivl._loc
 
     def test_interval_constructor_with_negative_length(self):
         clnd = tb_12_days()
@@ -443,6 +468,8 @@ class TestIntervalConstructorOtherWays:
         clnd = tb_12_days()
         with pytest.raises(VoidIntervalError):
             clnd.get_interval('08 Jan 2017 15:00', length=0)
+        with pytest.raises(VoidIntervalError):
+            clnd('08 Jan 2017 15:00', length=0)
 
     def test_interval_constructor_with_length_OOB(self):
         clnd = tb_12_days()
@@ -453,6 +480,8 @@ class TestIntervalConstructorOtherWays:
         # starts inside clnd, ends OOB
         with pytest.raises(OutOfBoundsError):
             clnd.get_interval('02 Jan 2017 15:00', length=20)
+        with pytest.raises(OutOfBoundsError):
+            clnd('02 Jan 2017 15:00', length=20)
         # starts OOB, ends inside clnd
         with pytest.raises(OutOfBoundsError):
             clnd.get_interval('30 Dec 2016 15:00', length=10)
@@ -468,6 +497,8 @@ class TestIntervalConstructorOtherWays:
         with pytest.raises(TypeError):
             clnd.get_interval('02 Jan 2017 15:00', length=5.5)
         with pytest.raises(TypeError):
+            clnd('02 Jan 2017 15:00', length=5.5)
+        with pytest.raises(TypeError):
             clnd.get_interval('02 Jan 2017 15:00', length='x')
         with pytest.raises(ValueError):
             clnd.get_interval('bad_timestamp', length=5)
@@ -481,6 +512,12 @@ class TestIntervalConstructorOtherWays:
         assert ivl._loc == (2, 8)
         assert ivl.length == 7
         assert not ivl.is_void
+
+        # if we call timeboard instance directly, it cannot figure that we
+        # want a period, as only one argument is given and it can be converted
+        # to a timestamp
+        ws = clnd(pd.Period('05 Jan 2017 15:00', freq='W'))
+        assert ws._loc == 2
 
     def test_interval_constructor_from_pd_period_OOB(self):
         clnd = tb_12_days()
@@ -519,6 +556,10 @@ class TestIntervalConstructorOtherWays:
         assert ivl.length == 32
         assert not ivl.is_void
 
+        ivlx = clnd((pd.Period('05 Jan 2017 15:00', freq='M'),
+                     pd.Period('19 Feb 2017 15:00', freq='M')))
+        assert ivlx._loc == ivl._loc
+
     def test_interval_constructor_bad_arg_combinations(self):
         clnd = tb_12_days()
         with pytest.raises(TypeError):
@@ -542,7 +583,26 @@ class TestIntervalConstructorOtherWays:
         with pytest.raises(TypeError):
             clnd.get_interval(length=1, period='W')
 
-
+    def test_interval_constructor_bad_arg_combinations_2(self):
+        clnd = tb_12_days()
+        with pytest.raises(TypeError):
+            clnd(('01 Jan 2017',))
+        with pytest.raises(TypeError):
+            clnd('01 Jan 2017', '05 Jan 2017')
+        with pytest.raises(TypeError):
+            clnd(('01 Jan 2017',), length=1)
+        with pytest.raises(TypeError):
+            clnd(('anyhting', 'anything'), length=1)
+        with pytest.raises(TypeError):
+            clnd(('02 Jan 2017',), period='W')
+        with pytest.raises(TypeError):
+            clnd(('anyhting', 'anything'), period='W')
+        with pytest.raises(TypeError):
+            clnd('anyhting', length=1, period='W')
+        with pytest.raises(TypeError):
+            clnd(('anyhting', 'anything'), length=1, period='W')
+        with pytest.raises(TypeError):
+            clnd(length=1, period='W')
 
 class TestIntervalConstructorDirect:
 

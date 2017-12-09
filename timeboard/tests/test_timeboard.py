@@ -95,7 +95,7 @@ class TestTBConstructorWithOrgs:
         amendments = pd.Series(index=pd.date_range(start='01 Jan 2017',
                                                 end='10 Jan 2017',
                                                 freq='D'),
-                               data=0)
+                               data=0).to_dict()
         clnd = tb.Timeboard(base_unit_freq='D',
                             start='28 Dec 2016', end='02 Apr 2017',
                             layout=week5x8,

@@ -1,3 +1,4 @@
+from __future__ import division
 from ..exceptions import OutOfBoundsError
 from ..core import get_timestamp
 from ..timeboard import Timeboard
@@ -136,7 +137,7 @@ def extend_weekends(amendments, how='nearest', label=None, weekend=None):
             first_step = len(weekend) - loc_in_wend
             step = 1
         elif how == 'nearest':
-            if loc_in_wend < len(weekend) / 2:
+            if loc_in_wend < len(weekend) // 2:
                 first_step = -(loc_in_wend + 1)
                 step = -1
             else:

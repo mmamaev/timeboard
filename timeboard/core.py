@@ -1,3 +1,4 @@
+from __future__ import division
 from .exceptions import (OutOfBoundsError,
                          VoidIntervalError,
                          UnsupportedPeriodError)
@@ -199,15 +200,14 @@ class _Frame(pd.PeriodIndex):
         # This comprehension takes 0.3s for 100 Years Standard Week 8x5
         loc_list = [self._get_loc_wrapper(t) for t in points_in_time]
         #timer1 = timeit.default_timer()
-        split_positions = filter(
-            lambda x: span_first < x <= span_last, loc_list)
+        split_positions = [x for x in loc_list if span_first < x <= span_last]
         #timer2 = timeit.default_timer()
         split_positions = sorted(list(set(split_positions)))
         #timer3 = timeit.default_timer()
 
         start_positions = split_positions[:]
         start_positions.insert(0, span_first)
-        end_positions = map(lambda x: x-1, split_positions)
+        end_positions = [x-1 for x in split_positions]
         end_positions.append(span_last)
         #timer4 = timeit.default_timer()
         # print "_locate_subframe timers:\n\t1: {:.5f}\n\t2: {:.5f}\n\t3: {:.5f}"\
@@ -544,7 +544,7 @@ class _Timeline(pd.Series):
         Nothing is returned; the timeline is modified in-place.
         """
         amendments_located = {}
-        for (point_in_time, value) in amendments.iteritems():
+        for (point_in_time, value) in amendments.items():
             try:
                 loc = self.frame.get_loc(point_in_time)
             except KeyError:

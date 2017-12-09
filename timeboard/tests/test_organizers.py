@@ -200,7 +200,7 @@ class TestApplyAmendments(object):
                       data=0)
         amendments = _Timeline(base_unit_freq='D',
                                start='02 Jan 2017', end='03 Jan 2017',
-                               data = 3 )
+                               data = 3 ).to_dict()
         t.amend(amendments)
         assert t.eq([0, 3, 3, 0, 0, 0, 0, 0, 0, 0]).all()
 
