@@ -608,7 +608,7 @@ class TestIntervalConstructorDirect:
 
     def test_interval_direct_with_locs(self):
         clnd = tb_12_days()
-        ivl = Interval(clnd, (2, 8))
+        ivl = Interval(clnd, (2, 8), clnd.schedules['_default'])
         assert ivl.start_time == datetime.datetime(2017, 1, 2, 0, 0, 0)
         assert ivl.end_time > datetime.datetime(2017, 1, 8, 23, 59, 59)
         assert ivl.end_time < datetime.datetime(2017, 1, 9, 0, 0, 0)
@@ -618,7 +618,9 @@ class TestIntervalConstructorDirect:
 
     def test_interval_direct_with_ws(self):
         clnd = tb_12_days()
-        ivl = Interval(clnd,(clnd('02 Jan 2017'), clnd('08 Jan 2017')))
+        ivl = Interval(clnd,
+                       (clnd('02 Jan 2017'), clnd('08 Jan 2017')),
+                        clnd.schedules['_default'])
         assert ivl.start_time == datetime.datetime(2017, 1, 2, 0, 0, 0)
         assert ivl.end_time > datetime.datetime(2017, 1, 8, 23, 59, 59)
         assert ivl.end_time < datetime.datetime(2017, 1, 9, 0, 0, 0)
@@ -628,7 +630,8 @@ class TestIntervalConstructorDirect:
 
     def test_interval_direct_mixed_args(self):
         clnd = tb_12_days()
-        ivl = Interval(clnd, (2, clnd('08 Jan 2017')))
+        ivl = Interval(clnd, (2, clnd('08 Jan 2017')),
+                       clnd.schedules['_default'])
         assert ivl.start_time == datetime.datetime(2017, 1, 2, 0, 0, 0)
         assert ivl.end_time > datetime.datetime(2017, 1, 8, 23, 59, 59)
         assert ivl.end_time < datetime.datetime(2017, 1, 9, 0, 0, 0)
@@ -638,7 +641,7 @@ class TestIntervalConstructorDirect:
 
     def test_interval_direct_same_locs(self):
         clnd = tb_12_days()
-        ivl = Interval(clnd, (2, 2))
+        ivl = Interval(clnd, (2, 2), clnd.schedules['_default'])
         assert ivl.start_time == datetime.datetime(2017, 1, 2, 0, 0, 0)
         assert ivl.end_time > datetime.datetime(2017, 1, 2, 23, 59, 59)
         assert ivl.end_time < datetime.datetime(2017, 1, 3, 0, 0, 0)
@@ -649,29 +652,29 @@ class TestIntervalConstructorDirect:
     def test_interval_direct_reverse_locs(self):
         clnd = tb_12_days()
         with pytest.raises(VoidIntervalError):
-            Interval(clnd, (8, 2))
+            Interval(clnd, (8, 2), clnd.schedules['_default'])
 
     def test_interval_direct_OOB_locs(self):
         clnd = tb_12_days()
         with pytest.raises(OutOfBoundsError):
-            Interval(clnd, (-1, 2))
+            Interval(clnd, (-1, 2), clnd.schedules['_default'])
         with pytest.raises(OutOfBoundsError):
-            Interval(clnd, (8, 13))
+            Interval(clnd, (8, 13), clnd.schedules['_default'])
         with pytest.raises(OutOfBoundsError):
-            Interval(clnd, (-1, 13))
+            Interval(clnd, (-1, 13), clnd.schedules['_default'])
         with pytest.raises(OutOfBoundsError):
-            Interval(clnd, (13, 25))
+            Interval(clnd, (13, 25), clnd.schedules['_default'])
 
     def test_interval_direct_bad_args(self):
         clnd = tb_12_days()
         with pytest.raises(AttributeError):
-            Interval('not a clnd', (2, 8))
+            Interval('not a clnd', (2, 8), clnd.schedules['_default'])
         with pytest.raises(TypeError):
-            Interval(clnd, (2, 8.5))
+            Interval(clnd, (2, 8.5), clnd.schedules['_default'])
         with pytest.raises(TypeError):
-            Interval(clnd, (2, '08 Jan 2017'))
+            Interval(clnd, (2, '08 Jan 2017'), clnd.schedules['_default'])
         with pytest.raises(IndexError):
-            Interval(clnd, (2,))
+            Interval(clnd, (2,), clnd.schedules['_default'])
         with pytest.raises(TypeError):
-            Interval(clnd, 'not a tuple')
+            Interval(clnd, 'not a tuple', clnd.schedules['_default'])
 

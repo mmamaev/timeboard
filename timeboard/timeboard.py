@@ -1,11 +1,10 @@
 from __future__ import division
-from .core import _Timeline, Organizer, get_period, get_timestamp
+from .core import _Timeline, Organizer, _Schedule, get_period, get_timestamp
 from .workshift import Workshift
 from .interval import Interval
 from .exceptions import OutOfBoundsError, VoidIntervalError
 from collections import Iterable, Sequence, namedtuple
 from math import copysign
-from numpy import nonzero
 import warnings
 
 OOB_LEFT = -911
@@ -18,18 +17,21 @@ _Location = namedtuple('_Location', ['index', 'where'])
 class Timeboard(object):
     """Your customized calendar.
     
-    A Timeboard object consists of two main parts:
-        - a timeline of workshifts constructed as specified by timeboard's
-        instantiation parameters,
-        - a `selector` function used to classify a workshift as on-duty or
-        off-duty
+    A Timeboard object consists of the following parts:
+        - the reference frame of base units of time extending from the 
+        beginning to the end of the timeboard's span;
+        - the timeline of workshifts constructed upon the reference frame as 
+        specified by parameters,
+        - one or more schedules which endow workshifts with on-duty or 
+        off-duty status.
         
     Calculations over a timeboard are either workshift-based or interval-based. 
     Execute `get_workshift` or `get_interval` to instantiate 
     a workshift/an interval and then call their appropriate methods to 
     perform calculations. 
     Note that an instance of the timeboard is callable and such call is 
-    a wrapper around `get_workshift`. 
+    a wrapper around `get_workshift` or `get_interval` whichever will seem 
+    more appropriate.. 
     
     Parameters
     ----------
@@ -66,7 +68,7 @@ class Timeboard(object):
         If there are several keys in `amendments` which refer to the same 
         workshift, the actual label would be unpredictable, therefore a 
         KeyError is raised.
-    selector : function, optional
+    defautl_selector : function, optional
         Function which takes one argument - label of a workshift. Returns 
         True if this is an on-duty workshift, returns False otherwise. Default 
         selector function returns `bool(label)`.
@@ -102,7 +104,7 @@ class Timeboard(object):
     Organizer - defines rules for setting up timeline's layout
     """
     def __init__(self, base_unit_freq, start, end, layout, amendments=None,
-                 selector=None, workshift_ts='start'):
+                 default_selector=None, workshift_ts='start'):
         if isinstance(layout, Organizer):
             org = layout
         elif isinstance(layout, Sequence):
@@ -120,7 +122,7 @@ class Timeboard(object):
         if not hasattr(amendments, 'items'):
             raise TypeError("`amendments` do not look like a dictionary: "
                             "`items` method is needed but not found.")
-        self._custom_selector = selector
+        self._custom_selector = default_selector
         self._timeline = _Timeline(base_unit_freq, start, end)
         self._timeline.organize(org)
         self._timeline.amend(amendments)
@@ -129,9 +131,9 @@ class Timeboard(object):
         self._repr = "Timeboard({!r}, {!r}, {!r}, {!r})"\
                      .format(base_unit_freq, start, end, layout)
 
-        on_duty_bool_index = self._timeline.apply(self.selector)
-        self._on_duty_idx = nonzero(on_duty_bool_index)[0]
-        self._off_duty_idx = nonzero(~on_duty_bool_index)[0]
+        default_schedule = _Schedule(self._timeline, '_default',
+                                     self.default_selector)
+        self._schedules = {'_default' : default_schedule}
 
     def __repr__(self):
         return self._repr
@@ -159,15 +161,19 @@ class Timeboard(object):
         return self._workshift_ts
 
     @property
-    def selector(self):
+    def default_selector(self):
 
-        def default_selector(x):
+        def _default_selector(x):
             return bool(x)
 
         if self._custom_selector is not None:
             return self._custom_selector
         else:
-            return default_selector
+            return _default_selector
+
+    @property
+    def schedules(self):
+        return self._schedules
 
     def __call__(self, *args, **kwargs):
         """A wrapper of `get_workshift()` or `get_interval()`."""
@@ -239,7 +245,7 @@ class Timeboard(object):
             message = msg
         raise VoidIntervalError(message)
 
-    def get_workshift(self, point_in_time):
+    def get_workshift(self, point_in_time, schedule=None):
         """Find workshift by timestamp.
         
         Takes a timestamp-like value and returns the workshift which
@@ -267,14 +273,16 @@ class Timeboard(object):
             workshift. You will need to know the absolute position 
             (`location`) of the workshift within the timeline.
         """
+        if schedule is None:
+            schedule = self._schedules['_default']
         loc = self._locate(point_in_time)
         if loc.index is None:
             return self._handle_out_of_bounds()
         else:
-            return Workshift(self, loc.index)
+            return Workshift(self, loc.index, schedule)
 
     def get_interval(self, interval_ref=None, length=None, period=None,
-                     clip_period=True, closed='11'):
+                     clip_period=True, closed='11', schedule=None):
         """Create interval on the timeline.
         
         A number of techniques to define the interval can be used. They are 
@@ -406,6 +414,9 @@ class Timeboard(object):
         drop_head = closed[0] == '0'
         drop_tail = closed[1] == '0'
 
+        if schedule is None:
+            schedule = self._schedules['_default']
+
         if length is None and period is None:
             try:
                 locs = self._get_interval_locs_from_reference(
@@ -453,7 +464,7 @@ class Timeboard(object):
                     "({}, {}) within {}".
                     format(locs[0].index, locs[1].index, self))
 
-        return Interval(self, (locs[0].index, locs[1].index))
+        return Interval(self, (locs[0].index, locs[1].index), schedule)
 
     def _get_interval_locs_from_reference(self, interval_ref,
                                           drop_head, drop_tail):

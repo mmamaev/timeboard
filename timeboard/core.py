@@ -3,6 +3,7 @@ from .exceptions import (OutOfBoundsError,
                          VoidIntervalError,
                          UnsupportedPeriodError)
 import pandas as pd
+from numpy import nonzero, arange
 from itertools import cycle, dropwhile
 from collections import Iterable, namedtuple
 #import timeit
@@ -765,3 +766,72 @@ class Splitter(_SplitterBase):
 
     def __new__(cls, split_freq, multiplier=1, ticks=None):
         return super(Splitter, cls).__new__(cls, split_freq, multiplier, ticks)
+
+class _Schedule(object):
+    """Duty schedule of workshifts.
+    
+    Instantiation: for a given timeline, set the duty status of the 
+    workshifts by applying a selector function to workshift's labels. 
+    
+    Parameters
+    ----------
+    tl : _Timeline
+    activity : str
+        A descriptive name for the schedule.
+    selector : function
+        Function taking one argument (workshift's label) and returning True 
+        if  the workshift with this label is on duty, False it is off duty.
+        
+    Attributes
+    ----------
+    activity: str
+    index: numpy ndarray
+        Ascending timeline indices of all schedule's workshifts.
+    on_duty_index: numpy ndarray
+        Ascending timeline indices of schedule's on duty workshifts.
+    off_duty_index: numpy ndarray
+        Ascending timeline indices of schedule's off duty workshifts.
+
+    Notes
+    -----
+    If a timeline consists of four workshifts, and the schedule declared  
+    workshifts 0 and 2 as on duty, and the rest as off duty, the schedules's 
+    attributes are asserted as follows:
+        index == np.array([0, 1, 2, 3])
+        on_duty_index == np.array([0, 2])
+        off_duty_index == np.array([1, 3])
+    """
+
+    def __init__(self, tl, activity, selector):
+        self._timeline = tl
+        self._activity = str(activity)
+        self._selector = selector
+
+        on_duty_bool_index = self._timeline.apply(self._selector)
+        self._on_duty_index = nonzero(on_duty_bool_index)[0]
+        self._off_duty_index = nonzero(~on_duty_bool_index)[0]
+
+    @property
+    def activity(self):
+        return self._activity
+
+    @property
+    def on_duty_index(self):
+        return self._on_duty_index
+
+    @property
+    def off_duty_index(self):
+        return self._off_duty_index
+
+    @property
+    def index(self):
+        return arange(len(self._timeline))
+
+    def label(self, i):
+        return self._timeline.iloc[i]
+
+    def is_on_duty(self, i):
+        return self._selector(self._timeline.iloc[i])
+
+    def is_off_duty(self, i):
+        return not self.is_on_duty(i)

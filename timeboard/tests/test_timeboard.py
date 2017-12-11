@@ -66,11 +66,12 @@ class TestTBConstructor(object):
         clnd = tb.Timeboard(base_unit_freq='D',
                             start='01 Jan 2017', end='12 Jan 2017',
                             layout=[0, 1, 0, 2])
-        selector = clnd.selector
+        sdl = clnd.schedules['_default']
+        selector = clnd.default_selector
         assert selector(clnd._timeline[1])
         assert map(selector, clnd._timeline) == [False, True] * 6
-        assert (clnd._on_duty_idx == [1, 3, 5, 7, 9, 11]).all()
-        assert (clnd._off_duty_idx == [0, 2, 4, 6, 8, 10]).all()
+        assert (sdl.on_duty_index == [1, 3, 5, 7, 9, 11]).all()
+        assert (sdl.off_duty_index == [0, 2, 4, 6, 8, 10]).all()
 
     def test_tb_constructor_trivial_custom_selector(self):
 
@@ -80,12 +81,13 @@ class TestTBConstructor(object):
         clnd = tb.Timeboard(base_unit_freq='D',
                             start='01 Jan 2017', end='12 Jan 2017',
                             layout=[0, 1, 0, 2],
-                            selector=custom_selector)
-        selector = clnd.selector
+                            default_selector=custom_selector)
+        sdl = clnd.schedules['_default']
+        selector = clnd.default_selector
         assert not selector(clnd._timeline[1])
         assert map(selector, clnd._timeline) == [False, False, False, True] * 3
-        assert (clnd._on_duty_idx == [3, 7, 11]).all()
-        assert (clnd._off_duty_idx == [0, 1, 2, 4, 5, 6, 8, 9, 10]).all()
+        assert (sdl.on_duty_index == [3, 7, 11]).all()
+        assert (sdl.off_duty_index == [0, 1, 2, 4, 5, 6, 8, 9, 10]).all()
 
 
 class TestTBConstructorWithOrgs:

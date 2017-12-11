@@ -40,7 +40,7 @@ class TestWorkshiftConstructor(object):
 
     def test_workshift_constructor(self):
         clnd = tb_12_days()
-        ws = clnd('04 Jan 2017')
+        ws = clnd.get_workshift('04 Jan 2017')
         assert ws._loc == 4
         assert ws.start_time == datetime.datetime(2017, 1, 4, 0, 0, 0)
         assert ws.end_time > datetime.datetime(2017, 1, 4, 23, 59, 59)
@@ -50,10 +50,13 @@ class TestWorkshiftConstructor(object):
         assert not ws.is_off_duty
         assert not ws.is_void
         assert ws.duration == 1
+
+        wsx = clnd('04 Jan 2017')
+        assert wsx._loc == ws._loc
 
     def test_workshift_constructor_from_ts(self):
         clnd = tb_12_days()
-        ws = clnd(pd.Timestamp('04 Jan 2017 15:00'))
+        ws = clnd.get_workshift(pd.Timestamp('04 Jan 2017 15:00'))
         assert ws._loc == 4
         assert ws.start_time == datetime.datetime(2017, 1, 4, 0, 0, 0)
         assert ws.end_time > datetime.datetime(2017, 1, 4, 23, 59, 59)
@@ -64,9 +67,12 @@ class TestWorkshiftConstructor(object):
         assert not ws.is_void
         assert ws.duration == 1
 
+        wsx = clnd(pd.Timestamp('04 Jan 2017 15:00'))
+        assert wsx._loc == ws._loc
+
     def test_workshift_constructor_from_datetime(self):
         clnd = tb_12_days()
-        ws = clnd(datetime.datetime(2017,1,4,15,0,0))
+        ws = clnd.get_workshift(datetime.datetime(2017,1,4,15,0,0))
         assert ws._loc == 4
         assert ws.start_time == datetime.datetime(2017, 1, 4, 0, 0, 0)
         assert ws.end_time > datetime.datetime(2017, 1, 4, 23, 59, 59)
@@ -76,11 +82,14 @@ class TestWorkshiftConstructor(object):
         assert not ws.is_off_duty
         assert not ws.is_void
         assert ws.duration == 1
+
+        wsx = clnd(datetime.datetime(2017,1,4,15,0,0))
+        assert wsx._loc == ws._loc
 
     def test_workshift_constructor_from_pd_period(self):
         clnd = tb_12_days()
         # freq='W' begins in Mon, which is 02 Jan
-        ws = clnd(pd.Period('05 Jan 2017', freq='W'))
+        ws = clnd.get_workshift(pd.Period('05 Jan 2017', freq='W'))
         assert ws._loc == 2
         assert ws.start_time == datetime.datetime(2017, 1, 2, 0, 0, 0)
         assert ws.end_time > datetime.datetime(2017, 1, 2, 23, 59, 59)
@@ -91,6 +100,9 @@ class TestWorkshiftConstructor(object):
         assert not ws.is_void
         assert ws.duration == 1
 
+        wsx = clnd(pd.Period('05 Jan 2017', freq='W'))
+        assert wsx._loc == ws._loc
+
     def test_workshift_constructor_date_outside(self):
         clnd = tb_12_days()
         with pytest.raises(OutOfBoundsError):
@@ -99,14 +111,14 @@ class TestWorkshiftConstructor(object):
     def test_direct_workshift_constructor_with_bad_loc(self):
         clnd = tb_12_days()
         #with pytest.raises(OutOfBoundsError):
-        assert get_timestamp(Workshift(clnd, -1)) == \
-                   datetime.datetime(2017, 1, 12, 0, 0, 0)
+        assert get_timestamp(Workshift(clnd, -1, clnd.schedules['_default'])
+                             ) ==  datetime.datetime(2017, 1, 12, 0, 0, 0)
         with pytest.raises(OutOfBoundsError):
-            Workshift(clnd, 500000000)
+            Workshift(clnd, 500000000, clnd.schedules['_default'])
         with pytest.raises(TypeError):
-            Workshift(clnd, 10.5)
+            Workshift(clnd, 10.5, clnd.schedules['_default'])
         with pytest.raises(TypeError):
-            Workshift(clnd, '05 Jan 2017')
+            Workshift(clnd, '05 Jan 2017', clnd.schedules['_default'])
 
 class TestRollForward(object):
 

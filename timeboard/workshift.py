@@ -5,17 +5,19 @@ from numpy import searchsorted
 
 
 class Workshift(object):
-    """A constituent of timeboard. 
+    """A constituent of timeline. 
     
     Timeboard's timeline is a sequence of workshifts. Each workshift has
-    a label which defines whether this workshift is on-duty or off-duty.
-    A workshift is made of one or more consecutive base units. 
+    a label which defines whether this workshift is on-duty or off-duty 
+    under a certain schedule. 
+    A workshift can span one or more consecutive base units. 
     
     Parameters
     ----------
-    timeboard : instance of Timeboard
+    timeboard : Timeboard
     location : int (>=0)
         Position of the workshift on the timeline of the timeboard (zero-based).
+    schedule: _Schedule
         
     Raises
     ------
@@ -32,12 +34,12 @@ class Workshift(object):
         Number of base unit making up the workshift.
     label
         An application-specific label associated with the workshift. 
-        Timeboard's `selector` method interprets the label to identify the duty
-        of the workshift.
+        Schedule's `selector` interprets the label to identify the duty
+        of the workshift under this schedule.
     is_on_duty : bool
-        True if the workship is on-duty.
+        True if the workship is on-duty under given `schedule`.
     is_off_duty : bool
-        True if the workship is off-duty.
+        True if the workship is off-duty under given `schedule`.
     
     Notes
     -----
@@ -46,10 +48,10 @@ class Workshift(object):
     calling Workshift() constructor directly. 
     """
 
-    def __init__(self, timeboard, location):
+    def __init__(self, timeboard, location, schedule):
 
         try:
-            self._label = timeboard._timeline.iloc[location]
+            self._label = schedule.label(location)
         except TypeError:
             raise TypeError('Workshift location = {}: expected integer-like '
                             'received {}'.format(location, type(location)))
@@ -63,6 +65,7 @@ class Workshift(object):
         #                            "not allowed.".format(location))
         self._tb = timeboard
         self._loc = location
+        self._schedule = schedule
 
     @property
     def start_time(self):
@@ -112,11 +115,11 @@ class Workshift(object):
 
     @property
     def is_on_duty(self):
-        return self._tb.selector(self.label)
+        return self._schedule.is_on_duty(self._loc)
 
     @property
     def is_off_duty(self):
-        return not self.is_on_duty
+        return self._schedule.is_off_duty(self._loc)
 
     @property
     def is_void(self):
@@ -182,12 +185,12 @@ class Workshift(object):
             `rollback` differs from `rollforward` only in the definition of 
             the zero step workshift and the default direction of stepping.
         """
-        idx = self._tb._on_duty_idx
+        idx = self._schedule.on_duty_index
         if (duty == 'off') or (duty == 'same' and self.is_off_duty) or (
                         duty == 'alt' and self.is_on_duty):
-            idx = self._tb._off_duty_idx
+            idx = self._schedule.off_duty_index
         elif duty == 'any':
-            idx = range(len(self._tb._timeline))
+            idx = self._schedule.index
 
         len_idx = len(idx)
         i = searchsorted(idx, self._loc)
@@ -195,7 +198,7 @@ class Workshift(object):
         if i == len_idx or i + steps < 0 or i + steps >= len_idx:
             return self._tb._handle_out_of_bounds()
 
-        return Workshift(self._tb, idx[i + steps])
+        return Workshift(self._tb, idx[i + steps], self._schedule)
 
     def rollback(self, steps=0, duty='on'):
         """
@@ -254,12 +257,12 @@ class Workshift(object):
         """
         # TODO: Optimize rollback and rolloforward to compy with DRY?
 
-        idx = self._tb._on_duty_idx
+        idx = self._schedule.on_duty_index
         if (duty == 'off') or (duty == 'same' and self.is_off_duty) or (
                         duty == 'alt' and self.is_on_duty):
-            idx = self._tb._off_duty_idx
+            idx = self._schedule.off_duty_index
         elif duty == 'any':
-            idx = range(len(self._tb._timeline))
+            idx = self._schedule.index
 
         # TODO: Optimize this search
         len_idx = len(idx)
@@ -270,7 +273,7 @@ class Workshift(object):
         if i == -1 or i - steps < 0 or i - steps >= len_idx:
             return self._tb._handle_out_of_bounds()
 
-        return Workshift(self._tb, idx[i - steps])
+        return Workshift(self._tb, idx[i - steps], self._schedule)
 
     def __add__(self, other):
         """ws + n is the same as ws.rollforward(n, duty='on')"""

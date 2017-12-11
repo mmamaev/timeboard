@@ -12,13 +12,17 @@ class Interval(object):
     the first and the last workshifts of the interval. An interval can
     contain one or more workshifts; empty interval is not allowed.
     
+    Duty status of the workshifts within the interval is set by the given 
+    schedule.
+    
     Parameters
     ----------
-    timeboard : instance of Timeboard
+    timeboard : Timeboard
     bounds : a two-element sequence (int or Workshift, int or Workshift)
         The two elements of `bounds` provide the positions of the first and 
         the last workshifts of the interval within the timelime. The element's 
         type is either non-negative integer or an instance of Workshift.
+    schedule: _Schedule
         
     Raises
     ------
@@ -44,7 +48,7 @@ class Interval(object):
     
     """
 
-    def __init__(self, timeboard, bounds):
+    def __init__(self, timeboard, bounds, schedule):
 
         def handle_bound(bound):
         #TODO: add support of clipping interval to timeline's bounds
@@ -77,10 +81,11 @@ class Interval(object):
         self._tb = timeboard
         self._loc = locs
         self._length = self._loc[1] - self._loc[0] + 1
+        self._schedule = schedule
         self._duty_idx = {
-            'on': self._tb._on_duty_idx,
-            'off': self._tb._off_duty_idx,
-            'any': range(len(self._tb._timeline))
+            'on': self._schedule.on_duty_index,
+            'off': self._schedule.off_duty_index,
+            'any': self._schedule.index
         }
         self._duty_loc = {
             'on': self._find_my_bounds_in_idx(self._duty_idx['on']),
@@ -133,8 +138,8 @@ class Interval(object):
     def is_void(self):
         return False
 
-    def labels(self):
-        return self._tb._timeline.iloc[self._loc[0] : self._loc[1]+1]
+    #def labels(self):
+    #    return self._tb._timeline.iloc[self._loc[0] : self._loc[1]+1]
 
     def first(self, duty='on'):
         """Return the first workshift with the specified duty.
@@ -207,7 +212,7 @@ class Interval(object):
                 'No "{}" workshift seq.n. {} in the interval {}'.
                 format(duty, n, self))
 
-        return Workshift(self._tb, duty_idx[loc_in_duty_idx])
+        return Workshift(self._tb, duty_idx[loc_in_duty_idx], self._schedule)
 
     def count(self, duty='on'):
         """Return the count of workshifts with the specified duty.
@@ -294,7 +299,7 @@ class Interval(object):
                               base_unit_freq=period)
         len_of_1st_period = self._tb.get_interval(
             (period_index[0].start_time, period_index[0].end_time),
-            clip_period=False).count(duty=duty)
+            clip_period=False, schedule=self._schedule).count(duty=duty)
 
         if ivl_duty_end_ts <= period_index[0].end_time:
             ivl_units_in_only_period = self.count(duty=duty)
@@ -303,23 +308,25 @@ class Interval(object):
         result = 0.0
         ivl_units_in_1st_period = self._tb.get_interval(
             (ivl_duty_start_ts, period_index[0].end_time),
-            clip_period=False).count(duty=duty)
+            clip_period=False, schedule=self._schedule).count(duty=duty)
         result += ivl_units_in_1st_period / len_of_1st_period
 
         ivl_units_in_last_period = self._tb.get_interval(
             (period_index[-1].start_time, ivl_duty_end_ts),
-            clip_period=False).count(duty=duty)
+            clip_period=False, schedule=self._schedule).count(duty=duty)
         len_of_last_period = self._tb.get_interval(
             (period_index[-1].start_time, period_index[-1].end_time),
-            clip_period=False).count(duty=duty)
+            clip_period=False, schedule=self._schedule).count(duty=duty)
         result += ivl_units_in_last_period / len_of_last_period
 
         full_periods_in_ivl = len(period_index) - 2
         if full_periods_in_ivl > 0:
 
             def duty_is_present(p):
-                return self._tb.get_interval((p.start_time, p.end_time),
-                    clip_period=False).count(duty=duty) > 0
+                return self._tb.get_interval(
+                    (p.start_time, p.end_time),
+                    clip_period=False,
+                    schedule=self._schedule).count(duty=duty) > 0
 
             result += sum(map(duty_is_present, period_index[1:-1]))
 
