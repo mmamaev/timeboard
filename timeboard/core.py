@@ -322,7 +322,7 @@ class _Frame(pd.PeriodIndex):
         # TODO: add support of freq multiplicators, i.e. (D by 4D) or (2D by 4D)
         # TODO: reason about freq multiplicators of anchored freqs
         # this line is a patch to support split_by is a trivial Splitter object
-        split_by = split_by.split_freq
+        split_by = split_by.each
         if not _check_splitby_freq(self._base_unit_freq, split_by):
             raise UnsupportedPeriodError('Ambiguous organizing: '
                                          '{} is not a subperiod of {}'
@@ -473,11 +473,9 @@ class _Timeline(pd.Series):
     end_time : Timestamp
         When the last element of the timeline ends.
     """
-    def __init__(self, base_unit_freq, start, end, data=None):
-        f = _Frame(base_unit_freq, start, end)
-        super(_Timeline, self).__init__(index=f, data=data)
-        self._base_unit_freq = base_unit_freq
-        self._frame = f
+    def __init__(self, frame, data=None):
+        super(_Timeline, self).__init__(index=frame, data=data)
+        self._frame = frame
 
     @property
     def frame(self):
@@ -742,7 +740,7 @@ class Organizer(object):
         return "Organizer({}, structure={!r})".format(s, self.structure)
 
 
-_SplitterBase = namedtuple('Splitter', 'split_freq multiplier ticks')
+_SplitterBase = namedtuple('Splitter', 'each at')
 class Splitter(_SplitterBase):
     """Container class defining how to partition a timeline.
 
@@ -764,14 +762,16 @@ class Splitter(_SplitterBase):
     """
     __slots__ = ()
 
-    def __new__(cls, split_freq, multiplier=1, ticks=None):
-        return super(Splitter, cls).__new__(cls, split_freq, multiplier, ticks)
+    def __new__(cls, each, at=None):
+        return super(Splitter, cls).__new__(cls, each, at)
 
 class _Schedule(object):
     """Duty schedule of workshifts.
     
-    Instantiation: for a given timeline, set the duty status of the 
-    workshifts by applying a selector function to workshift's labels. 
+    Provide duty-wise interpretation for workshifts with regard 
+    to a particular activity. 
+    Instantiation: for a given timeline, set the duty status of 
+    the workshifts by applying a selector function to workshift's labels. 
     
     Parameters
     ----------

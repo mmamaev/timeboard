@@ -1,5 +1,6 @@
 from __future__ import division
-from .core import _Timeline, Organizer, _Schedule, get_period, get_timestamp
+from .core import (_Frame, _Timeline, _Schedule,
+                   Organizer, get_period, get_timestamp)
 from .workshift import Workshift
 from .interval import Interval
 from .exceptions import OutOfBoundsError, VoidIntervalError
@@ -123,7 +124,8 @@ class Timeboard(object):
             raise TypeError("`amendments` do not look like a dictionary: "
                             "`items` method is needed but not found.")
         self._custom_selector = default_selector
-        self._timeline = _Timeline(base_unit_freq, start, end)
+        self._frame = _Frame(base_unit_freq, start, end)
+        self._timeline = _Timeline(frame=self._frame)
         self._timeline.organize(org)
         self._timeline.amend(amendments)
         self._base_unit_freq = base_unit_freq
@@ -150,11 +152,11 @@ class Timeboard(object):
 
     @property
     def start_time(self):
-        return self._timeline.start_time
+        return self._frame.start_time
 
     @property
     def end_time(self):
-        return self._timeline.end_time
+        return self._frame.end_time
 
     @property
     def workshift_ts(self):
@@ -223,9 +225,9 @@ class Timeboard(object):
                                    " for PiT {}".format(loc, point_in_time))
             return _Location(loc, LOC_WITHIN)
         except KeyError:
-            if pit_ts < self._timeline.frame.start_time:
+            if pit_ts < self.start_time:
                 return _Location(None, OOB_LEFT)
-            elif pit_ts > self._timeline.frame.end_time:
+            elif pit_ts > self.end_time:
                 return _Location(None, OOB_RIGHT)
             else:
                 raise RuntimeError("PiT {} is within frame but _Frame.get_loc"

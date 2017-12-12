@@ -87,7 +87,8 @@ class TestSkiperator(object):
 class TestTimelineConstructor(object):
 
     def test_time_line_constructor(self):
-        t = _Timeline(base_unit_freq='D', start='01 Jan 2017', end='10 Jan 2017')
+        t = _Timeline(_Frame(base_unit_freq='D', start='01 Jan 2017', end='10 '
+                                                                        'Jan 2017'))
         f = _Frame(base_unit_freq='D', start='01 Jan 2017', end='10 Jan 2017')
         assert len(t)==10
         assert (t.frame == f).all()
@@ -97,7 +98,8 @@ class TestTimelineConstructor(object):
 
 @pytest.fixture(scope='module')
 def timeline_10d():
-    return _Timeline(base_unit_freq='D', start='01 Jan 2017', end='10 Jan 2017')
+    return _Timeline(_Frame(base_unit_freq='D', start='01 Jan 2017', end='10 '
+                                                                        'Jan 2017'))
 
 class TestApplyPattern(object):
 
