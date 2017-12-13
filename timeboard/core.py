@@ -473,10 +473,13 @@ class _Timeline(object):
     end_time : Timestamp
         When the last element of the timeline ends.
     """
-    def __init__(self, frame, data=None):
+    def __init__(self, frame, organizer=None, data=None):
+        self._frame = frame
         self._frameband = pd.Series(index=frame, data=arange(len(frame)))
         self._wsband = pd.Series(index=arange(len(frame)), data=data)
-        self._frame = frame
+        if organizer is not None:
+            self.organize(organizer)
+
 
     @property
     def frame(self):

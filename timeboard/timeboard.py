@@ -125,8 +125,7 @@ class Timeboard(object):
                             "`items` method is needed but not found.")
         self._custom_selector = default_selector
         self._frame = _Frame(base_unit_freq, start, end)
-        self._timeline = _Timeline(frame=self._frame)
-        self._timeline.organize(org)
+        self._timeline = _Timeline(frame=self._frame, organizer=org)
         self._timeline.amend(amendments)
         self._base_unit_freq = base_unit_freq
         self._workshift_ts = workshift_ts
