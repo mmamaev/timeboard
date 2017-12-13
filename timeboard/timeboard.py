@@ -219,7 +219,7 @@ class Timeboard(object):
             raise
 
         try:
-            loc = self._timeline.frame.get_loc(pit_ts)
+            loc = self._timeline.get_ws_location(pit_ts)
             if loc < 0:
                 raise RuntimeError("_Frame.get_loc returned negative {}"
                                    " for PiT {}".format(loc, point_in_time))

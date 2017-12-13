@@ -123,12 +123,12 @@ class Interval(object):
     @property
     def start_time(self):
         # TODO: Refactor. This class has to know methods of Timeboard only
-        return self._tb._timeline.frame[self._loc[0]].start_time
+        return self._tb._timeline.get_ws_start_time(self._loc[0])
 
     @property
     def end_time(self):
         # TODO: Refactor. This class has to know methods of Timeboard only
-        return self._tb._timeline.frame[self._loc[1]].end_time
+        return self._tb._timeline.get_ws_end_time(self._loc[1])
 
     @property
     def length(self):

@@ -424,7 +424,7 @@ class _Subframe:
                                         self.skip_left, self.skip_right)
 
 
-class _Timeline(pd.Series):
+class _Timeline(object):
     """Period-indexed series of labels.
     
     `_Timeline` object, a timeline,  is the principal data structure of a 
@@ -474,7 +474,8 @@ class _Timeline(pd.Series):
         When the last element of the timeline ends.
     """
     def __init__(self, frame, data=None):
-        super(_Timeline, self).__init__(index=frame, data=data)
+        self._frameband = pd.Series(index=frame, data=arange(len(frame)))
+        self._wsband = pd.Series(index=arange(len(frame)), data=data)
         self._frame = frame
 
     @property
@@ -488,6 +489,36 @@ class _Timeline(pd.Series):
     @property
     def end_time(self):
         return self._frame.end_time
+
+    def __len__(self):
+        return len(self._wsband)
+
+    def __getitem__(self, i):
+        return self._wsband.iloc[i]
+
+    def get_ws_start_time(self, i):
+        first_base_unit = self._wsband.index[i]
+        return self._frameband.index[first_base_unit].start_time
+
+    def get_ws_end_time(self, i):
+        try:
+            self._wsband.index[i]
+        except:
+            raise
+        last_base_unit = len(self._frameband) - 1
+        try:
+            last_base_unit = self._wsband.index[i + 1] - 1
+        except IndexError:
+            pass
+        return self._frameband.index[last_base_unit].end_time
+
+    def get_ws_location(self, point_in_time):
+        base_unit = self._frameband.index.get_loc(point_in_time)
+        return self._frameband.iloc[base_unit]
+
+    @property
+    def labels(self):
+        return self._wsband
 
     def reset(self, value=pd.np.nan):
         """Set all workshift labels on the timeline to the specified value.
@@ -505,7 +536,7 @@ class _Timeline(pd.Series):
         Nothing is returned; the timeline is modified in-place.
 
         """
-        self.iloc[:] = value
+        self._wsband.iloc[:] = value
 
     def amend(self, amendments, not_in_range='ignore'):
         """
@@ -545,7 +576,7 @@ class _Timeline(pd.Series):
         amendments_located = {}
         for (point_in_time, value) in amendments.items():
             try:
-                loc = self.frame.get_loc(point_in_time)
+                loc = self.get_ws_location(point_in_time)
             except KeyError:
                 if not_in_range == 'raise':
                     raise OutOfBoundsError('Amendment {} is outside the '
@@ -557,7 +588,8 @@ class _Timeline(pd.Series):
                                "to workshift {}".format(point_in_time, loc))
             amendments_located[loc] = value
 
-        self.iloc[amendments_located.keys()] = amendments_located.values()
+        self._wsband.iloc[amendments_located.keys()] = \
+            amendments_located.values()
 
     def _apply_pattern(self, pattern, subframe):
         """Set workshift labels from a pattern.
@@ -588,7 +620,7 @@ class _Timeline(pd.Series):
         # TODO: support both directions (set direction in Organizer?)
         if not pattern:
             raise IndexError("Received empty pattern for {}".format(subframe))
-        self.iloc[subframe.first: subframe.last+1] = [
+        self._wsband.iloc[subframe.first: subframe.last+1] = [
             next(pattern_iterator)
             for i in range(subframe.first, subframe.last+1)
         ]
@@ -807,7 +839,7 @@ class _Schedule(object):
         self._activity = str(activity)
         self._selector = selector
 
-        on_duty_bool_index = self._timeline.apply(self._selector)
+        on_duty_bool_index = self._timeline.labels.apply(self._selector)
         self._on_duty_index = nonzero(on_duty_bool_index)[0]
         self._off_duty_index = nonzero(~on_duty_bool_index)[0]
 
@@ -828,10 +860,10 @@ class _Schedule(object):
         return arange(len(self._timeline))
 
     def label(self, i):
-        return self._timeline.iloc[i]
+        return self._timeline[i]
 
     def is_on_duty(self, i):
-        return self._selector(self._timeline.iloc[i])
+        return self._selector(self._timeline[i])
 
     def is_off_duty(self, i):
         return not self.is_on_duty(i)

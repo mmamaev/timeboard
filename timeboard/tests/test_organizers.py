@@ -56,49 +56,49 @@ class TestOrganizeSimple(object):
         t = _Timeline(_Frame(base_unit_freq='D', start='01 Jan 2017', end='10 Jan 2017'))
         org = Organizer(split_at=[], structure=[[1, 2, 3]])
         t.organize(org)
-        assert t.eq([1, 2, 3, 1, 2, 3, 1, 2, 3, 1]).all()
+        assert t.labels.eq([1, 2, 3, 1, 2, 3, 1, 2, 3, 1]).all()
 
     def test_organize_simple_splitat(self):
         t = _Timeline(_Frame(base_unit_freq='D', start='01 Jan 2017', end='10 Jan 2017'))
         org = Organizer(split_at=['05 Jan 2017'], structure=[[1, 2, 3], [11, 12]])
         t.organize(org)
-        assert t.eq([1, 2, 3, 1, 11, 12, 11, 12, 11, 12]).all()
+        assert t.labels.eq([1, 2, 3, 1, 11, 12, 11, 12, 11, 12]).all()
 
     def test_organize_simple_splitat_single_value(self):
         t = _Timeline(_Frame(base_unit_freq='D', start='01 Jan 2017', end='10 Jan 2017'))
         org = Organizer(split_at='05 Jan 2017', structure=[[1, 2, 3], [11, 12]])
         t.organize(org)
-        assert t.eq([1, 2, 3, 1, 11, 12, 11, 12, 11, 12]).all()
+        assert t.labels.eq([1, 2, 3, 1, 11, 12, 11, 12, 11, 12]).all()
 
     def test_organize_simple_splitat_cycle_structures(self):
         t = _Timeline(_Frame(base_unit_freq='D', start='01 Jan 2017', end='10 Jan 2017'))
         org = Organizer(split_at=['05 Jan 2017'], structure=[[1, 2, 3]])
         t.organize(org)
-        assert t.eq([1, 2, 3, 1, 1, 2, 3, 1, 2, 3]).all()
+        assert t.labels.eq([1, 2, 3, 1, 1, 2, 3, 1, 2, 3]).all()
 
     def test_organize_simple_splitby(self):
         t = _Timeline(_Frame(base_unit_freq='D', start='01 Jan 2017', end='10 Jan 2017'))
         org = Organizer(split_by='W', structure=[[1, 2, 3], [11, 12]])
         t.organize(org)
-        assert t.eq([1, 11, 12, 11, 12, 11, 12, 11, 1, 2]).all()
+        assert t.labels.eq([1, 11, 12, 11, 12, 11, 12, 11, 1, 2]).all()
 
     def test_organize_simple_splitby_cycle_structures(self):
         t = _Timeline(_Frame(base_unit_freq='D', start='01 Jan 2017', end='10 Jan 2017'))
         org = Organizer(split_by='W', structure=[[1, 2, 3]])
         t.organize(org)
-        assert t.eq([1, 1, 2, 3, 1, 2, 3, 1, 1, 2]).all()
+        assert t.labels.eq([1, 1, 2, 3, 1, 2, 3, 1, 1, 2]).all()
 
     def test_organize_splitat_outside(self):
         t = _Timeline(_Frame(base_unit_freq='D', start='01 Jan 2017', end='10 Jan 2017'))
         org = Organizer(split_at=['20 Jan 2017'], structure=[[1, 2, 3]])
         t.organize(org)
-        assert t.eq([1, 2, 3, 1, 2, 3, 1, 2, 3, 1]).all()
+        assert t.labels.eq([1, 2, 3, 1, 2, 3, 1, 2, 3, 1]).all()
 
     def test_organize_splitby_outside(self):
         t = _Timeline(_Frame(base_unit_freq='D', start='01 Jan 2017', end='10 Jan 2017'))
         org = Organizer(split_by='M', structure=[[1, 2, 3]])
         t.organize(org)
-        assert t.eq([1, 2, 3, 1, 2, 3, 1, 2, 3, 1]).all()
+        assert t.labels.eq([1, 2, 3, 1, 2, 3, 1, 2, 3, 1]).all()
 
     def test_organize_clean_timeline_if_bad_structures(self):
         t = _Timeline(_Frame(base_unit_freq='D', start='01 Jan 2017', end='10 Jan 2017'))
@@ -106,7 +106,7 @@ class TestOrganizeSimple(object):
         try:
             t.organize(org)
         except TypeError:
-            assert t.isnull().all()
+            assert t.labels.isnull().all()
         else:
             pytest.fail(msg="DID NOT RAISE TypeError for bad structure")
 
@@ -117,7 +117,7 @@ class TestOrganizeRecursive(object):
         org_int = Organizer(split_by='W', structure=[[1, 2, 3]])
         org_ext = Organizer(split_at=['06 Jan 2017'], structure=[org_int, [11, 12]])
         t.organize(org_ext)
-        assert t.eq([1, 1, 2, 3, 1, 11, 12, 11, 12, 11]).all()
+        assert t.labels.eq([1, 1, 2, 3, 1, 11, 12, 11, 12, 11]).all()
 
     def test_organize_recursive_2org(self):
         t = _Timeline(_Frame(base_unit_freq='D', start='27 Dec 2016', end='05 Jan 2017'))
@@ -125,14 +125,14 @@ class TestOrganizeRecursive(object):
         org_int2 = Organizer(split_by='W', structure=[[1, 2, 3]])
         org_ext = Organizer(split_by='M', structure=[org_int1, org_int2])
         t.organize(org_ext)
-        assert t.eq(['a', 'b', 'a', 'x', 'x', 1, 1, 2, 3, 1]).all()
+        assert t.labels.eq(['a', 'b', 'a', 'x', 'x', 1, 1, 2, 3, 1]).all()
 
     def test_organize_recursive_cycled_org(self):
         t = _Timeline(_Frame(base_unit_freq='D', start='27 Dec 2016', end='05 Jan 2017'))
         org_int = Organizer(split_by='W', structure=[[1, 2, 3]])
         org_ext = Organizer(split_by='M', structure=[org_int])
         t.organize(org_ext)
-        assert t.eq([2, 3, 1, 2, 3, 1, 1, 2, 3, 1]).all()
+        assert t.labels.eq([2, 3, 1, 2, 3, 1, 1, 2, 3, 1]).all()
 
     def test_organize_recursive_complex(self):
         t = _Timeline(_Frame(base_unit_freq='D', start='27 Dec 2016', end='01 '
@@ -155,7 +155,7 @@ class TestOrganizeRecursive(object):
         t.organize(org0)
         #result: Dec 27-31               Jan 1-5       rest of Jan      Feb 1
         result = ['d','e','c','d','e'] + [1,1,2,3,1] + ['z']*(31-6+1) + [3]
-        assert t.eq(result).all()
+        assert t.labels.eq(result).all()
 
 
 class TestApplyAmendments(object):
@@ -166,7 +166,7 @@ class TestApplyAmendments(object):
                       data=0)
         amendments = {'02 Jan 2017' : 1, '09 Jan 2017' : 2}
         t.amend(amendments)
-        assert t.eq([0, 1, 0, 0, 0, 0, 0, 0, 2, 0]).all()
+        assert t.labels.eq([0, 1, 0, 0, 0, 0, 0, 0, 2, 0]).all()
 
     def test_amendments_timestamps(self):
         t = _Timeline(_Frame(base_unit_freq='D',
@@ -175,7 +175,7 @@ class TestApplyAmendments(object):
         amendments = {pd.Timestamp('02 Jan 2017'): 1,
                       pd.Timestamp('09 Jan 2017'): 2}
         t.amend(amendments)
-        assert t.eq([0, 1, 0, 0, 0, 0, 0, 0, 2, 0]).all()
+        assert t.labels.eq([0, 1, 0, 0, 0, 0, 0, 0, 2, 0]).all()
 
     def test_amendments_periods(self):
         t = _Timeline(_Frame(base_unit_freq='D',
@@ -184,7 +184,7 @@ class TestApplyAmendments(object):
         amendments = {pd.Period('02 Jan 2017', freq='D'): 1,
                       pd.Period('09 Jan 2017', freq='D'): 2}
         t.amend(amendments)
-        assert t.eq([0, 1, 0, 0, 0, 0, 0, 0, 2, 0]).all()
+        assert t.labels.eq([0, 1, 0, 0, 0, 0, 0, 0, 2, 0]).all()
 
     def test_amendments_subperiods(self):
         t = _Timeline(_Frame(base_unit_freq='D',
@@ -193,17 +193,7 @@ class TestApplyAmendments(object):
         amendments = {pd.Period('02 Jan 2017 12:00', freq='H'): 1,
                       pd.Period('09 Jan 2017 15:00', freq='H'): 2}
         t.amend(amendments)
-        assert t.eq([0, 1, 0, 0, 0, 0, 0, 0, 2, 0]).all()
-
-    def test_amendments_from_timeline(self):
-        t = _Timeline(_Frame(base_unit_freq='D',
-                      start='01 Jan 2017', end='10 Jan 2017'),
-                      data=0)
-        amendments = _Timeline(_Frame(base_unit_freq='D',
-                               start='02 Jan 2017', end='03 Jan 2017'),
-                               data = 3 ).to_dict()
-        t.amend(amendments)
-        assert t.eq([0, 3, 3, 0, 0, 0, 0, 0, 0, 0]).all()
+        assert t.labels.eq([0, 1, 0, 0, 0, 0, 0, 0, 2, 0]).all()
 
     def test_amendments_outside(self):
         t = _Timeline(_Frame(base_unit_freq='D',
@@ -211,7 +201,7 @@ class TestApplyAmendments(object):
                       data=0)
         amendments = {'02 Jan 2017': 1, '11 Jan 2017': 2}
         t.amend(amendments)
-        assert t.eq([0, 1, 0, 0, 0, 0, 0, 0, 0, 0]).all()
+        assert t.labels.eq([0, 1, 0, 0, 0, 0, 0, 0, 0, 0]).all()
 
     def test_amendments_all_outside(self):
         t = _Timeline(_Frame(base_unit_freq='D',
@@ -219,7 +209,7 @@ class TestApplyAmendments(object):
                       data=0)
         amendments = {'02 Jan 2016': 1, '11 Jan 2017': 2}
         t.amend(amendments)
-        assert t.eq([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]).all()
+        assert t.labels.eq([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]).all()
 
     def test_amendments_outside_raise_and_clean(self):
         t = _Timeline(_Frame(base_unit_freq='D',
@@ -229,7 +219,7 @@ class TestApplyAmendments(object):
         try:
             t.amend(amendments, not_in_range='raise')
         except OutOfBoundsError:
-            assert t.eq([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]).all()
+            assert t.labels.eq([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]).all()
         else:
             pytest.fail(msg="DID NOT RAISE KeyError when not_in_range='raise'")
 
@@ -239,7 +229,7 @@ class TestApplyAmendments(object):
                       data=0)
         amendments = {}
         t.amend(amendments)
-        assert t.eq([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]).all()
+        assert t.labels.eq([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]).all()
 
     def test_amendments_bad_timestamp_raise_and_clean(self):
         t = _Timeline(_Frame(base_unit_freq='D',
@@ -249,6 +239,6 @@ class TestApplyAmendments(object):
         try:
             t.amend(amendments)
         except ValueError:
-            assert t.eq([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]).all()
+            assert t.labels.eq([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]).all()
         else:
             pytest.fail(msg='DID NOT RAISE for bad timestamp')

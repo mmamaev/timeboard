@@ -10,7 +10,7 @@ class TestTBConstructor(object):
         clnd = tb.Timeboard(base_unit_freq='D',
                             start='01 Jan 2017', end='12 Jan 2017',
                             layout=[1])
-        assert clnd._timeline.eq([1]*12).all()
+        assert clnd._timeline.labels.eq([1]*12).all()
         assert clnd.start_time == datetime.datetime(2017, 01, 01, 0, 0, 0)
         assert clnd.end_time > datetime.datetime(2017, 01, 12, 23, 59, 59)
         assert clnd.end_time < datetime.datetime(2017, 01, 13, 0, 0, 0)
@@ -22,7 +22,7 @@ class TestTBConstructor(object):
                             layout=[1],
                             amendments={'11 Jan 2017': 2,
                                         '12 Jan 2017': 3})
-        assert clnd._timeline.eq([1]*10 + [2,3]).all()
+        assert clnd._timeline.labels.eq([1]*10 + [2,3]).all()
         assert clnd.start_time == datetime.datetime(2017, 1, 1, 0, 0, 0)
         assert clnd.end_time > datetime.datetime(2017, 1, 12, 23, 59, 59)
         assert clnd.end_time < datetime.datetime(2017, 1, 13, 0, 0, 0)
@@ -34,7 +34,7 @@ class TestTBConstructor(object):
                             layout=[1],
                             amendments={'31 Dec 2016': 2,
                                         '12 Jan 2017': 3})
-        assert clnd._timeline.eq([1]*11 + [3]).all()
+        assert clnd._timeline.labels.eq([1]*11 + [3]).all()
         assert clnd.start_time == datetime.datetime(2017, 1, 1, 0, 0, 0)
         assert clnd.end_time > datetime.datetime(2017, 1, 12, 23, 59, 59)
         assert clnd.end_time < datetime.datetime(2017, 1, 13, 0, 0, 0)

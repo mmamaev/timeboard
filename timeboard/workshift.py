@@ -70,12 +70,12 @@ class Workshift(object):
     @property
     def start_time(self):
         # TODO: Refactor. This class has to know methods of Timeboard only
-        return self._tb._timeline.frame[self._loc].start_time
+        return self._tb._timeline.get_ws_start_time(self._loc)
 
     @property
     def end_time(self):
         # TODO: Refactor. This class has to know methods of Timeboard only
-        return self._tb._timeline.frame[self._loc].end_time
+        return self._tb._timeline.get_ws_end_time(self._loc)
 
     def to_timestamp(self):
         """The characteristic time used to represent the workshift. 

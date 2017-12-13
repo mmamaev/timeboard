@@ -87,14 +87,13 @@ class TestSkiperator(object):
 class TestTimelineConstructor(object):
 
     def test_time_line_constructor(self):
-        t = _Timeline(_Frame(base_unit_freq='D', start='01 Jan 2017', end='10 '
-                                                                        'Jan 2017'))
+
         f = _Frame(base_unit_freq='D', start='01 Jan 2017', end='10 Jan 2017')
+        t = _Timeline(f)
         assert len(t)==10
-        assert (t.frame == f).all()
         assert t.start_time == f.start_time
         assert t.end_time == f.end_time
-        assert t.isnull().all()
+        assert t.labels.isnull().all()
 
 @pytest.fixture(scope='module')
 def timeline_10d():
@@ -107,19 +106,19 @@ class TestApplyPattern(object):
         p = [1,2,3]
         t = timeline_10d()
         t._apply_pattern(p, _Subframe(0, len(t.frame)-1))
-        assert t.eq([1, 2, 3, 1, 2, 3, 1, 2, 3, 1]).all()
+        assert t.labels.eq([1, 2, 3, 1, 2, 3, 1, 2, 3, 1]).all()
 
     def test_apply_pattern_skip(self):
         p = [1,2,3]
         t = timeline_10d()
         t._apply_pattern(p, _Subframe(0, len(t.frame)-1, skip_left=2))
-        assert t.eq([3, 1, 2, 3, 1, 2, 3, 1, 2, 3]).all()
+        assert t.labels.eq([3, 1, 2, 3, 1, 2, 3, 1, 2, 3]).all()
 
     def test_apply_pattern_as_string_skip(self):
         p = '123'
         t = timeline_10d()
         t._apply_pattern(p, _Subframe(0, len(t.frame)-1, skip_left=2))
-        assert t.eq(['3', '1', '2', '3', '1', '2', '3', '1', '2', '3']).all()
+        assert t.labels.eq(['3', '1', '2', '3', '1', '2', '3', '1', '2', '3']).all()
 
     def test_apply_pattern_span_skip(self):
         p = [1,2,3]
@@ -133,31 +132,31 @@ class TestApplyPattern(object):
         t = timeline_10d()
         t._apply_pattern(p1, _Subframe(0, len(t.frame)-1))
         t._apply_pattern(p2, _Subframe(1, 6, skip_left=2))
-        assert t.eq([11, 3, 1, 2, 3, 1, 2, 12, 11, 12]).all()
+        assert t.labels.eq([11, 3, 1, 2, 3, 1, 2, 12, 11, 12]).all()
 
     def test_apply_pattern_short(self):
         p = [1]
         t = timeline_10d()
         t._apply_pattern(p, _Subframe(0, len(t.frame) - 1))
-        assert t.eq([1, 1, 1, 1, 1, 1, 1, 1, 1, 1]).all()
+        assert t.labels.eq([1, 1, 1, 1, 1, 1, 1, 1, 1, 1]).all()
 
     def test_apply_pattern_toolong(self):
         p = range(15)
         t = timeline_10d()
         t._apply_pattern(p, _Subframe(0, len(t.frame) - 1))
-        assert t.eq(range(10)).all()
+        assert t.labels.eq(range(10)).all()
 
     def test_apply_pattern_toolong_skip(self):
         p = range(15)
         t = timeline_10d()
         t._apply_pattern(p, _Subframe(0, len(t.frame) - 1, skip_left=3))
-        assert t.eq(range(3, 13)).all()
+        assert t.labels.eq(range(3, 13)).all()
 
     def test_apply_pattern_toolong_skip_more(self):
         p = range(15)
         t = timeline_10d()
         t._apply_pattern(p, _Subframe(0, len(t.frame) - 1, skip_left=10))
-        assert t.eq([10, 11, 12, 13, 14, 0, 1, 2, 3, 4]).all()
+        assert t.labels.eq([10, 11, 12, 13, 14, 0, 1, 2, 3, 4]).all()
 
     def test_apply_pattern_empty(self):
         p = []
