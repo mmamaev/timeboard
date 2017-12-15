@@ -3,11 +3,13 @@ from .exceptions import (OutOfBoundsError,
                          VoidIntervalError,
                          UnsupportedPeriodError)
 import pandas as pd
+import numpy as np
 from numpy import nonzero, arange
 from itertools import cycle, dropwhile
 from collections import Iterable, namedtuple
 #import timeit
 
+SMALLEST_TIMEDELTA = pd.Timedelta(1, unit='s')
 
 def get_timestamp(arg):
     try:
@@ -269,7 +271,7 @@ class _Frame(pd.PeriodIndex):
             subframes = [_Subframe(span_first, span_last, 0, 0)]
         return subframes
 
-    def do_split_by(self, span_first, span_last, split_by):
+    def do_split_by(self, span_first, span_last, splitter):
         """Partition the (part of) frame into calendar periods.
         
         Take a part of the frame (a "span") and partition it into 
@@ -322,36 +324,74 @@ class _Frame(pd.PeriodIndex):
         # TODO: add support of freq multiplicators, i.e. (D by 4D) or (2D by 4D)
         # TODO: reason about freq multiplicators of anchored freqs
         # this line is a patch to support split_by is a trivial Splitter object
-        split_by = split_by.each
-        if not _check_splitby_freq(self._base_unit_freq, split_by):
+        if not _check_splitby_freq(self._base_unit_freq, splitter.each):
             raise UnsupportedPeriodError('Ambiguous organizing: '
                                          '{} is not a subperiod of {}'
                                          .format(self._base_unit_freq,
-                                                 split_by))
+                                                 splitter.each))
         self.check_span(span_first, span_last)
         span_start_ts = self[span_first].start_time
         span_end_ts = self[span_last].end_time
-        stencil = _Frame(base_unit_freq=split_by,
-                         start=span_start_ts,
-                         end=span_end_ts)
-        if stencil.start_time < span_start_ts:
+
+        at_points = []
+        if splitter.at:
+            if span_first == 0:
+                envelope_start_ts = span_start_ts - SMALLEST_TIMEDELTA
+            else:
+                envelope_start_ts = self[span_first - 1].start_time
+            if span_last == len(self) - 1:
+                envelope_end_ts = span_end_ts + SMALLEST_TIMEDELTA
+            else:
+                envelope_end_ts = self[span_last + 1].start_time
+
+            stencil = _Frame(base_unit_freq=splitter.each,
+                             start=envelope_start_ts,
+                             end=envelope_end_ts)
+            for stencil_period in stencil:
+                at_points += [pd.Period(t, freq=self._base_unit_freq).start_time
+                    for t in splitter.at_func(stencil_period.start_time,
+                                              stencil_period.end_time,
+                                              splitter.at)]
+            at_points = np.sort(np.array(at_points))
+            #print "before searchsorted\n", at_points
+
+            at_points = at_points[
+                np.searchsorted(at_points, span_start_ts, side='right') - 1:
+                np.searchsorted(at_points, span_end_ts) + 1]
+
+            #print "after searchsorted\n", at_points
+
+        if len(at_points) > 0:
+            left_stencil_bound = min([at_points[0], span_start_ts])
+            right_stencil_bound = max([span_end_ts,
+                                      at_points[-1] - SMALLEST_TIMEDELTA])
+            split_points = at_points
+            #print left_stencil_bound, right_stencil_bound
+        else:
+            stencil = _Frame(base_unit_freq=splitter.each,
+                             start=span_start_ts,
+                             end=span_end_ts)
+            left_stencil_bound = stencil[0].start_time
+            right_stencil_bound = stencil[-1].end_time
+            split_points = stencil.to_timestamp(how='start')
+
+        if left_stencil_bound < span_start_ts:
             left_dangle = pd.PeriodIndex(freq=self._base_unit_freq,
-                                         start=stencil.start_time,
+                                         start=left_stencil_bound,
                                          end=span_start_ts)
             skipped_units_before = len(left_dangle.
                                        difference(self[span_first:]))
         else:
             skipped_units_before = 0
 
-        if stencil.end_time > span_end_ts:
+        if right_stencil_bound > span_end_ts:
             right_dangle = pd.PeriodIndex(freq=self._base_unit_freq,
                                           start=span_end_ts,
-                                          end=stencil.end_time)
+                                          end=right_stencil_bound)
             skipped_units_after = len(right_dangle.
                                       difference(self[:span_last + 1]))
         else:
             skipped_units_after = 0
-        split_points = stencil.to_timestamp(how='start')
         subframes = self._create_subframes(span_first, span_last, split_points)
         subframes[0].skip_left = skipped_units_before
         subframes[-1].skip_right = skipped_units_after
@@ -775,7 +815,7 @@ class Organizer(object):
         return "Organizer({}, structure={!r})".format(s, self.structure)
 
 
-_SplitterBase = namedtuple('Splitter', 'each at')
+_SplitterBase = namedtuple('Splitter', ['each', 'at', 'at_func'])
 class Splitter(_SplitterBase):
     """Container class defining how to partition a timeline.
 
@@ -797,8 +837,17 @@ class Splitter(_SplitterBase):
     """
     __slots__ = ()
 
-    def __new__(cls, each, at=None):
-        return super(Splitter, cls).__new__(cls, each, at)
+    def __new__(cls, each, at=None, at_func=None):
+
+        def default_at_func(starttime, endtime, at):
+            return [starttime + t
+                    for t in [pd.DateOffset(**kwargs) for kwargs in at]
+                    if starttime <= starttime + t <= endtime]
+
+        if at_func is None:
+            at_func = default_at_func
+
+        return super(Splitter, cls).__new__(cls, each, at, at_func)
 
 class _Schedule(object):
     """Duty schedule of workshifts.
