@@ -2,6 +2,7 @@ from __future__ import division
 from .exceptions import (OutOfBoundsError,
                          VoidIntervalError,
                          UnsupportedPeriodError)
+from .when import simple_offset
 import pandas as pd
 import numpy as np
 from numpy import nonzero, arange
@@ -272,30 +273,23 @@ class _Frame(pd.PeriodIndex):
         return subframes
 
     def do_split_by(self, span_first, span_last, splitter):
-        """Partition the (part of) frame into calendar periods.
-        
-        Take a part of the frame (a "span") and partition it into 
-        a list of subframes according to the rule set by `split_by` parameter.
-
-        `split_by` parameter defines calendar periods (i.e. weeks), which
-        are overlaid on the span 'carving' a list of subframes.
+        """Partition the (part of) frame using a Splitter.
         
         Parameters
         ----------
         span_first: int>=0
-            Index of the first element of the span in the frame.
+            Index of the first element of the part of the frame which is to 
+            be partitioned.
         span_last: int>=0
-            Index of the last element of the span in the frame.
-        split_by: Splitter
-            *** Currently only Splitter.split_by_freq is used which is
-            a pandas-compatible calendar frequency; accepts same values as 
-            `base_unit_freq` of timeline (timeboard). *** 
+            Index of the last element of the part of the frame which is to 
+            be partitioned.
+        splitter: Splitter
         
         Raises
         ------
         UnsupportedPeriodError (ValueError)
-            If `split_by` defines a period which is not a multiple of 
-            `base_unit_freq`.
+            If `splitter` specifies a partitioning period which is not a 
+            multiple of frame's `base_unit_freq`.
         
         Returns
         -------
@@ -310,20 +304,20 @@ class _Frame(pd.PeriodIndex):
         attribute of the first subframe or in `skip_right` attribute of 
         the last subframe, respectively.
         
-        For example, if base_unit_freq='D', and the span contains the days
-        from 01 Jan until 31 Jan 2017, and split_by='W', the first subframe 
-        will contain only one day 01 Jan, Sunday. The first six days of this
-        week (26-31 Dec) are outside the span. The number of such fell out
-        days are recorded in subframe's `skip_left` attribute. Analogously,
-        the last subframe of the span will contain only two days: 
+        For example, if `base_unit_freq`='D', and the span contains the days
+        from 01 Jan until 31 Jan 2017, and `splitter.each`='W', the first 
+        subframe will contain only one day 01 Jan, Sunday. 
+        The first six days of this week (26-31 Dec) are outside the span. 
+        The number of such fell out days are recorded in subframe's 
+        `skip_left` attribute. 
+        
+        Analogously, the last subframe of the span will contain only two days: 
         Mon 30 Jan and Tue 31 Jan. The rest five days of this week fall out of
         the span. This is recorded in `skip_right` attribute which is set, 
         in this subframe, to 5. All subframes in between represent a full week
         each, and their `skip_left` and `skip_right` attributes are zeroed. 
         """
         # TODO: add support of freq multiplicators, i.e. (D by 4D) or (2D by 4D)
-        # TODO: reason about freq multiplicators of anchored freqs
-        # this line is a patch to support split_by is a trivial Splitter object
         if not _check_splitby_freq(self._base_unit_freq, splitter.each):
             raise UnsupportedPeriodError('Ambiguous organizing: '
                                          '{} is not a subperiod of {}'
@@ -333,7 +327,7 @@ class _Frame(pd.PeriodIndex):
         span_start_ts = self[span_first].start_time
         span_end_ts = self[span_last].end_time
 
-        at_points = []
+        at_points = pd.DatetimeIndex([])
         if splitter.at:
             if span_first == 0:
                 envelope_start_ts = span_start_ts - SMALLEST_TIMEDELTA
@@ -347,26 +341,23 @@ class _Frame(pd.PeriodIndex):
             stencil = _Frame(base_unit_freq=splitter.each,
                              start=envelope_start_ts,
                              end=envelope_end_ts)
-            for stencil_period in stencil:
-                at_points += [pd.Period(t, freq=self._base_unit_freq).start_time
-                    for t in splitter.at_func(stencil_period.start_time,
-                                              stencil_period.end_time,
-                                              splitter.at)]
-            at_points = np.sort(np.array(at_points))
-            #print "before searchsorted\n", at_points
 
+            for kwargs in splitter.at:
+                at_points = at_points.append(
+                                splitter.how(stencil,
+                                    normalize_by=self._base_unit_freq,
+                                    **kwargs)
+                            )
+            at_points = pd.DatetimeIndex(np.sort(at_points))
             at_points = at_points[
                 np.searchsorted(at_points, span_start_ts, side='right') - 1:
                 np.searchsorted(at_points, span_end_ts) + 1]
-
-            #print "after searchsorted\n", at_points
 
         if len(at_points) > 0:
             left_stencil_bound = min([at_points[0], span_start_ts])
             right_stencil_bound = max([span_end_ts,
                                       at_points[-1] - SMALLEST_TIMEDELTA])
             split_points = at_points
-            #print left_stencil_bound, right_stencil_bound
         else:
             stencil = _Frame(base_unit_freq=splitter.each,
                              start=span_start_ts,
@@ -743,9 +734,10 @@ class Organizer(object):
     
     Parameters
     ----------
-    split_by: str
-        Pandas-compatible calendar frequency; accepts same values as 
-        `base_unit_freq` of timeline (timeboard). 
+    split_by: {Splitter, str}
+        A Splitter or a pandas-compatible calendar frequency (accepts same 
+        values as `base_unit_freq` of timeboard). The latter is equivalent to
+        `Splitter(each=split_by)`.
     split_at: Iterable of Timestamp-like
     structure: Iterable of {Organizer | Iterable}
         An element of `structure` is either another organizer or a pattern.
@@ -764,9 +756,9 @@ class Organizer(object):
     -----
     Firstly, organizer tells how to partition timeline into chunks (spans); 
     this is defined by `split_by` or `split_at` parameter. Given `split_by` 
-    parameter, the timeline is partitioned into spans aligned with calendar 
-    periods such as days, weeks, months, etc. With `split_at`, the timeline 
-    is partitioned at the specified points in time. 
+    parameter, the timeline is partitioned into spans whose bounds are 
+    calculated according to the rules set by the Splitter. With `split_at`, 
+    the timeline is partitioned at the explicitly specified points in time. 
     
     One and only one of `split_by` or `split_at` parameters must be supplied.
 
@@ -815,39 +807,80 @@ class Organizer(object):
         return "Organizer({}, structure={!r})".format(s, self.structure)
 
 
-_SplitterBase = namedtuple('Splitter', ['each', 'at', 'at_func'])
+_SplitterBase = namedtuple('Splitter', ['each', 'at', 'how'])
 class Splitter(_SplitterBase):
-    """Container class defining how to partition a timeline.
-
-    *** Only trivial split by a frequency is currently implemented ***
+    """Container class defining how to partition a timeboard's frame.
 
     Parameters
     ----------
-    split_freq : str
+    each : str
         Pandas-compatible calendar frequency; accepts same values as 
         `base_unit_freq` of timeline (timeboard).
-    multiplier : int
-        Not implemented
-    ticks : iterable
-        Not implemented
+    at : list of dict, optional
+        Each dictionary is a suite of keyword arguments used for calling 
+        `how` function. 
+    how : function, optional
+        A function (pandas.PeriodIndex, 'normalize_by': str, **kwargs) -> 
+        pandas.DatetimeIndex
+        Functions from module `when` can be used as `how`. By default 
+        `how=simple_offset`.
 
     Attributes
     ----------
     Same as parameters.
+    
+    Notes
+    -----
+    The rule set by Splitter is to be applied to a span, which is a part of a 
+    timeboard's frame or the whole frame. The rule specifies how to partition 
+    a span into subframes:
+    
+    In each period of frequency `each` located partly or wholly within the span 
+    find split points defined by `at` parameter. Each dictionary in `at` list is 
+    a suite of keywords which specify how to find a split point within the 
+    period. The interpretation of these keywords is specific to function 
+    `how`. 
+    
+    Split the span into subframes. The first subframe starts on the 
+    first base unit of the span. The second subframe starts on the base unit 
+    of the first split point. The last subframe starts on the base unit of 
+    the last split point and ends on the last bas unit of the span.
+    
+    If `at` parameter is not provided (or the list is epmty), or `how` function 
+    produced no valid split points, the span will be split in periods 
+    specified by `each`.
+    
+    
+    Examples
+    --------
+    Splitter(each='W')
+        Partition a span into weeks (start a subframe on each Monday at 00:00).
+        
+    Splitter(each='W', at=[{'days': 2}, {'days': 5}])  
+        Partition a span on each Wednesday and each Saturday at 00:00.
+        
+    Splitter(each='W', at=[{'days': 0}, {'days': 2}, {'days': 5}])  
+        Partition a span on each Moday, Wednesday, and Saturday.  
+        
+    Splitter(each='D')
+        Partition a span into days (start a subframe at each midnight).
+          
+    Splitter(each='D', at=[{'hours': 9}, {'hours':18}])
+        Partition a span at 09:00 and 18:00 on each day (but not at the 
+        midnight)
+        
+    Splitter(each='A', at=[{'month': 5, 'week': -1, 'weekday': 1},
+                           {'month': 9, 'week': 1, 'weekday': 1}],
+                       how=nth_weekday_of_month)
+        Partition a span on the last Monday in May and the first Monday in 
+        September of each year.
     """
     __slots__ = ()
 
-    def __new__(cls, each, at=None, at_func=None):
-
-        def default_at_func(starttime, endtime, at):
-            return [starttime + t
-                    for t in [pd.DateOffset(**kwargs) for kwargs in at]
-                    if starttime <= starttime + t <= endtime]
-
-        if at_func is None:
-            at_func = default_at_func
-
-        return super(Splitter, cls).__new__(cls, each, at, at_func)
+    def __new__(cls, each, at=None, how=None):
+        if how is None:
+            how = simple_offset
+        return super(Splitter, cls).__new__(cls, each, at, how)
 
 class _Schedule(object):
     """Duty schedule of workshifts.

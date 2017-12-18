@@ -191,6 +191,7 @@ class TestDaysSplitByWeeklyAtPointsCornerCases(object):
                                Splitter('W', at=[{'days': 2, 'hours': 24},
                                                  {'days': 5, 'hours': 25}]))
         # However adding to many hours does move the split to the next day
+        # this is same as days:3 and days:6
         # Subframes will be Thu to Sat, Sun to Wed
         assert len(result) == 5
         assert assert_subframe(result[0], 0, 2, 1, 0) # Mon 2 to Wed 4
@@ -271,6 +272,9 @@ class TestDaysSplitByWeeklyAtPointsCornerCases(object):
         assert assert_subframe(result[1], 2, 8, 0, 0)
         assert assert_subframe(result[2], 9, 13, 0, 2)
 
+    @pytest.mark.xfail(reason='Pandas does not implement '
+                      'PeriodIndex + float offset.'
+                      ' However, it does implement Timestamp + float offset')
     def test_days_splitby_weekly_atpoints_float(self):
         f = _Frame(base_unit_freq='D', start='02 Jan 2017', end='15 Jan 2017')
         result = f.do_split_by(0, len(f) - 1,
