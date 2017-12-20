@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 
-def simple_offset(pi, normalize_by=None, **kwargs):
+def from_start_of_each(pi, normalize_by=None, **kwargs):
     """Calculate point in time specified by offset.
     
     To the start time of each period in the period index `pi` add an offset 
@@ -93,24 +93,32 @@ def nth_weekday_of_month(pi, month, week, weekday, shift=None, **kwargs):
     m_start_times = dti + pd.tseries.offsets.MonthBegin(month - 1,
                                                         normalize=True)
     m_end_times = dti + pd.tseries.offsets.MonthEnd(month, normalize=True)
+    # make sure we are inside put periods pi - this check makes sense when
+    # pi.freq is based on 'M'
+    pi_end_times = pi.to_timestamp(how='end')
+    m_start_times = m_start_times[m_start_times <= pi_end_times]
+    m_end_times = m_end_times[m_end_times <= pi_end_times]
 
     if week > 0:
         off_by_one_bug_flag = m_start_times.weekday == weekday - 1
-        week_factors = week * np.ones(len(dti),
+        week_factors = week * np.ones(len(m_start_times),
                                       dtype=np.int8) - off_by_one_bug_flag
         week_offsets = week_factors * pd.tseries.offsets.Week(
             weekday=weekday - 1, normalize=True)
         dtw = pd.DatetimeIndex(
-            [m_start_times[i] + week_offsets[i] for i in range(len(dti))])
+            [m_start_times[i] + week_offsets[i]
+             for i in range(len(m_start_times))])
+
         dtw = dtw[dtw <= m_end_times]
+
     else:
         off_by_one_bug_flag = m_end_times.weekday == weekday - 1
-        week_factors = week * np.ones(len(dti),
+        week_factors = week * np.ones(len(m_end_times),
                                       dtype=np.int8) + off_by_one_bug_flag
         week_offsets = week_factors * pd.tseries.offsets.Week(
             weekday=weekday - 1, normalize=True)
         dtw = pd.DatetimeIndex(
-            [m_end_times[i] + week_offsets[i] for i in range(len(dti))])
+            [m_end_times[i] + week_offsets[i]
+             for i in range(len(m_end_times))])
         dtw = dtw[dtw >= m_start_times]
-
     return dtw + pd.DateOffset(days=shift)

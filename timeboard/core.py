@@ -2,7 +2,7 @@ from __future__ import division
 from .exceptions import (OutOfBoundsError,
                          VoidIntervalError,
                          UnsupportedPeriodError)
-from .when import simple_offset
+from .when import (from_start_of_each, nth_weekday_of_month)
 import pandas as pd
 import numpy as np
 from numpy import nonzero, arange
@@ -27,6 +27,11 @@ def get_period(period_ref, freq=None, honor_period=True):
     else:
         return pd.Period(get_timestamp(period_ref), freq=freq)
 
+def get_freq_delta(freq):
+    # Starting on 01 Jul 2016 gives the longest timedeltas for freq  based
+    # on 'M', 'Q', 'A'
+    pi = pd.PeriodIndex(start='01 Jul 2016', freq=freq, periods=2)
+    return pi[1].start_time - pi[0].start_time
 
 def _skiperator(values, direction='forward', skip=0):
     """Build a skip-and-cycle generator
@@ -326,18 +331,16 @@ class _Frame(pd.PeriodIndex):
         self.check_span(span_first, span_last)
         span_start_ts = self[span_first].start_time
         span_end_ts = self[span_last].end_time
+        left_dangle_undefined = False
+        right_dangle_undefined = False
 
         at_points = pd.DatetimeIndex([])
         if splitter.at:
-            if span_first == 0:
-                envelope_start_ts = span_start_ts - SMALLEST_TIMEDELTA
-            else:
-                envelope_start_ts = self[span_first - 1].start_time
-            if span_last == len(self) - 1:
-                envelope_end_ts = span_end_ts + SMALLEST_TIMEDELTA
-            else:
-                envelope_end_ts = self[span_last + 1].start_time
-
+            envelope_margin = 1
+            envelope_start_ts = span_start_ts - \
+                                envelope_margin * get_freq_delta(splitter.each)
+            envelope_end_ts = span_end_ts + \
+                              envelope_margin * get_freq_delta(splitter.each)
             stencil = _Frame(base_unit_freq=splitter.each,
                              start=envelope_start_ts,
                              end=envelope_end_ts)
@@ -350,14 +353,22 @@ class _Frame(pd.PeriodIndex):
                             )
             at_points = pd.DatetimeIndex(np.sort(at_points))
             at_points = at_points[
-                np.searchsorted(at_points, span_start_ts, side='right') - 1:
-                np.searchsorted(at_points, span_end_ts) + 1]
+                max([0,np.searchsorted(at_points,
+                                       span_start_ts,
+                                       side='right') - 1]):
+                min([len(at_points),
+                    np.searchsorted(at_points, span_end_ts) + 1])]
 
-        if len(at_points) > 0:
-            left_stencil_bound = min([at_points[0], span_start_ts])
-            right_stencil_bound = max([span_end_ts,
-                                      at_points[-1] - SMALLEST_TIMEDELTA])
-            split_points = at_points
+            if len(at_points) > 0:
+                left_stencil_bound = min([at_points[0], span_start_ts])
+                left_dangle_undefined = at_points[0] > span_start_ts
+                right_stencil_bound = max([span_end_ts,
+                                          at_points[-1] - SMALLEST_TIMEDELTA])
+                right_dangle_undefined = at_points[-1] < span_end_ts
+                split_points = at_points
+            else:
+                return [_Subframe(span_first, span_last, -1, -1)]
+
         else:
             stencil = _Frame(base_unit_freq=splitter.each,
                              start=span_start_ts,
@@ -366,7 +377,9 @@ class _Frame(pd.PeriodIndex):
             right_stencil_bound = stencil[-1].end_time
             split_points = stencil.to_timestamp(how='start')
 
-        if left_stencil_bound < span_start_ts:
+        if left_dangle_undefined:
+            skipped_units_before = -1
+        elif left_stencil_bound < span_start_ts:
             left_dangle = pd.PeriodIndex(freq=self._base_unit_freq,
                                          start=left_stencil_bound,
                                          end=span_start_ts)
@@ -375,7 +388,9 @@ class _Frame(pd.PeriodIndex):
         else:
             skipped_units_before = 0
 
-        if right_stencil_bound > span_end_ts:
+        if right_dangle_undefined:
+            skipped_units_after = -1
+        elif right_stencil_bound > span_end_ts:
             right_dangle = pd.PeriodIndex(freq=self._base_unit_freq,
                                           start=span_end_ts,
                                           end=right_stencil_bound)
@@ -433,12 +448,14 @@ class _Subframe:
         Index of the first element of subframe within the frame.
     last: int    
         Index of the last element of subframe within the frame
-    skip_left: int >=0
+    skip_left: int >=0 or -1
         Number of steps to skip if a pattern of labels is applied to  
-        this subframe in 'forward' direction (left to right)
-    skip_right: int >=0    
+        this subframe in 'forward' direction (left to right). Negative one
+        if this number could not be calculated.
+    skip_right: int >=0 or -1
         Number of steps to skip if a pattern of labels is applied to 
-        this subframe in 'reverse' direction (from right to left)            
+        this subframe in 'reverse' direction (from right to left). Negative one
+        if this number could not be calculated.           
     
     Attributes
     ----------
@@ -648,12 +665,16 @@ class _Timeline(object):
         ----
         Nothing is returned; the timeline is modified in-place.
         """
-        pattern_iterator = _skiperator(pattern,
-                                       direction='forward',
-                                       skip=subframe.skip_left)
         # TODO: support both directions (set direction in Organizer?)
         if not pattern:
             raise IndexError("Received empty pattern for {}".format(subframe))
+        if subframe.skip_left<0:
+            raise OutOfBoundsError("Attemted to apply forward pattern to {}, "
+                                   "where left dangle could not be "
+                                   "calculated".format(subframe))
+        pattern_iterator = _skiperator(pattern,
+                                       direction='forward',
+                                       skip=subframe.skip_left)
         self._wsband.iloc[subframe.first: subframe.last+1] = [
             next(pattern_iterator)
             for i in range(subframe.first, subframe.last+1)
@@ -819,12 +840,25 @@ class Splitter(_SplitterBase):
     at : list of dict, optional
         Each dictionary is a suite of keyword arguments used for calling 
         `how` function. 
-    how : function, optional
-        A function (pandas.PeriodIndex, 'normalize_by': str, **kwargs) -> 
-        pandas.DatetimeIndex
-        Functions from module `when` can be used as `how`. By default 
-        `how=simple_offset`.
-
+    how : str or function, optional
+        'from_start_of_each' (default) - keyword arguments in `at` define an 
+        offset (number of hours, days, etc.) from the start of `each` period.
+        'nth_weekday_of_month' - keyword arguments in `at` define N-th weekday 
+        of M-th month from the start of `each` period.
+        'from_easter_western' - keyword arguments in `at` define an offset 
+        in days from the Western Easter in `each` period.
+        'from_easter_othodox' -  keyword arguments in `at` define an offset 
+        in days from the Orthodox Easter in `each` period.
+        
+        The above string labels effectively substitute their name-sake 
+        functions from module `when`.
+        
+        Alternatively, a user-defined function may be supplied as the value of 
+        `how` which conforms to the signature 
+        def (pandas.PeriodIndex, 'normalize_by': str, **kwargs) -> 
+        pandas.DatetimeIndex.
+        
+ 
     Attributes
     ----------
     Same as parameters.
@@ -844,11 +878,12 @@ class Splitter(_SplitterBase):
     Split the span into subframes. The first subframe starts on the 
     first base unit of the span. The second subframe starts on the base unit 
     of the first split point. The last subframe starts on the base unit of 
-    the last split point and ends on the last bas unit of the span.
+    the last split point and ends on the last base unit of the span. If no 
+    valid split points are found, no partitioning is done (only one 
+    subframe is created which contains the whole span).
     
-    If `at` parameter is not provided (or the list is epmty), or `how` function 
-    produced no valid split points, the span will be split in periods 
-    specified by `each`.
+    If `at` parameter is not provided or `at` list is empty, the span 
+    will be split in periods specified by `each`.
     
     
     Examples
@@ -862,6 +897,11 @@ class Splitter(_SplitterBase):
     Splitter(each='W', at=[{'days': 0}, {'days': 2}, {'days': 5}])  
         Partition a span on each Moday, Wednesday, and Saturday.  
         
+    Splitter(each='W', at=[{'days': 7}])  
+        No partitioning will be done. Adding 7 days to the start of the week 
+        places the split point into the next week, i.e. outside the current 
+        'each' period, hence this split point is not valid.
+        
     Splitter(each='D')
         Partition a span into days (start a subframe at each midnight).
           
@@ -869,17 +909,29 @@ class Splitter(_SplitterBase):
         Partition a span at 09:00 and 18:00 on each day (but not at the 
         midnight)
         
+    Splitter(each='M', at=[{'days': 30}])
+        Partition a span on the 31st day of each month. If there is no 31st 
+        day, there is no split point in this month. For example, if the span 
+        is a year, subframes will start on Jan 1, Jan 31, Mar 31, May 31, 
+        Jul 31, Aug 31, Oct 31, Dec 31.
+        
     Splitter(each='A', at=[{'month': 5, 'week': -1, 'weekday': 1},
                            {'month': 9, 'week': 1, 'weekday': 1}],
-                       how=nth_weekday_of_month)
+                       how='nth_weekday_of_month')
         Partition a span on the last Monday in May and the first Monday in 
         September of each year.
     """
     __slots__ = ()
 
     def __new__(cls, each, at=None, how=None):
+        how_functions = {
+            'from_start_of_each': from_start_of_each,
+            'nth_weekday_of_month': nth_weekday_of_month
+        }
         if how is None:
-            how = simple_offset
+            how = from_start_of_each
+        elif not callable(how):
+            how = how_functions[how]
         return super(Splitter, cls).__new__(cls, each, at, how)
 
 class _Schedule(object):
