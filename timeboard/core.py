@@ -10,6 +10,7 @@ import numpy as np
 from numpy import nonzero, arange
 from itertools import cycle, dropwhile
 from collections import Iterable, namedtuple
+import re
 #import timeit
 
 SMALLEST_TIMEDELTA = pd.Timedelta(1, unit='s')
@@ -77,9 +78,9 @@ def _skiperator(values, direction='forward', skip=0):
     return dropwhile(counter, cycle(pattern))
 
 
-def _check_splitby_freq(base_unit_freq, split_by):
+def _check_splitby_freq(base_unit_freq, split_by_freq):
     """
-    Check if the value of `split_by` from some Organizer can be used 
+    Check if the value of `split_by` from some Splitter can be used 
     with the given `base_unit_freq`, meaning that partitioning of a timeline 
     will not result in a situation when a base unit belongs to more 
     than one span at the same time. 
@@ -92,11 +93,35 @@ def _check_splitby_freq(base_unit_freq, split_by):
     """
     # TODO: add support of freq multiplicators, i.e. (D,4D) or (2D,4D)
     #       is_subperiod function does not support this
-    return bool(
-        pd.tseries.frequencies.is_subperiod(base_unit_freq, split_by)
-        # some combinations of arguments result in is_subperiod function
+    if bool(
+        pd.tseries.frequencies.is_subperiod(base_unit_freq, split_by_freq)
+        # Some combinations of arguments result in is_subperiod function
         # returning nothing (NoneType)
-        )
+        ):
+        return True
+    else:
+        # is_subperiod does not support frequency multiplicators,
+        # i.e. (D,4D) or (2D,4D). So we will handle this manually.
+        try:
+            get_freq_delta(split_by_freq)  # make sure this is a valid freq
+        except ValueError:
+            return False
+        bu_match = re.match(r"(^\d*)([A-Z-]+)", base_unit_freq)
+        sb_match = re.match(r"(^\d*)([A-Z-]+)", split_by_freq)
+        if (bu_match and sb_match and
+            bu_match.group(2) == sb_match.group(2)):
+
+            if bu_match.group(1) == '':
+                bu_factor = 1
+            else:
+                bu_factor = int(bu_match.group(1))
+            if sb_match.group(1) == '':
+                sb_factor = 1
+            else:
+                sb_factor = int(sb_match.group(1))
+            return sb_factor % bu_factor == 0
+        else:
+            return False
 
 
 def _to_iterable(x):
@@ -121,10 +146,9 @@ class _Frame(pd.PeriodIndex):
     Parameters
     ----------
     base_unit_freq: str
-        Pandas-compatible calendar frequency (i.e. 'D' for day) defining the 
-        constituent period of the frame. Pandas-native business  periods 
-        (i.e. 'BM') are not supported. Support of periods with multipliers 
-        (i.e. '3D') is planned but not yet there.
+        Pandas-compatible calendar frequency (i.e. 'D' for day or '8H' for 
+        8 hours regarded as one unit) defining the constituent period of 
+        the frame. Pandas-native business periods (i.e. 'BM') are not supported. 
     start: Timestamp-like
         A pandas Timestamp, a datetime object, or a string convertible to 
         Timestamp - a point in time defining the first element of the frame 
@@ -163,9 +187,11 @@ class _Frame(pd.PeriodIndex):
                 "(make sure the start time precedes the end time)")
         if frame[0].start_time > frame[-1].start_time:
             raise RuntimeError("Frame is invalid: starts on {}, ends on {}. "
-                               "Check that your time range is "
-                               "supported.".format(frame[0].start_time,
-                                                   frame[-1].start_time))
+                               "Make sure that your time range is "
+                               "supported (22 Sep 1677 seems to be the "
+                               "earliest possible day)"
+                               ".".format(frame[0].start_time,
+                                          frame[-1].start_time))
         frame._base_unit_freq = _freq
         return frame
 
@@ -399,7 +425,7 @@ class _Frame(pd.PeriodIndex):
             skipped_units_after = -1
         elif right_stencil_bound > span_end_ts:
             right_dangle = pd.PeriodIndex(freq=self._base_unit_freq,
-                                          start=span_end_ts,
+                                          start=self[span_last].start_time,
                                           end=right_stencil_bound)
             skipped_units_after = len(right_dangle.
                                       difference(self[:span_last + 1]))
@@ -496,9 +522,8 @@ class _Timeline(object):
         timeline. Every workshift on the timeline consists of an integer 
         number of base units (currently, of only one base unit). 
         Base unit is defined by `base_unit_freq` pandas-compatible calendar 
-        frequency (i.e. 'D' for day). Pandas-native business  periods 
-        (i.e. 'BM') are not supported. Support of periods with multipliers 
-        (i.e. '3D') is planned but not yet there.
+        frequency (i.e. 'D' for day or '8H' for 8 hours regarded as one unit). 
+        Pandas-native business  periods (i.e. 'BM') are not supported. 
     start : Timestamp-like
         A point in time represented by a string convertible to a timestamp, or
         a pandas Timestamp, or a datetime object. This point in time is used 

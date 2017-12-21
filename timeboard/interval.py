@@ -245,7 +245,7 @@ class Interval(object):
         period : str
             Pandas-compatible label defining a kind of calendar period 
             (i.e. 'M' for month). Pandas-native business periods (i.e. 'BM')  
-            as well as  periods with multipliers (i.e. '3M') are not supported.
+            as well as  periods with multipliers (i.e. '3M') are not applicable.
         duty : {'on', 'off', 'any'} , optional (default 'on')
             Specify the duty of workshifts to be accounted for. See 'Notes'
             below for explanation.

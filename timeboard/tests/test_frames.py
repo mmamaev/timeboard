@@ -182,12 +182,17 @@ class TestFrameConstructor(object) :
         assert f.is_monotonic
 
     def test_frame_constructor_end_before_start(self):
-        with pytest.raises(VoidIntervalError) :
+        with pytest.raises(VoidIntervalError):
             _Frame(base_unit_freq='D', start='01 Mar 2017', end='01 Jan 2017')
 
     def test_frame_constructor_bad_timestamp(self):
-        with pytest.raises(ValueError) :
+        with pytest.raises(ValueError):
             _Frame(base_unit_freq='D', start='01 Mar 2017', end='bad timestamp')
+
+    def test_frame_constructor_too_big_range(self):
+        with pytest.raises(RuntimeError):
+            _Frame(start='21 Sep 1677', end='2017', base_unit_freq='D')
+            # 22 Sep 1677 is the earliest possible day
 
 
 @pytest.fixture(scope='module')

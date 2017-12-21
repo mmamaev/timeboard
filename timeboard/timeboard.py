@@ -41,9 +41,8 @@ class Timeboard(object):
         timeline. Every workshift on the timeline consists of an integer 
         number of base units (currently, of only one base unit). 
         Base unit is defined by `base_unit_freq` pandas-compatible calendar 
-        frequency (i.e. 'D' for day). Pandas-native business  periods 
-        (i.e. 'BM') are not supported. Support of periods with multipliers 
-        (i.e. '3D') is planned but not yet there.
+        frequency (i.e. 'D' for day  or '8H' for 8 hours regarded as one unit). 
+        Pandas-native business  periods (i.e. 'BM') are not supported. 
     start : Timestamp-like
         A point in time represented by a string convertible to a timestamp, or
         a pandas Timestamp, or a datetime object. This point in time is used 

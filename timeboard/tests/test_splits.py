@@ -702,9 +702,6 @@ class TestMultipliedFreqSplitBy(object):
         with pytest.raises(UnsupportedPeriodError):
             f.do_split_by(0, len(f) - 1, Splitter('M'))
 
-    @pytest.mark.xfail(reason='Probably bug in '
-                              'pd.tseries.frequencies.is_subperiod'
-                              ' (X is not a subperiod of NX)')
     def test_4D_splitby_8D(self):
         f = _Frame(base_unit_freq='4D', start='01 Jan 2017', end='19 Jan 2017')
         result = f.do_split_by(0, len(f) - 1, Splitter('8D'))
@@ -713,9 +710,6 @@ class TestMultipliedFreqSplitBy(object):
         assert assert_subframe(result[1], 2, 3, 0, 0)
         assert assert_subframe(result[2], 4, 4, 0, 1)
 
-    @pytest.mark.xfail(reason='Probably bug in '
-                              'pd.tseries.frequencies.is_subperiod'
-                              ' (X is not a subperiod of NX)')
     def test_4D_splitby_8D_span_aligned(self):
         f = _Frame(base_unit_freq='4D', start='01 Jan 2017', end='19 Jan 2017')
         result = f.do_split_by(1, 4, Splitter('8D'))
@@ -723,9 +717,6 @@ class TestMultipliedFreqSplitBy(object):
         assert assert_subframe(result[0], 1, 2, 0, 0)
         assert assert_subframe(result[1], 3, 4, 0, 0)
 
-    @pytest.mark.xfail(reason='Probably bug in '
-                              'pd.tseries.frequencies.is_subperiod'
-                              ' (X is not a subperiod of NX)')
     def test_4D_splitby_8D_span_dangling(self):
         f = _Frame(base_unit_freq='4D', start='01 Jan 2017', end='19 Jan 2017')
         result = f.do_split_by(1, 3, Splitter('8D'))
@@ -733,9 +724,6 @@ class TestMultipliedFreqSplitBy(object):
         assert assert_subframe(result[0], 1, 2, 0, 0)
         assert assert_subframe(result[1], 3, 3, 0, 1)
 
-    @pytest.mark.xfail(reason='Probably bug in '
-                              'pd.tseries.frequencies.is_subperiod'
-                              ' (X is not a subperiod of NX)')
     def test_weeks_splitby_multiple_weeks(self):
         f = _Frame(base_unit_freq='W', start='02 Jan 2017', end='29 Jan 2017')
         result = f.do_split_by(0, len(f) - 1, Splitter('2W'))
@@ -743,9 +731,6 @@ class TestMultipliedFreqSplitBy(object):
         assert assert_subframe(result[0], 0, 1, 0, 0)
         assert assert_subframe(result[1], 2, 3, 0, 0)
 
-    @pytest.mark.xfail(reason='Probably bug in '
-                              'pd.tseries.frequencies.is_subperiod'
-                              ' (X is not a subperiod of NX)')
     def test_weeks_splitby_multiple_weeks_dangling(self):
         f = _Frame(base_unit_freq='W', start='02 Jan 2017', end='30 Jan 2017')
         result = f.do_split_by(0, len(f) - 1, Splitter('2W'))
