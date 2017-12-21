@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from dateutil.easter import easter
 
 
 def from_start_of_each(pi, normalize_by=None, **kwargs):
@@ -32,7 +33,7 @@ def from_start_of_each(pi, normalize_by=None, **kwargs):
     start_times = pi.to_timestamp(how='start')
     end_times = pi.to_timestamp(how='end')
 
-    # workaround for bug in pandas when pi.freq='D
+    # workaround for bug in pandas when pi.freq='D'
     if end_times[0] == start_times[0]:
         et = np.array([p.end_time for p in pi], dtype='datetime64[ns]')
         end_times = pd.DatetimeIndex(et)
@@ -42,6 +43,15 @@ def from_start_of_each(pi, normalize_by=None, **kwargs):
         result = pd.PeriodIndex(result,
                                 freq=normalize_by).to_timestamp(how='start')
     result = result[result <= end_times]
+    # Generally we should also filter result with [result >= start_times]
+    # since normalize_by frequency can be anything, incl. having period larger
+    # than pi frequency (i.e. pi freq='D', normalize_by='M'). In this case.
+    # despite of positive (future-directed) offset, normalization can throw a
+    # point in result in the past beyond start_times.
+    # However this does not make sense (at least, in the context of this
+    # package), and this function is always called from within this package
+    # with  normalize_by=_Frame.base_unit_freq.
+    # Therefore, we'd rather save time on filtering.
     return result
 
 
@@ -122,3 +132,59 @@ def nth_weekday_of_month(pi, month, week, weekday, shift=None, **kwargs):
              for i in range(len(m_end_times))])
         dtw = dtw[dtw >= m_start_times]
     return dtw + pd.DateOffset(days=shift)
+
+
+def from_easter(pi, easter_type='western', normalize_by=None, **kwargs):
+    """Calculate point in time related to Easter.
+
+    In each period in the period index `pi` find the start time of the day of 
+    Easter and add an offset specified by the supplied keyword arguments. 
+    If the resulting timestamp is not within the period, silently omit this 
+    result from the returned array.
+
+    Parameters
+    ----------
+    pi : pandas.PeriodIndex
+    easter_type: {'western', 'orthodox'}, optional (default 'western')
+    kwargs 
+        keyword arguments for pandas.DateOffset
+
+    Returns
+    -------
+    pandas.DatetimeIndex
+    """
+    assert easter_type in ['western', 'orthodox']
+    if easter_type == 'western':
+        _easter_type = 3
+    elif easter_type == 'orthodox':
+        _easter_type = 2
+
+    offset = pd.DateOffset(**kwargs)
+    testtime = pd.Timestamp('01 Jan 2004')
+    shift_to_future = testtime + offset >= testtime
+
+    pi_start_times = pi.to_timestamp(how='start')
+    pi_end_times = pi.to_timestamp(how='end')
+
+    easter_dates = pd.DatetimeIndex([easter(y, _easter_type) for y in pi.year])
+    easter_dates = easter_dates[(easter_dates >= pi_start_times) &
+                                (easter_dates <= pi_end_times)]
+
+    result = easter_dates + offset
+    if normalize_by is not None:
+        result = pd.PeriodIndex(result,
+                                freq=normalize_by).to_timestamp(how='start')
+    if shift_to_future:
+        result = result[result <= pi_end_times]
+    else:
+        result = result[result >= pi_start_times]
+    # See comment about filtering for the other end of periods in
+    # from_start_of_each function
+    return result
+
+
+def from_easter_orthodox(pi, normalize_by=None, **kwargs):
+    return from_easter(pi, easter_type='orthodox', normalize_by=normalize_by,
+                       **kwargs)
+
+from_easter_western = from_easter

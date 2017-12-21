@@ -2,7 +2,9 @@ from __future__ import division
 from .exceptions import (OutOfBoundsError,
                          VoidIntervalError,
                          UnsupportedPeriodError)
-from .when import (from_start_of_each, nth_weekday_of_month)
+from .when import (from_start_of_each,
+                   nth_weekday_of_month,
+                   from_easter_western, from_easter_orthodox)
 import pandas as pd
 import numpy as np
 from numpy import nonzero, arange
@@ -159,6 +161,11 @@ class _Frame(pd.PeriodIndex):
         if len(frame) == 0:
             raise VoidIntervalError("Empty frame not allowed "
                 "(make sure the start time precedes the end time)")
+        if frame[0].start_time > frame[-1].start_time:
+            raise RuntimeError("Frame is invalid: starts on {}, ends on {}. "
+                               "Check that your time range is "
+                               "supported.".format(frame[0].start_time,
+                                                   frame[-1].start_time))
         frame._base_unit_freq = _freq
         return frame
 
@@ -347,9 +354,9 @@ class _Frame(pd.PeriodIndex):
 
             for kwargs in splitter.at:
                 at_points = at_points.append(
-                                splitter.how(stencil,
-                                    normalize_by=self._base_unit_freq,
-                                    **kwargs)
+                                 splitter.how(stencil,
+                                              normalize_by=self._base_unit_freq,
+                                              **kwargs)
                             )
             at_points = pd.DatetimeIndex(np.sort(at_points))
             at_points = at_points[
@@ -847,7 +854,7 @@ class Splitter(_SplitterBase):
         of M-th month from the start of `each` period.
         'from_easter_western' - keyword arguments in `at` define an offset 
         in days from the Western Easter in `each` period.
-        'from_easter_othodox' -  keyword arguments in `at` define an offset 
+        'from_easter_orthodox' -  keyword arguments in `at` define an offset 
         in days from the Orthodox Easter in `each` period.
         
         The above string labels effectively substitute their name-sake 
@@ -926,7 +933,9 @@ class Splitter(_SplitterBase):
     def __new__(cls, each, at=None, how=None):
         how_functions = {
             'from_start_of_each': from_start_of_each,
-            'nth_weekday_of_month': nth_weekday_of_month
+            'nth_weekday_of_month': nth_weekday_of_month,
+            'from_easter_western': from_easter_western,
+            'from_easter_orthodox': from_easter_orthodox,
         }
         if how is None:
             how = from_start_of_each

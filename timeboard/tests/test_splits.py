@@ -1,6 +1,7 @@
 from timeboard.core import _Frame, _Subframe, Splitter, get_timestamp
 from timeboard.exceptions import UnsupportedPeriodError
 import pytest
+from pandas import Period
 
 
 @pytest.fixture(scope='module')
@@ -167,6 +168,7 @@ class TestDaysSplitByWeeklyAtPoints(object):
         assert assert_subframe(result[3], 19, 21, 0, 0) # Wed 11 to Fri 13
         assert assert_subframe(result[4], 22, 23, 0, 2) # Sat 14 to Sun 15
                                                         # dangle to Tue 17
+
 
 class TestDaysSplitByAtPointsCornerCases(object):
 
@@ -423,6 +425,49 @@ class TestDaysSplitByAnnually(object):
         assert assert_subframe(result[5], 881, 972, 0, 0)
         assert assert_subframe(result[6], 973, 1095, 0, 149)
 
+    def test_days_splitby_annually_at_easter_western(self):
+        f = _Frame(base_unit_freq='D', start='31 Dec 2013', end='01 Jan 2017')
+        # split at Good Friday, Easter and Easter Monday in 2014, 2015, 2016
+        result = f.do_split_by(0, len(f) - 1,
+                               Splitter(each='A',
+                                        at=[{'days': -2}, {'days': 0},
+                                            {'days': 1}],
+                                        how='from_easter_western'
+                                        )
+                               )
+        result_dates = map(lambda x: (f[x.first], f[x.last]), result)
+        assert len(result) == 10
+        assert result_dates[1][0] == Period('2014-04-18', 'D')
+        assert result_dates[2][0] == Period('2014-04-20', 'D') #easter
+        assert result_dates[3][0] == Period('2014-04-21', 'D')
+        assert result_dates[4][0] == Period('2015-04-03', 'D')
+        assert result_dates[5][0] == Period('2015-04-05', 'D') #easter
+        assert result_dates[6][0] == Period('2015-04-06', 'D')
+        assert result_dates[7][0] == Period('2016-03-25', 'D')
+        assert result_dates[8][0] == Period('2016-03-27', 'D') #easter
+        assert result_dates[9][0] == Period('2016-03-28', 'D')
+
+    def test_days_splitby_annually_at_easter_orthodox(self):
+        f = _Frame(base_unit_freq='D', start='31 Dec 2013', end='01 Jan 2017')
+        # split at Good Friday, Easter and Easter Monday in 2014, 2015, 2016
+        result = f.do_split_by(0, len(f) - 1,
+                               Splitter(each='A',
+                                        at=[{'days': -2}, {'days': 0},
+                                            {'days': 1}],
+                                        how='from_easter_orthodox'
+                                        )
+                               )
+        result_dates = map(lambda x: (f[x.first], f[x.last]), result)
+        assert len(result) == 10
+        assert result_dates[1][0] == Period('2014-04-18', 'D')
+        assert result_dates[2][0] == Period('2014-04-20', 'D') #easter
+        assert result_dates[3][0] == Period('2014-04-21', 'D')
+        assert result_dates[4][0] == Period('2015-04-10', 'D')
+        assert result_dates[5][0] == Period('2015-04-12', 'D') #easter
+        assert result_dates[6][0] == Period('2015-04-13', 'D')
+        assert result_dates[7][0] == Period('2016-04-29', 'D')
+        assert result_dates[8][0] == Period('2016-05-01', 'D') #easter
+        assert result_dates[9][0] == Period('2016-05-02', 'D')
 
 class TestDaysSplitByAtWeekdaysCornerCases(object):
 
