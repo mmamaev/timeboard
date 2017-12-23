@@ -27,12 +27,8 @@ class TestOrganizerConstructor(object):
         assert org.structure == [1, 2, 3]
 
     def test_organizer_constructor_structures_as_str(self):
-        # Organizer does not care what is inside structure.
-        # _Timeline.organize will check it
-        org = Organizer(split_at='01 Jan 2017', structure='123')
-        assert org.split_by is None
-        assert org.split_at == ['01 Jan 2017']
-        assert org.structure == '123'
+        with pytest.raises(TypeError):
+            Organizer(split_at='01 Jan 2017', structure='123')
 
     def test_organizer_constructor_no_splits(self):
         with pytest.raises(ValueError):
@@ -50,6 +46,7 @@ class TestOrganizerConstructor(object):
         with pytest.raises(TypeError):
             Organizer(split_by='W', structure=1)
 
+
 class TestOrganizeSimple(object):
 
     def test_organize_trivial(self):
@@ -57,6 +54,13 @@ class TestOrganizeSimple(object):
         org = Organizer(split_at=[], structure=[[1, 2, 3]])
         t = _Timeline(frame=f, organizer=org)
         assert t.labels.eq([1, 2, 3, 1, 2, 3, 1, 2, 3, 1]).all()
+
+    def test_organize_trivial_string_are_labels(self):
+        f = _Frame(base_unit_freq='D', start='01 Jan 2017', end='10 Jan 2017')
+        org = Organizer(split_at=[], structure=[['ab', 'cd', 'ef']])
+        t = _Timeline(frame=f, organizer=org)
+        assert t.labels.eq(['ab', 'cd', 'ef', 'ab', 'cd', 'ef', 'ab', 'cd',
+                            'ef', 'ab']).all()
 
     def test_organize_simple_splitat(self):
         f = _Frame(base_unit_freq='D', start='01 Jan 2017', end='10 Jan 2017')
@@ -100,11 +104,6 @@ class TestOrganizeSimple(object):
         t = _Timeline(frame=f, organizer=org)
         assert t.labels.eq([1, 2, 3, 1, 2, 3, 1, 2, 3, 1]).all()
 
-    def test_organize_clean_timeline_if_bad_structures(self):
-        f = _Frame(base_unit_freq='D', start='01 Jan 2017', end='10 Jan 2017')
-        org = Organizer(split_at=['05 Jan 2017'], structure=[[1, 2, 3], 1])
-        with pytest.raises(TypeError):
-             _Timeline(frame=f, organizer=org)
 
 class TestOrganizeRecursive(object):
 
@@ -117,7 +116,8 @@ class TestOrganizeRecursive(object):
 
     def test_organize_recursive_2org(self):
         f = _Frame(base_unit_freq='D', start='27 Dec 2016', end='05 Jan 2017')
-        org_int1 = Organizer(split_at=['30 Dec 2016'], structure=['ab', 'x'])
+        org_int1 = Organizer(split_at=['30 Dec 2016'], structure=[['a','b'],
+                                                                  ['x']])
         org_int2 = Organizer(split_by='W', structure=[[1, 2, 3]])
         org_ext = Organizer(split_by='M', structure=[org_int1, org_int2])
         t = _Timeline(frame=f, organizer=org_ext)
@@ -143,9 +143,9 @@ class TestOrganizeRecursive(object):
         # org3(1) : 01.01.17(Sun) - 05.01.17(Thu) <-[1,2,3] anchored at W-SUN
         # org3(2) : 01.02.17(Wed) <-[1,2,3] anchored at W-SUN
         org3 = Organizer(split_by='W', structure=[[1, 2, 3]])
-        org2 = Organizer(split_at='06 Jan 2017', structure=[org3, 'z'])
+        org2 = Organizer(split_at='06 Jan 2017', structure=[org3, ['z']])
         org1 = Organizer(split_by='M', structure=[org2, org3])
-        org4 = Organizer(split_at=[], structure=['dec'])
+        org4 = Organizer(split_at=[], structure=[['d', 'e', 'c']])
         org0 = Organizer(split_by='A', structure=[org4, org1])
         t = _Timeline(frame=f, organizer=org0)
         #result: Dec 27-31               Jan 1-5       rest of Jan      Feb 1
@@ -237,3 +237,30 @@ class TestApplyAmendments(object):
             assert t.labels.eq([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]).all()
         else:
             pytest.fail(msg='DID NOT RAISE for bad timestamp')
+
+
+class TestOrganizeWithAggregation(object):
+
+    def test_organize_aggregate_all(self):
+        f = _Frame(base_unit_freq='D', start='31 Dec 2016', end='10 Jan 2017')
+        org = Organizer(split_by='W', structure=[1, 2])
+        t = _Timeline(frame=f, organizer=org)
+        assert t.labels.eq([1, 2, 1]).all()
+        assert t._frameband.eq([0,0,2,2,2,2,2,2,2,9,9]).all()
+        assert (t._wsband.index == [0, 2, 9]).all()
+
+    def test_organize_aggregate_alternate(self):
+        f = _Frame(base_unit_freq='D', start='31 Dec 2016', end='10 Jan 2017')
+        org = Organizer(split_by='W', structure=[100,[1, 2, 3]])
+        t = _Timeline(frame=f, organizer=org)
+        assert t.labels.eq([100, 1, 2, 3, 1, 2, 3, 1, 100]).all()
+        assert t._frameband.eq([0,0,2,3,4,5,6,7,8,9,9]).all()
+        assert (t._wsband.index == [0, 2,3,4,5,6,7,8, 9]).all()
+
+    def test_organize_aggregate_when_strings_are_labels(self):
+        f = _Frame(base_unit_freq='D', start='31 Dec 2016', end='10 Jan 2017')
+        org = Organizer(split_by='W', structure=['abc', 'x'])
+        t = _Timeline(frame=f, organizer=org)
+        assert t.labels.eq(['abc', 'x', 'abc']).all()
+        assert t._frameband.eq([0,0,2,2,2,2,2,2,2,9,9]).all()
+        assert (t._wsband.index == [0, 2, 9]).all()

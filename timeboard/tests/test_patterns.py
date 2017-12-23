@@ -115,6 +115,8 @@ class TestApplyPattern(object):
         assert t.labels.eq([3, 1, 2, 3, 1, 2, 3, 1, 2, 3]).all()
 
     def test_apply_pattern_as_string_skip(self):
+        # this won't happen in real life as Organizer does not allow
+        # pattern as a string
         p = '123'
         t = timeline_10d()
         t._apply_pattern(p, _Subframe(0, len(t.frame)-1, skip_left=2))

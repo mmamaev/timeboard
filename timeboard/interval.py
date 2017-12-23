@@ -290,8 +290,8 @@ class Interval(object):
                                          'of timeboard base unit "{}"'.
                                          format(period, self._tb.base_unit_freq))
         try:
-            ivl_duty_start_ts = self.first(duty).start_time
-            ivl_duty_end_ts = self.last(duty).end_time
+            ivl_duty_start_ts = self.first(duty).to_timestamp()
+            ivl_duty_end_ts = self.last(duty).to_timestamp()
         except OutOfBoundsError:
             return 0.0
 

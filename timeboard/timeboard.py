@@ -1,10 +1,10 @@
 from __future__ import division
 from .core import (_Frame, _Timeline, _Schedule,
-                   Organizer, get_period, get_timestamp)
+                   Organizer, get_period, get_timestamp, _is_iterable)
 from .workshift import Workshift
 from .interval import Interval
 from .exceptions import OutOfBoundsError, VoidIntervalError
-from collections import Iterable, Sequence, namedtuple
+from collections import namedtuple
 from math import copysign
 import warnings
 
@@ -12,19 +12,14 @@ OOB_LEFT = -911
 OOB_RIGHT = -119
 LOC_WITHIN = 0
 
-_Location = namedtuple('_Location', ['index', 'where'])
+_Location = namedtuple('_Location', ['position', 'where'])
 
 
 class Timeboard(object):
-    """Your customized calendar.
+    """Your calendar.
     
-    A Timeboard object consists of the following parts:
-        - the reference frame of base units of time extending from the 
-        beginning to the end of the timeboard's span;
-        - the timeline of workshifts constructed upon the reference frame as 
-        specified by parameters,
-        - one or more schedules which endow workshifts with on-duty or 
-        off-duty status.
+    Timeboard contains a timeline of workshifts and one or more schedules 
+    which endow workshifts with on-duty or off-duty status.
         
     Calculations over a timeboard are either workshift-based or interval-based. 
     Execute `get_workshift` or `get_interval` to instantiate 
@@ -38,25 +33,25 @@ class Timeboard(object):
     ----------
     base_unit_freq : str
         Base unit is a period of time that is the building block of the 
-        timeline. Every workshift on the timeline consists of an integer 
-        number of base units (currently, of only one base unit). 
+        timeboard's reference frame. Every workshift consists 
+        of an integer number of base units. 
         Base unit is defined by `base_unit_freq` pandas-compatible calendar 
         frequency (i.e. 'D' for day  or '8H' for 8 hours regarded as one unit). 
         Pandas-native business  periods (i.e. 'BM') are not supported. 
     start : Timestamp-like
-        A point in time represented by a string convertible to a timestamp, or
-        a pandas Timestamp, or a datetime object. This point in time is used 
-        to identify the first base unit of the timeline. The point in time 
-        can be located anywhere within this base unit.
+        A point in time referring to the first base unit of the timeboard. 
+        The point in time can be located anywhere within this base unit.
+        The value may be a pandas Timestamp, or a string convertible 
+        to Timestamp, or a datetime object. 
     end : Timestamp-like
-        Same as `start` but for the last base unit of the timeline.
+        Same as `start` but for the last base unit of the timeboard.
     layout : Iterable or Organizer
-        Define the rules of assigning labels to workshifts. 
-        If layout is an Iterable, it is interpreted as a pattern of labels which
-        are assigned to workshifts starting from the beginning of the 
-        timeline. Application of `layout` is repeated in cycles until the end 
-        of the timeline is reached.
-        If layout is an Organizer, the timeline is structured according to 
+        Define how to mark up the timeboard into workshifts. 
+        If `layout` is an Iterable, it is interpreted as a pattern of labels. 
+        Each base unit becomes a workshift; the workshifts receive labels from
+        the pattern. Application of `layout` pattern is repeated in cycles 
+        until the end of the timeboard is reached.
+        If `layout` is an Organizer, the timeboard is structured according to 
         the rule set by the Organizer.
     amendments : dict-like, optional
         Override labels set according to `layout`.
@@ -68,24 +63,29 @@ class Timeboard(object):
         If there are several keys in `amendments` which refer to the same 
         workshift, the actual label would be unpredictable, therefore a 
         KeyError is raised.
-    defautl_selector : function, optional
-        Function which takes one argument - label of a workshift. Returns 
-        True if this is an on-duty workshift, returns False otherwise. Default 
-        selector function returns `bool(label)`.
     workshift_ts : {'start' | 'end'}, optional (default 'start')
         Define what point in time will be used to represent a workshift. 
         The respective point in time will be returned by `to_timestamp{}`
         method of a workshift or by calling `get_timestamp` on a workshift. 
         Available  options: 'start' to use the start time of the workshift, 
         'end' to use the end time. 
+    default_activity : str, optional
+        The name for the default activity schedule. If not supplied, '_default' 
+        is used.
+    default_selector : function, optional
+        The selector function for the default activity schedule. This is 
+        the function which takes one argument - label of a workshift, and 
+        returns True if this is an on-duty workshift, False otherwise. 
+        If not supplied, the function is used that returns `bool(label)`.
     
     Raises
     ------
     UnsupportedPeriodError (ValueError)
-        If `base_unit_freq` is not supported or an Organizer attempted a split
-        by a period which is not a multiple of `base_unit_freq`.
+        If `base_unit_freq` is not supported or an Organizer attempted 
+        to partition the reference frame  by a period which is not a multiple 
+        of `base_unit_freq`.
     VoidIntervalError (ValueError)
-        If an instantiation of an empty timeline is attempted.
+        If an instantiation of a zero-duration timeboard is attempted.
     KeyError
         If `amendments` contain several references to the same workshift.
         
@@ -93,21 +93,26 @@ class Timeboard(object):
     ----------
     base_unit_freq : str
     start_time : Timestamp
-        When the first workshift of the timeboard starts.
+        When the first workshift / base unit of the timeboard starts.
     end_time : Timestamp
-        When the last workshift of the timeboard ends.
-    workshift_ts
-    selector : function
+        When the last workshift / base unit of the timeboard ends.
+    workshift_ts : str
+    default_activity : str
+    default_selector : function
         
     See also
     --------
-    Organizer - defines rules for setting up timeline's layout
+    Organizer - define rule for marking up the reference frame into workshifts.
+    Splitter - define rule for partitioning the reference frame.
     """
-    def __init__(self, base_unit_freq, start, end, layout, amendments=None,
-                 default_selector=None, workshift_ts='start'):
+    def __init__(self, base_unit_freq, start, end, layout,
+                 amendments=None,
+                 default_selector=None,
+                 default_activity=None,
+                 workshift_ts='start'):
         if isinstance(layout, Organizer):
             org = layout
-        elif isinstance(layout, Sequence):
+        elif _is_iterable(layout):
             if len(layout) == 1 and isinstance(layout[0], Organizer):
                 warnings.warn("Received 'layout' as an Organizer wrapped in "
                               "a list. Probably you do not want a list here.",
@@ -131,9 +136,14 @@ class Timeboard(object):
         self._repr = "Timeboard({!r}, {!r}, {!r}, {!r})"\
                      .format(base_unit_freq, start, end, layout)
 
-        default_schedule = _Schedule(self._timeline, '_default',
-                                     self.default_selector)
-        self._schedules = {'_default' : default_schedule}
+        if default_activity is None:
+            default_activity = '_default'
+        self._default_activity = str(default_activity)
+        self._default_schedule = _Schedule(self._timeline,
+                                           self._default_activity,
+                                           self.default_selector)
+        self._schedules = {self._default_activity : self._default_schedule}
+
 
     def __repr__(self):
         return self._repr
@@ -143,6 +153,9 @@ class Timeboard(object):
             self.base_unit_freq,
             str(get_period(self.start_time, freq=self.base_unit_freq)),
             str(get_period(self.end_time, freq=self.base_unit_freq)))
+
+    def to_dataframe(self):
+        pass
 
     @property
     def base_unit_freq(self):
@@ -175,6 +188,10 @@ class Timeboard(object):
     def schedules(self):
         return self._schedules
 
+    @property
+    def default_schedule(self):
+        return self._default_schedule
+
     def __call__(self, *args, **kwargs):
         """A wrapper of `get_workshift()` or `get_interval()`."""
         if len(args) == 1 and len(kwargs) == 0:
@@ -190,7 +207,7 @@ class Timeboard(object):
             raise
 
     def _locate(self, point_in_time):
-        """Find base unit by timestamp
+        """Find workshift by timestamp
         
         Parameters
         ----------
@@ -200,29 +217,26 @@ class Timeboard(object):
         -------
         _Location 
             _Location is a namedtuple of two fields:
-            index: {int >=0, None}
+            position: {int >=0, None}
             where: {LOC_WITHIN, OOB_RIGHT, OOB_LEFT}
-            If the base unit is found, its index in the timeline is returned
-            in `index` field and `LOC_WITHIN` constant is returned in `where` 
-            field. 
-            If `point_in_time` is outside the timeline, `index` field 
+            If the workshift is found, its zero-based position on the 
+            timeline is returned in `position` field and `LOC_WITHIN` constant 
+            is returned in `where` field. 
+            If `point_in_time` is outside the timeline, `position` field 
             is set to `None` and `where` field contains indication whether 
             the point in time is in the future(`where=OOB_RIGHT`) or in the 
             past (`where=OOB_LEFT`)
             
         """
-        try:
-            pit_ts = get_timestamp(point_in_time)
-        except:
-            raise
+        pit_ts = get_timestamp(point_in_time)
 
         try:
-            loc = self._timeline.get_ws_location(pit_ts)
+            loc = self._timeline.get_ws_position(pit_ts)
             if loc < 0:
                 raise RuntimeError("_Frame.get_loc returned negative {}"
                                    " for PiT {}".format(loc, point_in_time))
             return _Location(loc, LOC_WITHIN)
-        except KeyError:
+        except OutOfBoundsError:
             if pit_ts < self.start_time:
                 return _Location(None, OOB_LEFT)
             elif pit_ts > self.end_time:
@@ -246,7 +260,7 @@ class Timeboard(object):
         raise VoidIntervalError(message)
 
     def get_workshift(self, point_in_time, schedule=None):
-        """Find workshift by timestamp.
+        """Get workshift by timestamp.
         
         Takes a timestamp-like value and returns the workshift which
         contains this timestamp.
@@ -274,12 +288,12 @@ class Timeboard(object):
             (`location`) of the workshift within the timeline.
         """
         if schedule is None:
-            schedule = self._schedules['_default']
+            schedule = self.default_schedule
         loc = self._locate(point_in_time)
-        if loc.index is None:
+        if loc.position is None:
             return self._handle_out_of_bounds()
         else:
-            return Workshift(self, loc.index, schedule)
+            return Workshift(self, loc.position, schedule)
 
     def get_interval(self, interval_ref=None, length=None, period=None,
                      clip_period=True, closed='11', schedule=None):
@@ -415,7 +429,7 @@ class Timeboard(object):
         drop_tail = closed[1] == '0'
 
         if schedule is None:
-            schedule = self._schedules['_default']
+            schedule = self.default_schedule
 
         if length is None and period is None:
             try:
@@ -443,7 +457,7 @@ class Timeboard(object):
             raise TypeError("Unacceptable combination of interval reference "
                             "and 'length' or 'period' parameters")
 
-        if locs[0].index is None and locs[1].index is None:
+        if locs[0].position is None and locs[1].position is None:
             if clip_period and locs[0].where > locs[1].where:
                 return self._handle_void_interval(
                     "Attempted to create reversed overlapping interval "
@@ -452,19 +466,19 @@ class Timeboard(object):
                 raise OutOfBoundsError("Interval referenced by '{}' is "
                                        "completely outside {}".
                                        format(interval_ref, self))
-        if locs[0].index is None:
+        if locs[0].position is None:
             raise OutOfBoundsError("The 1st bound of interval referenced by '{}' "
                                    "is outside {}".format(interval_ref, self))
-        if locs[1].index is None:
+        if locs[1].position is None:
             raise OutOfBoundsError("The 2nd bound of interval referenced by '{}' "
                                    "is outside {}".format(interval_ref, self))
-        if locs[0].index > locs[1].index:
+        if locs[0].position > locs[1].position:
             return self._handle_void_interval(
                     "Attempted to create interval with reversed indices "
                     "({}, {}) within {}".
-                    format(locs[0].index, locs[1].index, self))
+                    format(locs[0].position, locs[1].position, self))
 
-        return Interval(self, (locs[0].index, locs[1].index), schedule)
+        return Interval(self, (locs[0].position, locs[1].position), schedule)
 
     def _get_interval_locs_from_reference(self, interval_ref,
                                           drop_head, drop_tail):
@@ -492,10 +506,10 @@ class Timeboard(object):
         if length == 0:
             return self._handle_void_interval('Interval length cannot be zero')
         loc0 = self._locate(start_ref)
-        if loc0.index is None:
+        if loc0.position is None:
             return [loc0, loc0]
-        indices = sorted([loc0.index,
-                         loc0.index + length - int(copysign(1, length))])
+        indices = sorted([loc0.position,
+                         loc0.position + length - int(copysign(1, length))])
         return self._strip_interval_locs(
                     [_Location(indices[0], LOC_WITHIN),
                      _Location(indices[1], LOC_WITHIN)],
@@ -505,8 +519,8 @@ class Timeboard(object):
                                      clip_period, drop_head, drop_tail):
         p = get_period(period_ref, freq=period_freq)
         locs = [self._locate(p.start_time), self._locate(p.end_time)]
-        result0 = locs[0].index
-        result1 = locs[1].index
+        result0 = locs[0].position
+        result1 = locs[1].position
         if clip_period:
             if locs[0].where == OOB_LEFT and locs[1].where != OOB_LEFT:
                 result0 = 0
@@ -520,11 +534,11 @@ class Timeboard(object):
                                          drop_head, drop_tail)
 
     def _strip_interval_locs(self, locs, drop_head, drop_tail):
-        result0 = locs[0].index
-        result1 = locs[1].index
-        if drop_head and locs[0].index is not None:
+        result0 = locs[0].position
+        result1 = locs[1].position
+        if drop_head and locs[0].position is not None:
             result0 += 1
-        if drop_tail and locs[1].index is not None:
+        if drop_tail and locs[1].position is not None:
             result1 -= 1
         return [_Location(result0, locs[0].where),
                 _Location(result1, locs[1].where)]

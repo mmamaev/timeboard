@@ -11,6 +11,7 @@ from numpy import nonzero, arange
 from itertools import cycle, dropwhile
 from collections import Iterable, namedtuple
 import re
+import six
 #import timeit
 
 SMALLEST_TIMEDELTA = pd.Timedelta(1, unit='s')
@@ -20,7 +21,6 @@ def get_timestamp(arg):
         return arg.to_timestamp()
     except AttributeError:
         return pd.Timestamp(arg)
-
 
 def get_period(period_ref, freq=None, honor_period=True):
     if isinstance(period_ref, pd.Period) and honor_period:
@@ -35,6 +35,18 @@ def get_freq_delta(freq):
     # on 'M', 'Q', 'A'
     pi = pd.PeriodIndex(start='01 Jul 2016', freq=freq, periods=2)
     return pi[1].start_time - pi[0].start_time
+
+def _is_iterable(obj):
+    return (isinstance(obj, Iterable) and
+            not isinstance(obj, six.string_types))
+
+def _to_iterable(x):
+    if x is None:
+        return x
+    if _is_iterable(x):
+        return x
+    else:
+        return [x]
 
 def _skiperator(values, direction='forward', skip=0):
     """Build a skip-and-cycle generator
@@ -124,24 +136,13 @@ def _check_splitby_freq(base_unit_freq, split_by_freq):
             return False
 
 
-def _to_iterable(x):
-    if x is None:
-        return x
-    # TODO: Modify check to make it work for unicode strings
-    elif isinstance(x, str):
-        return [x]
-    elif isinstance(x, Iterable):
-        return x
-    else:
-        return [x]
-
-
 class _Frame(pd.PeriodIndex):
-    """Ordered sequence of uniform periods of time.
+    """Timeboard's reference frame.
     
-    `_Frame` object implements the structure of time in timeboard and 
-    serves as the index for timeline. Elements of the frame are timeboard's 
-    base units.
+    Frame is an ordered sequence of uniform periods of time (called base 
+    units) which define the extent of the timeboard and the smallest duration 
+    of anything happening within the timeboard. Workshifts are aligned 
+    with base units; each workshift comprises one or more base units. 
     
     Parameters
     ----------
@@ -211,9 +212,9 @@ class _Frame(pd.PeriodIndex):
         Parameters
         ----------
         span_first: int>=0
-            Index of the first element of the span in the frame.
+            Position of the first base unit of the span in the frame.
         span_last: int>=0
-            Index of the last element of the span in the frame.
+            Position of the last base unit of the span in the frame.
         points_in_time: Iterable of Timestamp-like 
             List of points in time referring to frame's elements that will 
             become the first elements of subframes.
@@ -229,9 +230,9 @@ class _Frame(pd.PeriodIndex):
         Any elements of `points_in_time` that do not define a start of 
         a subframe within the span are ignored.
         These are:
-          - points referring to a frame's element already designated as the 
+          - points referring to a base unit already designated as the 
           first element of a subframe,
-          - points referring to `span_first` element,
+          - points referring to `span_first` base unit,
           - points outside the span.
         If no usable points are found or `points_in_time` is empty,
         [(span_start, span_end)] is returned. 
@@ -286,9 +287,9 @@ class _Frame(pd.PeriodIndex):
         Parameters
         ----------
         span_first: int>=0
-            Index of the first element of the span in the frame.
+            Position of the first base unit of the span in the frame.
         span_last: int>=0
-            Index of the last element of the span in the frame.
+            Position of the last base unit of the span in the frame.
         points_in_time: Iterable of Timestamp-like 
             List of points in time referring to frame's elements that will 
             become the first elements of subframes.
@@ -316,11 +317,11 @@ class _Frame(pd.PeriodIndex):
         Parameters
         ----------
         span_first: int>=0
-            Index of the first element of the part of the frame which is to 
-            be partitioned.
+            Position of the base unit which begins the part of the  frame  
+            to be partitioned.
         span_last: int>=0
-            Index of the last element of the part of the frame which is to 
-            be partitioned.
+            Position of the base unit which ends the part of the  frame  
+            to be partitioned.
         splitter: Splitter
         
         Raises
@@ -346,7 +347,7 @@ class _Frame(pd.PeriodIndex):
         from 01 Jan until 31 Jan 2017, and `splitter.each`='W', the first 
         subframe will contain only one day 01 Jan, Sunday. 
         The first six days of this week (26-31 Dec) are outside the span. 
-        The number of such fell out days are recorded in subframe's 
+        The number of such fell out days (6) is recorded in subframe's 
         `skip_left` attribute. 
         
         Analogously, the last subframe of the span will contain only two days: 
@@ -355,7 +356,6 @@ class _Frame(pd.PeriodIndex):
         in this subframe, to 5. All subframes in between represent a full week
         each, and their `skip_left` and `skip_right` attributes are zeroed. 
         """
-        # TODO: add support of freq multiplicators, i.e. (D by 4D) or (2D by 4D)
         if not _check_splitby_freq(self._base_unit_freq, splitter.each):
             raise UnsupportedPeriodError('Ambiguous organizing: '
                                          '{} is not a subperiod of {}'
@@ -445,12 +445,15 @@ class _Frame(pd.PeriodIndex):
         Parameters
         ----------
         span_first: int>=0
-            Index of the first element of the span in the frame.
+            Position of the base unit which begins the part of the  frame  
+            to be partitioned.
         span_last: int>=0
-            Index of the last element of the span in the frame.
+            Position of the base unit which ends the part of the  frame  
+            to be partitioned.
         split_at: Iterable of Timestamp-like 
-            List of points in time referring to frame's elements that will 
-            become the first elements of subframes.
+            List of points in time referring to base units that will 
+            become the first elements of subframes. A point in time may fall 
+            anywhere within the base unit.
 
         Returns
         -------
@@ -461,14 +464,13 @@ class _Frame(pd.PeriodIndex):
         Any elements of `split_at` that do not define a start of 
         a subframe within the span are ignored.
         These are:
-          - points referring to a frame's element already designated as the 
+          - points referring to a base unit already designated as the 
           first element of a subframe,
-          - points referring to `span_first` element,
+          - points referring to `span_first` base unit,
           - points outside the span.
         If no usable points are found or `points_in_time` is empty,
         [(span_start, span_end)] is returned. 
         """
-        # TODO: add support of partial point-in-time specifications
         return self._create_subframes(span_first, span_last, split_at)
 
 
@@ -478,17 +480,17 @@ class _Subframe:
     Parameters
     ----------
     first: int 
-        Index of the first element of subframe within the frame.
+        Position of the first base unit of subframe within the frame.
     last: int    
-        Index of the last element of subframe within the frame
+        Position of the last base unit of subframe within the frame.
     skip_left: int >=0 or -1
         Number of steps to skip if a pattern of labels is applied to  
-        this subframe in 'forward' direction (left to right). Negative one
-        if this number could not be calculated.
+        this subframe in 'forward' direction (left to right). 
+        If this number could not be calculated `skip_left=-1`.
     skip_right: int >=0 or -1
         Number of steps to skip if a pattern of labels is applied to 
-        this subframe in 'reverse' direction (from right to left). Negative one
-        if this number could not be calculated.           
+        this subframe in 'reverse' direction (from right to left). 
+        If this number could not be calculated, skip_right=-1`.           
     
     Attributes
     ----------
@@ -506,59 +508,45 @@ class _Subframe:
 
 
 class _Timeline(object):
-    """Period-indexed series of labels.
+    """Timeline of workshifts.
     
-    `_Timeline` object, a timeline,  is the principal data structure of a 
-    timeboard. Timeline's index consists of periods representing workshifts 
-    of the timeboard, and timeline's data are workshift labels.
-    The labels are set by calling `organize` method, and then are adjusted to 
-    account for irregular circumstances by calling `amend`. These methods 
-    change the timeline in-place.
+    On instantiation, mark up timeboard's frame into workshifts and set 
+    their labels as prescribed by the Organizer.
     
     Parameters
     ----------
-    base_unit_freq : str
-        Base unit is a period of time that is the building block of the 
-        timeline. Every workshift on the timeline consists of an integer 
-        number of base units (currently, of only one base unit). 
-        Base unit is defined by `base_unit_freq` pandas-compatible calendar 
-        frequency (i.e. 'D' for day or '8H' for 8 hours regarded as one unit). 
-        Pandas-native business  periods (i.e. 'BM') are not supported. 
-    start : Timestamp-like
-        A point in time represented by a string convertible to a timestamp, or
-        a pandas Timestamp, or a datetime object. This point in time is used 
-        to identify the first base unit of the timeline. The point in time 
-        can be located anywhere within this base unit.
-    end : Timestamp-like
-        Same as `start` but for the last base unit of the timeline.  
+    frame : _Frame
+    organizer : Organizer, optional
     data : optional
-        Labels to initialize the timeline with (a single value or an iterable 
+        Labels to initialize the timeline (a single value or an iterable 
         for the full length of the timeline).By default the timeline is 
-        initialized with NaN.
+        initialized with NaN. This parameter is only useful when 
+        `organizer` is not given.
         
     Raises
     ------
     UnsupportedPeriodError (ValueError)
-        If `base_unit_freq` is not supported or `organize` attempted a split
-        by a period which is not a multiple of `base_unit_freq`.
+        If `base_unit_freq` is not supported or Organizer required to 
+        partition the frame in periods whose frequency is not a multiple of 
+        `base_unit_freq`.
     VoidIntervalError (ValueError)
         If an instantiation of an empty timeline is attempted.
         
     Attributes
     ----------
     frame : _Frame
-        A series of periods of time serving as the index of the timeline.
+        The frame upon which the timeline is built.
     start_time : Timestamp
-        When the first element of the timeline starts.
+        When the first workshift starts.
     end_time : Timestamp
-        When the last element of the timeline ends.
+        When the last workshift ends.
     """
     def __init__(self, frame, organizer=None, data=None):
         self._frame = frame
         self._frameband = pd.Series(index=frame, data=arange(len(frame)))
         self._wsband = pd.Series(index=arange(len(frame)), data=data)
         if organizer is not None:
-            self.organize(organizer)
+            self._organize(organizer)
 
 
     @property
@@ -576,28 +564,92 @@ class _Timeline(object):
     def __len__(self):
         return len(self._wsband)
 
-    def __getitem__(self, i):
-        return self._wsband.iloc[i]
+    def __getitem__(self, n):
+        return self._wsband.iloc[n]
 
-    def get_ws_start_time(self, i):
-        first_base_unit = self._wsband.index[i]
-        return self._frameband.index[first_base_unit].start_time
+    def _get_ws_first_baseunit(self, n):
+        return self._wsband.index[n]
 
-    def get_ws_end_time(self, i):
+    def _get_ws_last_baseunit(self, n):
+        # first check if the workshift exists
         try:
-            self._wsband.index[i]
+            self._wsband.iloc[n]
         except:
             raise
         last_base_unit = len(self._frameband) - 1
         try:
-            last_base_unit = self._wsband.index[i + 1] - 1
+            last_base_unit = self._wsband.index[n+1]-1
         except IndexError:
             pass
-        return self._frameband.index[last_base_unit].end_time
+        return last_base_unit
 
-    def get_ws_location(self, point_in_time):
-        base_unit = self._frameband.index.get_loc(point_in_time)
-        return self._frameband.iloc[base_unit]
+    def get_ws_start_time(self, n):
+        """The start time of the n-th workshift.
+        
+        Parameters
+        ----------
+        n : int
+            Zero-based sequence number of a workshift on the timeline.
+            
+        Returns
+        -------
+        Timestamp
+        """
+        return self._frameband.index[self._get_ws_first_baseunit(n)].start_time
+
+    def get_ws_end_time(self, n):
+        """The end time of the n-th workshift.
+        
+        Parameters
+        ----------
+        n : int
+            Zero-based sequence number of a workshift on the timeline.
+            
+        Returns
+        -------
+        Timestamp
+        """
+        return self._frameband.index[self._get_ws_last_baseunit(n)].end_time
+
+    def get_ws_duration(self, n):
+        """The duration of the n-th workshift counted in base units.
+        
+        Parameters
+        ----------
+        n : int
+            Zero-based sequence number of a workshift on the timeline.
+            
+        Returns
+        -------
+        int >0
+        """
+        return self._get_ws_last_baseunit(n) - \
+               self._get_ws_first_baseunit(n) + 1
+
+    def get_ws_position(self, point_in_time):
+        """Get position of the workshift containing the given point in time.
+        
+        Parameters
+        ----------
+        point_in_time : Timestamp-like
+            
+        Returns
+        -------
+        int >=0
+            Zero-based sequence number of a workshift on the timeline.
+            
+        Raises
+        ------
+        OutOfBoundsError
+            If the point in time is not within the timeline.
+        """
+        try:
+            base_unit = self.frame.get_loc(point_in_time)
+        except KeyError:
+            raise OutOfBoundsError("Point in time {} is not within the "
+                                   "timeline {}".format(point_in_time, self))
+        ws_idx = self._frameband.iloc[base_unit]
+        return self._wsband.index.get_loc(ws_idx)
 
     @property
     def labels(self):
@@ -659,8 +711,8 @@ class _Timeline(object):
         amendments_located = {}
         for (point_in_time, value) in amendments.items():
             try:
-                loc = self.get_ws_location(point_in_time)
-            except KeyError:
+                loc = self.get_ws_position(point_in_time)
+            except OutOfBoundsError:
                 if not_in_range == 'raise':
                     raise OutOfBoundsError('Amendment {} is outside the '
                                            'timeboard'.format(point_in_time))
@@ -707,7 +759,7 @@ class _Timeline(object):
         pattern_iterator = _skiperator(pattern,
                                        direction='forward',
                                        skip=subframe.skip_left)
-        self._wsband.iloc[subframe.first: subframe.last+1] = [
+        self._wsband.loc[subframe.first: subframe.last] = [
             next(pattern_iterator)
             for i in range(subframe.first, subframe.last+1)
         ]
@@ -719,21 +771,21 @@ class _Timeline(object):
         #     except StopIteration:
         #         raise IndexError('Timeline pattern exhausted since {}'.format(i))
 
-    def organize(self, organizer, span_first=None, span_last=None):
-        """Set up a layout defined by organizer.
+    def _organize(self, organizer, span_first=None, span_last=None):
+        """Mark up the frame to create workshifts.
         
-        Set workshift labels by imposing a layout defined by `organizer`
-        within the specified span of the timeline .
+        Partition the specified span of the frame into workshifts and set 
+        workshift labels as prescribed by `organizer`.
 
         Parameters
         ----------
-        organizer: instance of Organizer 
+        organizer: Organizer 
         span_first: int>=0, optional
-            Index of the first workshift of the span on the timeline. 
-            By  default this is the first workshift of the timeline.
+            Index of the first base unit of the span of the frame. 
+            By  default this is the first base unit of the frame.
         span_last: int>=0, optional
-            Index of the last workshift of the span on the timeline. 
-            By default this is the last workshift of the timeline.
+            Index of the last base unit of the span of the frame.. 
+            By default this is the last base unit of the frame.
             
         Returns
         -------
@@ -744,7 +796,6 @@ class _Timeline(object):
         Nothing is returned; the timeline is modified in-place.
         """
         #TODO: introduce concept of workshifts of varied length (>1 BU per workshift
-        #TODO: timeline will contain workshifts, not base units
         if span_first is None:
             span_first = 0
         if span_last is None:
@@ -768,18 +819,97 @@ class _Timeline(object):
             #if timer2 is None: timer2 = timeit.default_timer()
 
             if isinstance(layout, Organizer):
-                self.organize(layout, subframe.first, subframe.last)
-            elif isinstance(layout, Iterable):
+                self._organize(layout, subframe.first, subframe.last)
+            elif _is_iterable(layout):
                 self._apply_pattern(layout, subframe)
             else:
-                self.reset()
-                raise TypeError('Organizer.layout may contain either '
-                                'patterns (iterables of values) or  '
-                                'other Organizers')
+                # aggregate subframe into one workshift, use layout as label
+                self._wsband.loc[subframe.first] = layout
+                self._wsband.drop(index=arange(subframe.first+1,
+                                               subframe.last+1), inplace=True)
+                self._frameband.iloc[subframe.first:
+                                     subframe.last+1] = subframe.first
+                # self.reset()
+                # raise TypeError('Organizer.layout may contain either '
+                #                 'patterns (iterables of labels) or  '
+                #                 'other Organizers')
         # timer3 = timeit.default_timer()
-        # print "organize ({},{})\n\tsplit: {:.5f}\n\tstructure init: {:.5f}" \
+        # print "_organize ({},{})\n\tsplit: {:.5f}\n\tstructure init: {:.5f}" \
         #     "\n\tstructure run: {:.5f}".format(span_first, span_last,
         #                     timer1-timer0, timer2-timer1, timer3-timer2)
+
+
+class _Schedule(object):
+    """Duty schedule of workshifts.
+
+    For a given timeline, define the duty status of 
+    the workshifts by applying a selector function to workshift's labels. 
+
+    Parameters
+    ----------
+    tl : _Timeline
+    activity : str
+        A descriptive name for the schedule.
+    selector : function
+        Function taking one argument (workshift's label) and returning True 
+        if the workshift with this label is on duty, and False if it is off 
+        duty.
+
+    Attributes
+    ----------
+    activity: str
+    index: numpy ndarray
+        Ascending list of all schedule's workshift positions on the timeline.
+    on_duty_index: numpy ndarray
+        Ascending list of schedule's on-duty workshift positions on the 
+        timeline.
+    off_duty_index: numpy ndarray
+        Ascending list of schedule's off-duty workshift positions on the 
+        timeline.
+
+    Examples
+    --------
+    If a timeline consists of four workshifts, and the schedule defines  
+    workshifts 0 and 2 as on duty, and the rest as off duty, the schedules's 
+    attributes are  as follows:
+        index = np.array([0, 1, 2, 3])
+        on_duty_index = np.array([0, 2])
+        off_duty_index = np.array([1, 3])
+    """
+
+    def __init__(self, tl, activity, selector):
+        self._timeline = tl
+        self._activity = str(activity)
+        self._selector = selector
+
+        on_duty_bool_index = self._timeline.labels.apply(self._selector)
+        self._on_duty_index = nonzero(on_duty_bool_index)[0]
+        self._off_duty_index = nonzero(~on_duty_bool_index)[0]
+
+    @property
+    def activity(self):
+        return self._activity
+
+    @property
+    def on_duty_index(self):
+        return self._on_duty_index
+
+    @property
+    def off_duty_index(self):
+        return self._off_duty_index
+
+    @property
+    def index(self):
+        return arange(len(self._timeline))
+
+    def label(self, n):
+        return self._timeline[n]
+
+    def is_on_duty(self, n):
+        return self._selector(self._timeline[n])
+
+    def is_off_duty(self, n):
+        return not self.is_on_duty(n)
 
 
 class Organizer(object):
@@ -787,7 +917,7 @@ class Organizer(object):
     
     Parameters
     ----------
-    split_by: {Splitter, str}
+    split_by: Splitter or str
         A Splitter or a pandas-compatible calendar frequency (accepts same 
         values as `base_unit_freq` of timeboard). The latter is equivalent to
         `Splitter(each=split_by)`.
@@ -807,22 +937,34 @@ class Organizer(object):
         
     Notes
     -----
-    Firstly, organizer tells how to partition timeline into chunks (spans); 
-    this is defined by `split_by` or `split_at` parameter. Given `split_by` 
-    parameter, the timeline is partitioned into spans whose bounds are 
-    calculated according to the rules set by the Splitter. With `split_at`, 
-    the timeline is partitioned at the explicitly specified points in time. 
+    Firstly, organizer tells how to partition timeboard's frame into chunks (
+    spans); this is defined by `split_by` or `split_at` parameter. 
+    
+    Given `split_by` parameter, the frame is partitioned into spans 
+    whose bounds are calculated according to the rules set by the Splitter. 
+    
+    If, instead, `split_at` is given,  
+    the frame is partitioned at the explicitly specified points in time. 
     
     One and only one of `split_by` or `split_at` parameters must be supplied.
 
     Secondly, organizer tells what to do with each of the identified spans; 
     this is specified by `structure` parameter which is an iterable. For each 
-    span a next element is taken from structure. This element is either  
-    another organizer or a pattern (an iterable of workshift labels). If it is 
-    an organizer, it is used to further partition this span of the 
-    timeline into sub-spans. If it is a pattern, the recursive partitioning 
-    does not happen. Instead, labels from the pattern are set for the 
-    workshifts in the span.  
+    span a next element is taken from `structure`. This element is either  
+    another `Organizer`, or a pattern (an iterable of workshift labels), 
+    or a single label.
+    
+    If an element of `structure` is an `Organizer`, it is used to further 
+    partition this span of the frame into sub-spans. 
+    
+    If it is a pattern, the recursive partitioning does not happen. Instead, 
+    each base unit of the span becomes a workshift. The labels for these 
+    workshifts are taken from the pattern. 
+    
+    If the element of `structure` is some other single value, it is considered 
+    a label. In this case all the span becomes a single workshift which 
+    receives this label. Such a workshift comprises several base units 
+    (unless the span itself consists of a single base unit).
     
     Once `structure` is exhausted , it is re-enacted in cycles. The same 
     approach applies for pattern when setting workshift labels.
@@ -831,7 +973,7 @@ class Organizer(object):
         if (split_by is None) == (split_at is None):
             raise ValueError("One and only one of 'split_by' or 'split_at' "
                              "must be specified ")
-        if not isinstance(structure, Iterable):
+        if not _is_iterable(structure):
             raise TypeError("structure parameter must be iterable")
         self._split_by = split_by
         self._split_at = split_at
@@ -873,24 +1015,23 @@ class Splitter(_SplitterBase):
         Each dictionary is a suite of keyword arguments used for calling 
         `how` function. 
     how : str or function, optional
-        'from_start_of_each' (default) - keyword arguments in `at` define an 
+        'from_start_of_each' (default) : keyword arguments in `at` define an 
         offset (number of hours, days, etc.) from the start of `each` period.
-        'nth_weekday_of_month' - keyword arguments in `at` define N-th weekday 
+        'nth_weekday_of_month' : keyword arguments in `at` define N-th weekday 
         of M-th month from the start of `each` period.
-        'from_easter_western' - keyword arguments in `at` define an offset 
+        'from_easter_western' : keyword arguments in `at` define an offset 
         in days from the Western Easter in `each` period.
-        'from_easter_orthodox' -  keyword arguments in `at` define an offset 
+        'from_easter_orthodox' :  keyword arguments in `at` define an offset 
         in days from the Orthodox Easter in `each` period.
         
-        The above string labels effectively substitute their name-sake 
+        The above strings effectively substitute their name-sake 
         functions from module `when`.
         
         Alternatively, a user-defined function may be supplied as the value of 
-        `how` which conforms to the signature 
-        def (pandas.PeriodIndex, 'normalize_by': str, **kwargs) -> 
+        `how`. The function must conform to the signature 
+        def fun(pandas.PeriodIndex, 'normalize_by': str, **kwargs) -> 
         pandas.DatetimeIndex.
         
- 
     Attributes
     ----------
     Same as parameters.
@@ -916,7 +1057,6 @@ class Splitter(_SplitterBase):
     
     If `at` parameter is not provided or `at` list is empty, the span 
     will be split in periods specified by `each`.
-    
     
     Examples
     --------
@@ -968,73 +1108,3 @@ class Splitter(_SplitterBase):
             how = how_functions[how]
         return super(Splitter, cls).__new__(cls, each, at, how)
 
-class _Schedule(object):
-    """Duty schedule of workshifts.
-    
-    Provide duty-wise interpretation for workshifts with regard 
-    to a particular activity. 
-    Instantiation: for a given timeline, set the duty status of 
-    the workshifts by applying a selector function to workshift's labels. 
-    
-    Parameters
-    ----------
-    tl : _Timeline
-    activity : str
-        A descriptive name for the schedule.
-    selector : function
-        Function taking one argument (workshift's label) and returning True 
-        if  the workshift with this label is on duty, False it is off duty.
-        
-    Attributes
-    ----------
-    activity: str
-    index: numpy ndarray
-        Ascending timeline indices of all schedule's workshifts.
-    on_duty_index: numpy ndarray
-        Ascending timeline indices of schedule's on duty workshifts.
-    off_duty_index: numpy ndarray
-        Ascending timeline indices of schedule's off duty workshifts.
-
-    Notes
-    -----
-    If a timeline consists of four workshifts, and the schedule declared  
-    workshifts 0 and 2 as on duty, and the rest as off duty, the schedules's 
-    attributes are asserted as follows:
-        index == np.array([0, 1, 2, 3])
-        on_duty_index == np.array([0, 2])
-        off_duty_index == np.array([1, 3])
-    """
-
-    def __init__(self, tl, activity, selector):
-        self._timeline = tl
-        self._activity = str(activity)
-        self._selector = selector
-
-        on_duty_bool_index = self._timeline.labels.apply(self._selector)
-        self._on_duty_index = nonzero(on_duty_bool_index)[0]
-        self._off_duty_index = nonzero(~on_duty_bool_index)[0]
-
-    @property
-    def activity(self):
-        return self._activity
-
-    @property
-    def on_duty_index(self):
-        return self._on_duty_index
-
-    @property
-    def off_duty_index(self):
-        return self._off_duty_index
-
-    @property
-    def index(self):
-        return arange(len(self._timeline))
-
-    def label(self, i):
-        return self._timeline[i]
-
-    def is_on_duty(self, i):
-        return self._selector(self._timeline[i])
-
-    def is_off_duty(self, i):
-        return not self.is_on_duty(i)

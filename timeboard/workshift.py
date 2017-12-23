@@ -69,13 +69,18 @@ class Workshift(object):
 
     @property
     def start_time(self):
-        # TODO: Refactor. This class has to know methods of Timeboard only
+        # TODO: Refactor. _Timeline methods should not be called from this class
         return self._tb._timeline.get_ws_start_time(self._loc)
 
     @property
     def end_time(self):
-        # TODO: Refactor. This class has to know methods of Timeboard only
+        # TODO: Refactor. _Timeline methods should not be called from this class
         return self._tb._timeline.get_ws_end_time(self._loc)
+
+    @property
+    def duration(self):
+        # TODO: Refactor. _Timeline methods should not be called from this class
+        return self._tb._timeline.get_ws_duration(self._loc)
 
     def to_timestamp(self):
         """The characteristic time used to represent the workshift. 
@@ -124,11 +129,6 @@ class Workshift(object):
     @property
     def is_void(self):
         return False
-
-    @property
-    def duration(self):
-        # TODO: Support workshifts containing  variable numbers of BU
-        return 1
 
     def rollforward(self, steps=0, duty='on'):
         """
