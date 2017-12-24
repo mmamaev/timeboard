@@ -62,7 +62,7 @@ class Interval(object):
                                 format(bound, type(bound)))
             if not 0 <= loc < len(timeboard._timeline):
                 raise OutOfBoundsError("Interval bound {} is outside timeboard "
-                                       "{}".format(bound, timeboard))
+                                       "{}".format(bound, timeboard.compact_str))
             return loc
 
         if not hasattr(bounds, '__getitem__'):
@@ -287,7 +287,7 @@ class Interval(object):
                                          format(period))
         if not _check_splitby_freq(self._tb.base_unit_freq, period):
             raise UnsupportedPeriodError('Period "{}" is not a superperiod '
-                                         'of timeboard base unit "{}"'.
+                                         'of timeboard\'s base unit "{}"'.
                                          format(period, self._tb.base_unit_freq))
         try:
             ivl_duty_start_ts = self.first(duty).to_timestamp()

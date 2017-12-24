@@ -194,6 +194,7 @@ class _Frame(pd.PeriodIndex):
                                ".".format(frame[0].start_time,
                                           frame[-1].start_time))
         frame._base_unit_freq = _freq
+        frame._start_times = frame.to_timestamp(how='start')
         return frame
 
     @property
@@ -203,6 +204,10 @@ class _Frame(pd.PeriodIndex):
     @property
     def end_time(self):
         return self[-1].end_time
+
+    @property
+    def start_times(self):
+        return self._start_times
 
     def _locate_subframes(self, span_first, span_last, points_in_time):
         """
@@ -240,10 +245,12 @@ class _Frame(pd.PeriodIndex):
         #timer0 = timeit.default_timer()
         self.check_span(span_first, span_last)
         # TODO: SPEED UP.
-        # This comprehension takes 0.3s for 100 Years Standard Week 8x5
-        loc_list = [self._get_loc_wrapper(t) for t in points_in_time]
+        # This computation takes 0.3s for 100 Years Standard Week 8x5
+        #loc_list = [self.get_loc(t, 0) for t in points_in_time]
+        loc_list = self.get_loc_vectorized(points_in_time, 0)
         #timer1 = timeit.default_timer()
-        split_positions = [x for x in loc_list if span_first < x <= span_last]
+        split_positions = [int(x)
+                           for x in loc_list if span_first < x <= span_last]
         #timer2 = timeit.default_timer()
         split_positions = sorted(list(set(split_positions)))
         #timer3 = timeit.default_timer()
@@ -260,7 +267,8 @@ class _Frame(pd.PeriodIndex):
         return zip(start_positions, end_positions)
 
     def check_span(self, span_first, span_last):
-        if not (isinstance(span_first, int) and isinstance(span_last, int)):
+        if not (isinstance(span_first, six.integer_types) and
+                    isinstance(span_last, six.integer_types)):
             # Guard against Python 2 which is ok to compare strings and
             # integers, i.e. "20 Feb 2017" > 60 evaluates to True
             raise TypeError("Span boundaries must be of type integer")
@@ -272,11 +280,23 @@ class _Frame(pd.PeriodIndex):
             raise VoidIntervalError("Span cannot be empty")
         return True
 
-    def _get_loc_wrapper(self, x):
-        try:
-            return self.get_loc(x)
-        except KeyError:
-            return 0
+    def get_loc(self, timestamp, not_in_range=None, *kwargs):
+        if timestamp > self.end_time or timestamp < self.start_time:
+            if not_in_range is None:
+                raise KeyError("Timestamp {} is out of bounds")
+            else:
+                return not_in_range
+        return int(np.searchsorted(self.start_times, timestamp, side='right')
+                   - 1)
+
+    def get_loc_vectorized(self, timestamps, not_in_range=0):
+        start_times = self.start_times.append(
+            pd.DatetimeIndex([self.start_times[-1] + SMALLEST_TIMEDELTA]))
+        arr = np.searchsorted(start_times,
+                              np.array(timestamps, dtype='datetime64[ns]'),
+                              side='right')-1
+        result = np.where((arr>=0) & (arr<len(self)), arr, [not_in_range])
+        return result
 
     def _create_subframes(self, span_first, span_last, points_in_time):
         """ Wrapper around `_locate_subframes`.
@@ -471,7 +491,8 @@ class _Frame(pd.PeriodIndex):
         If no usable points are found or `points_in_time` is empty,
         [(span_start, span_end)] is returned. 
         """
-        return self._create_subframes(span_first, span_last, split_at)
+        return self._create_subframes(span_first, span_last,
+                                      map(get_timestamp, split_at))
 
 
 class _Subframe:
@@ -644,7 +665,7 @@ class _Timeline(object):
             If the point in time is not within the timeline.
         """
         try:
-            base_unit = self.frame.get_loc(point_in_time)
+            base_unit = self.frame.get_loc(get_timestamp(point_in_time))
         except KeyError:
             raise OutOfBoundsError("Point in time {} is not within the "
                                    "timeline {}".format(point_in_time, self))
@@ -838,6 +859,20 @@ class _Timeline(object):
         #     "\n\tstructure run: {:.5f}".format(span_first, span_last,
         #                     timer1-timer0, timer2-timer1, timer3-timer2)
 
+    def to_dataframe(self):
+        my_base_units = self.frame[self._wsband.index]
+        ws_bounds = np.concatenate((np.array(self._wsband.index),
+                                  [len(self.frame)]))
+        durations = [ws_bounds[i+1] - ws_bounds[i]
+                     for i in range(len(ws_bounds)-1)]
+        start_times = self.frame[ws_bounds[:-1]].to_timestamp(how='start')
+        end_times = self.frame[ws_bounds[1:]-1].to_timestamp(how='end')
+        #index = start_times
+        data = {'start' : start_times,
+                'end' : end_times,
+                'duration' : durations,
+                'label' : np.array(self.labels)}
+        return pd.DataFrame(data=data).set_index('start')
 
 class _Schedule(object):
     """Duty schedule of workshifts.

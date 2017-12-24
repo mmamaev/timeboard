@@ -222,6 +222,18 @@ class TestFrameLocSubframesWhole(object):
         for i in range(len(result)) :
             assert (result[i] == split_frame_60d()[i])
 
+    def test_frame_locsubf_multiplied_freq(self):
+        f = _Frame(start='31 Dec 2016', end='09 Jan 2017', base_unit_freq='2D')
+        split_points=[pd.Timestamp('02 Jan 2017'),
+                      pd.Timestamp('02 Jan 2017 12:12:12'),
+                      pd.Timestamp('07 Jan 2017'),
+                      pd.Timestamp('07 Jan 2017 11:05')]
+        result = f._locate_subframes(0, len(f)-1, split_points)
+        assert len(result) == 3
+        assert result[0] == (0, 0)
+        assert result[1] == (1, 2)
+        assert result[2] == (3, 4)
+
     def test_frame_locsubf_basic_from_dti(self):
         split_points=[pd.Timestamp('10 Jan 2017'),
                       pd.Timestamp('10 Feb 2017 12:12:12'),

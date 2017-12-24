@@ -66,7 +66,7 @@ class TestTBConstructor(object):
         clnd = tb.Timeboard(base_unit_freq='D',
                             start='01 Jan 2017', end='12 Jan 2017',
                             layout=[0, 1, 0, 2])
-        sdl = clnd.schedules['_default']
+        sdl = clnd.default_schedule
         selector = clnd.default_selector
         assert selector(clnd._timeline[1])
         assert map(selector, clnd._timeline.labels) == [False, True] * 6
@@ -82,7 +82,7 @@ class TestTBConstructor(object):
                             start='01 Jan 2017', end='12 Jan 2017',
                             layout=[0, 1, 0, 2],
                             default_selector=custom_selector)
-        sdl = clnd.schedules['_default']
+        sdl = clnd.default_schedule
         selector = clnd.default_selector
         assert not selector(clnd._timeline[1])
         assert map(selector, clnd._timeline.labels) == [False, False, False,

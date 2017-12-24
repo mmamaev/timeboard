@@ -53,12 +53,13 @@ class Workshift(object):
         try:
             self._label = schedule.label(location)
         except TypeError:
-            raise TypeError('Workshift location = {}: expected integer-like '
+            raise TypeError('Workshift location = `{!r}`: expected '
+                            'integer-like '
                             'received {}'.format(location, type(location)))
         except IndexError:
             raise OutOfBoundsError("Workshift location {} "
                                    "is outside timeboard {}".
-                                   format(location, timeboard))
+                                   format(location, timeboard.compact_str))
         # negative locations are not allowed? why?
         # if location <0:
         #     raise OutOfBoundsError("Received location={}. Negative location is "
@@ -107,8 +108,8 @@ class Workshift(object):
     def __str__(self):
         duration_str = ''
         if self.duration != 1:
-            duration_str = str(self.duration)
-        return "Workshift '{}{}' at {}".\
+            duration_str = str(self.duration) + 'x'
+        return "Workshift {}{} at {}".\
                 format(duration_str,
                        self._tb.base_unit_freq,
                        get_period(self.to_timestamp(),

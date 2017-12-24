@@ -111,14 +111,14 @@ class TestWorkshiftConstructor(object):
     def test_direct_workshift_constructor_with_bad_loc(self):
         clnd = tb_12_days()
         #with pytest.raises(KeyError):
-        get_timestamp(Workshift(clnd, -1, clnd.schedules['_default'])
+        get_timestamp(Workshift(clnd, -1, clnd.default_schedule)
                              ) ==  datetime.datetime(2017, 1, 12, 0, 0, 0)
         with pytest.raises(OutOfBoundsError):
-            Workshift(clnd, 500000000, clnd.schedules['_default'])
+            Workshift(clnd, 500000000, clnd.default_schedule)
         with pytest.raises(TypeError):
-            Workshift(clnd, 10.5, clnd.schedules['_default'])
+            Workshift(clnd, 10.5, clnd.default_schedule)
         with pytest.raises(TypeError):
-            Workshift(clnd, '05 Jan 2017', clnd.schedules['_default'])
+            Workshift(clnd, '05 Jan 2017', clnd.default_schedule)
 
 class TestRollForward(object):
 

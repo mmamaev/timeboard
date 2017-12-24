@@ -70,7 +70,7 @@ class Timeboard(object):
         Available  options: 'start' to use the start time of the workshift, 
         'end' to use the end time. 
     default_activity : str, optional
-        The name for the default activity schedule. If not supplied, '_default' 
+        The name for the default activity schedule. If not supplied, 'on_duty' 
         is used.
     default_selector : function, optional
         The selector function for the default activity schedule. This is 
@@ -137,7 +137,7 @@ class Timeboard(object):
                      .format(base_unit_freq, start, end, layout)
 
         if default_activity is None:
-            default_activity = '_default'
+            default_activity = 'on_duty'
         self._default_activity = str(default_activity)
         self._default_schedule = _Schedule(self._timeline,
                                            self._default_activity,
@@ -148,14 +148,23 @@ class Timeboard(object):
     def __repr__(self):
         return self._repr
 
-    def __str__(self):
+    @property
+    def compact_str(self):
         return "Timeboard of '{}': {} -> {}".format(
             self.base_unit_freq,
-            str(get_period(self.start_time, freq=self.base_unit_freq)),
-            str(get_period(self.end_time, freq=self.base_unit_freq)))
+            self._frame[0],
+            self._frame[-1])
+
+    def __str__(self):
+        return self.compact_str + "\n\n{}".format(self.to_dataframe())
 
     def to_dataframe(self):
-        pass
+        df = self._timeline.to_dataframe()
+        for activity, schedule in self._schedules.items():
+            #TODO: refactor to use already computed duty indexes from _Schedule
+            df[activity]=list(self._timeline.labels.apply(
+                schedule._selector))
+        return df
 
     @property
     def base_unit_freq(self):
@@ -442,7 +451,7 @@ class Timeboard(object):
                     raise TypeError('Could not interpret the provided interval '
                                     'reference. Expected a sequence of two '
                                     'Timestamp-like, or a Period-like, or None.'
-                                    ' Received: {}'.format(interval_ref))
+                                    ' Received: `{!r}`'.format(interval_ref))
                 else:
                     locs = self._get_interval_locs_by_period(
                         p, None, clip_period, drop_head, drop_tail)
@@ -461,22 +470,25 @@ class Timeboard(object):
             if clip_period and locs[0].where > locs[1].where:
                 return self._handle_void_interval(
                     "Attempted to create reversed overlapping interval "
-                    "referenced by '{}' within {}".format(interval_ref, self))
+                    "referenced by `{}` within {}".format(interval_ref,
+                                                          self.compact_str))
             else:
-                raise OutOfBoundsError("Interval referenced by '{}' is "
+                raise OutOfBoundsError("Interval referenced by `{}` is "
                                        "completely outside {}".
-                                       format(interval_ref, self))
+                                       format(interval_ref, self.compact_str))
         if locs[0].position is None:
-            raise OutOfBoundsError("The 1st bound of interval referenced by '{}' "
-                                   "is outside {}".format(interval_ref, self))
+            raise OutOfBoundsError("The 1st bound of interval referenced by `{}` "
+                                   "is outside {}".format(interval_ref,
+                                                          self.compact_str))
         if locs[1].position is None:
-            raise OutOfBoundsError("The 2nd bound of interval referenced by '{}' "
-                                   "is outside {}".format(interval_ref, self))
+            raise OutOfBoundsError("The 2nd bound of interval referenced by `{}` "
+                                   "is outside {}".format(interval_ref,
+                                                          self.compact_str))
         if locs[0].position > locs[1].position:
             return self._handle_void_interval(
                     "Attempted to create interval with reversed indices "
                     "({}, {}) within {}".
-                    format(locs[0].position, locs[1].position, self))
+                    format(locs[0].position, locs[1].position, self.compact_str))
 
         return Interval(self, (locs[0].position, locs[1].position), schedule)
 
@@ -492,14 +504,14 @@ class Timeboard(object):
         else:
             raise TypeError("Could not get interval bounds from the provided "
                             "reference. Expected a sequence of two "
-                            "Timestamp-like or None. Received {}".
+                            "Timestamp-like or None. Received `{!r}`".
                             format(interval_ref))
         return self._strip_interval_locs(locs, drop_head, drop_tail)
 
     def _get_interval_locs_by_length(self, start_ref, length,
                                      drop_head, drop_tail):
         if not isinstance(length, int):
-            raise TypeError('Interval length = {}: expected integer '
+            raise TypeError('Interval length = `{!r}`: expected integer '
                             'got {}. If you are not using length parameter, '
                             'make sure you passed interval bounds '
                             'as a tuple'.format(length, type(length)))

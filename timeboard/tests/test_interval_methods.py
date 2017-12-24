@@ -26,24 +26,24 @@ class TestIntervalFindMyBounds:
     def test_interval_find_my_bounds_on(self):
         clnd = tb_12_days()
         for locs in ((2,11), (4, 11), (2,10), (4,10)):
-            ivl = Interval(clnd, locs, clnd.schedules['_default'])
+            ivl = Interval(clnd, locs, clnd.default_schedule)
             assert ivl._duty_loc['on'] == (1, 3)
 
     def test_interval_find_my_bounds_off(self):
         clnd = tb_12_days()
         for locs in ((1,10), (2, 10), (1,9), (2,9)):
-            ivl = Interval(clnd, locs, clnd.schedules['_default'])
+            ivl = Interval(clnd, locs, clnd.default_schedule)
             assert ivl._duty_loc['off'] == (1, 6)
 
     def test_interval_find_my_bounds_no_such_duty_in_interval(self):
         clnd = tb_12_days()
-        ivl = Interval(clnd, (11, 12), clnd.schedules['_default'])
+        ivl = Interval(clnd, (11, 12), clnd.default_schedule)
         assert ivl._duty_loc['on'] == (None, None)
         assert ivl._duty_loc['off'] == (7, 8)
-        ivl = Interval(clnd, (0, 0), clnd.schedules['_default'])
+        ivl = Interval(clnd, (0, 0), clnd.default_schedule)
         assert ivl._duty_loc['on'] == (None, None)
         assert ivl._duty_loc['off'] == (0, 0)
-        ivl = Interval(clnd, (10, 10), clnd.schedules['_default'])
+        ivl = Interval(clnd, (10, 10), clnd.default_schedule)
         assert ivl._duty_loc['on'] == (3, 3)
         assert ivl._duty_loc['off'] == (None, None)
 
@@ -51,7 +51,7 @@ class TestIntervalFindMyBounds:
         clnd = tb.Timeboard(base_unit_freq='D',
                             start='31 Dec 2016', end='12 Jan 2017',
                             layout=[0])
-        ivl = Interval(clnd, (1,2), clnd.schedules['_default'])
+        ivl = Interval(clnd, (1,2), clnd.default_schedule)
         assert ivl._duty_loc['on'] == (None, None)
         assert ivl._duty_loc['off'] == (1, 2)
 
@@ -59,7 +59,7 @@ class TestIntervalFindMyBounds:
         clnd = tb.Timeboard(base_unit_freq='D',
                             start='31 Dec 2016', end='12 Jan 2017',
                             layout=[1])
-        ivl = Interval(clnd, (1,2), clnd.schedules['_default'])
+        ivl = Interval(clnd, (1,2), clnd.default_schedule)
         assert ivl._duty_loc['on'] == (1, 2)
         assert ivl._duty_loc['off'] == (None, None)
 
@@ -69,7 +69,7 @@ class TestIntervalFirstLastNth:
     def test_interval_nth_on(self):
         clnd = tb_12_days()
         for locs in ((2,11), (4, 11), (2,10), (4,10)):
-            ivl = Interval(clnd, locs, clnd.schedules['_default'])
+            ivl = Interval(clnd, locs, clnd.default_schedule)
             wsf = ivl.first()
             wsl = ivl.last()
             ws2 = ivl.nth(2)
@@ -86,7 +86,7 @@ class TestIntervalFirstLastNth:
     def test_interval_nth_off(self):
         clnd = tb_12_days()
         for locs in ((1,10), (2, 10), (1,9), (2,9)):
-            ivl = Interval(clnd, locs, clnd.schedules['_default'])
+            ivl = Interval(clnd, locs, clnd.default_schedule)
             wsf = ivl.first(duty='off')
             wsl = ivl.last(duty='off')
             ws2 = ivl.nth(2, duty='off')
@@ -102,7 +102,7 @@ class TestIntervalFirstLastNth:
 
     def test_interval_nth_any(self):
         clnd = tb_12_days()
-        ivl = Interval(clnd, (2, 10), clnd.schedules['_default'])
+        ivl = Interval(clnd, (2, 10), clnd.default_schedule)
         wsf = ivl.first(duty='any')
         wsl = ivl.last(duty='any')
         ws2 = ivl.nth(2, duty='any')
@@ -120,7 +120,7 @@ class TestIntervalFirstLastNth:
         clnd = tb_12_days()
         for loc, duty in ((0, 'off'), (3, 'any'), (4,'on'),
                           (7, 'any'), (12, 'off')):
-            ivl = Interval(clnd, (loc, loc), clnd.schedules['_default'])
+            ivl = Interval(clnd, (loc, loc), clnd.default_schedule)
             wsf = ivl.first(duty=duty)
             wsl = ivl.last(duty=duty)
             ws2 = ivl.nth(1, duty=duty)
@@ -133,13 +133,13 @@ class TestIntervalFirstLastNth:
 
     def test_interval_nth_zero(self):
         clnd = tb_12_days()
-        ivl = Interval(clnd, (1, 10), clnd.schedules['_default'])
+        ivl = Interval(clnd, (1, 10), clnd.default_schedule)
         with pytest.raises(ValueError):
             ivl.nth(0)
 
     def test_interval_nth_no_on_duty(self):
         clnd = tb_12_days()
-        ivl = Interval(clnd, (2, 3), clnd.schedules['_default'])
+        ivl = Interval(clnd, (2, 3), clnd.default_schedule)
         with pytest.raises(OutOfBoundsError):
             ivl.first()
         with pytest.raises(OutOfBoundsError):
@@ -149,7 +149,7 @@ class TestIntervalFirstLastNth:
 
     def test_interval_nth_no_off_duty(self):
         clnd = tb_12_days()
-        ivl = Interval(clnd, (4, 4), clnd.schedules['_default'])
+        ivl = Interval(clnd, (4, 4), clnd.default_schedule)
         with pytest.raises(OutOfBoundsError):
             ivl.first(duty='off')
         with pytest.raises(OutOfBoundsError):
@@ -159,7 +159,7 @@ class TestIntervalFirstLastNth:
 
     def test_interval_nth_OOB(self):
         clnd = tb_12_days()
-        ivl = Interval(clnd, (2, 8), clnd.schedules['_default'])
+        ivl = Interval(clnd, (2, 8), clnd.default_schedule)
         with pytest.raises(OutOfBoundsError):
             ivl.nth(3)
         with pytest.raises(OutOfBoundsError):
@@ -193,31 +193,31 @@ class TestIntervalCount:
     def test_interval_count_on(self):
         clnd = tb_12_days()
         for locs in ((2,11), (4, 11), (2,10), (4,10)):
-            assert Interval(clnd, locs, clnd.schedules['_default']).count() == 3
+            assert Interval(clnd, locs, clnd.default_schedule).count() == 3
 
     def test_interval_count_off(self):
         clnd = tb_12_days()
         for locs in ((1, 10), (2, 10), (1, 9), (2, 9)):
             assert Interval(clnd, locs,
-                            clnd.schedules['_default']).count(duty='off') == 6
+                            clnd.default_schedule).count(duty='off') == 6
 
     def test_interval_count_any(self):
         clnd = tb_12_days()
         assert Interval(clnd, (1,9),
-                        clnd.schedules['_default']).count(duty='any') == 9
+                        clnd.default_schedule).count(duty='any') == 9
 
     def test_interval_count_single(self):
         clnd = tb_12_days()
         for loc, duty in ((2, 'off'), (3, 'any'), (4,'on'), (7, 'any')):
             assert Interval(clnd, (loc, loc),
-                            clnd.schedules['_default']).count(duty=duty) == 1
+                            clnd.default_schedule).count(duty=duty) == 1
 
     def test_interval_count_no_such_duty(self):
         clnd = tb_12_days()
         assert Interval(clnd, (2, 3),
-                        clnd.schedules['_default']).count() == 0
+                        clnd.default_schedule).count() == 0
         assert Interval(clnd, (4, 4),
-                        clnd.schedules['_default']).count(duty='off') == 0
+                        clnd.default_schedule).count(duty='off') == 0
 
     def test_interval_count_default(self):
         clnd = tb_12_days()
