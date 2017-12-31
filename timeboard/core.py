@@ -12,6 +12,7 @@ from itertools import cycle, dropwhile
 from collections import Iterable, namedtuple
 import re
 import six
+from math import fmod
 #import timeit
 
 SMALLEST_TIMEDELTA = pd.Timedelta(1, unit='s')
@@ -120,18 +121,31 @@ def _check_splitby_freq(base_unit_freq, split_by_freq):
             return False
         bu_match = re.match(r"(^\d*)([A-Z-]+)", base_unit_freq)
         sb_match = re.match(r"(^\d*)([A-Z-]+)", split_by_freq)
-        if (bu_match and sb_match and
-            bu_match.group(2) == sb_match.group(2)):
-
+        if bu_match and sb_match:
             if bu_match.group(1) == '':
-                bu_factor = 1
+                bu_freq_factor = 1
             else:
-                bu_factor = int(bu_match.group(1))
+                bu_freq_factor = int(bu_match.group(1))
             if sb_match.group(1) == '':
-                sb_factor = 1
+                sb_freq_factor = 1
             else:
-                sb_factor = int(sb_match.group(1))
-            return sb_factor % bu_factor == 0
+                sb_freq_factor = int(sb_match.group(1))
+            bu_freq_denomination = bu_match.group(2)
+            sb_freq_denomination = sb_match.group(2)
+
+            if bu_freq_denomination == sb_freq_denomination:
+                return sb_freq_factor % bu_freq_factor == 0
+            elif bu_freq_factor == 1:
+                return _check_splitby_freq(bu_freq_denomination,
+                                           sb_freq_denomination)
+            else:
+                # there can be the possibility of valid splitting
+                # but it depends on the alignment of the frame's start_time
+                # which we do not check here
+                # For example '12H' frame can be split by 'D' only if it
+                # starts at 00:00 or 12:00;
+                # see more examples in test_splits::TestMultipliedFreqSplitBy
+                return False
         else:
             return False
 
@@ -247,10 +261,12 @@ class _Frame(pd.PeriodIndex):
         # TODO: SPEED UP.
         # This computation takes 0.3s for 100 Years Standard Week 8x5
         #loc_list = [self.get_loc(t, 0) for t in points_in_time]
-        loc_list = self.get_loc_vectorized(points_in_time, 0)
+        split_positions = self.get_loc_vectorized(points_in_time,
+                                                  span_first=span_first,
+                                                  span_last=span_last)
         #timer1 = timeit.default_timer()
-        split_positions = [int(x)
-                           for x in loc_list if span_first < x <= span_last]
+        # split_positions = [int(x)
+        #                    for x in loc_list if span_first < x <= span_last]
         #timer2 = timeit.default_timer()
         split_positions = sorted(list(set(split_positions)))
         #timer3 = timeit.default_timer()
@@ -267,17 +283,21 @@ class _Frame(pd.PeriodIndex):
         return zip(start_positions, end_positions)
 
     def check_span(self, span_first, span_last):
-        if not (isinstance(span_first, six.integer_types) and
-                    isinstance(span_last, six.integer_types)):
-            # Guard against Python 2 which is ok to compare strings and
-            # integers, i.e. "20 Feb 2017" > 60 evaluates to True
-            raise TypeError("Span boundaries must be of type integer")
+        try:
+            _ = self[span_first]
+            _ = self[span_last]
+        except IndexError:
+            raise OutOfBoundsError("Span ({}, {}) not within frame"
+                                   ".".format(span_first, span_last))
+        except ValueError:
+            raise TypeError("Expected integer indices, received "
+                            "`{}` and `{}`".format(type(span_first),
+                                                   type(span_last)))
         if span_first < 0 or span_last < 0:
             raise OutOfBoundsError("Span boundaries must be non-negative")
-        if span_first > len(self) or span_last > len(self):
-            raise OutOfBoundsError("Span not within frame")
         if span_first > span_last:
             raise VoidIntervalError("Span cannot be empty")
+
         return True
 
     def get_loc(self, timestamp, not_in_range=None, *kwargs):
@@ -289,13 +309,20 @@ class _Frame(pd.PeriodIndex):
         return int(np.searchsorted(self.start_times, timestamp, side='right')
                    - 1)
 
-    def get_loc_vectorized(self, timestamps, not_in_range=0):
+    def get_loc_vectorized(self, timestamps, not_in_range=0, span_first=None,
+                           span_last=None):
         start_times = self.start_times.append(
             pd.DatetimeIndex([self.start_times[-1] + SMALLEST_TIMEDELTA]))
+        if span_first is None:
+            span_first = 0
+        if span_last is None:
+            span_last = len(self)-1
         arr = np.searchsorted(start_times,
                               np.array(timestamps, dtype='datetime64[ns]'),
                               side='right')-1
-        result = np.where((arr>=0) & (arr<len(self)), arr, [not_in_range])
+        # result = np.where((arr>span_first) & (arr<=span_last),
+        #                   arr, [not_in_range])
+        result = arr[np.nonzero((arr>span_first) & (arr<=span_last))[0]]
         return result
 
     def _create_subframes(self, span_first, span_last, points_in_time):
@@ -954,8 +981,8 @@ class Organizer(object):
     ----------
     split_by: Splitter or str
         A Splitter or a pandas-compatible calendar frequency (accepts same 
-        values as `base_unit_freq` of timeboard). The latter is equivalent to
-        `Splitter(each=split_by)`.
+        kind of values as `base_unit_freq` of timeboard). The latter is 
+        equivalent to `Splitter(each=split_by)`.
     split_at: Iterable of Timestamp-like
     structure: Iterable of {Organizer | Iterable}
         An element of `structure` is either another organizer or a pattern.

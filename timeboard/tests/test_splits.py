@@ -86,6 +86,7 @@ class TestDaysSplitByWeekly(object):
         assert assert_subframe(result[1], 2, 8, 0, 0)
         assert assert_subframe(result[2], 9, 12, 0, 3)
 
+
 class TestDaysSplitByWeeklyAtPoints(object):
 
     def test_days_splitby_weekly_atpoints_empty(self):
@@ -657,6 +658,7 @@ class TestWeeksSplitBy(object):
         with pytest.raises(UnsupportedPeriodError):
             f.do_split_by(0, len(f) - 1, Splitter('A'))
 
+
 class TestMonthSplitBy(object):
 
     def test_months_splitby_years(self):
@@ -678,6 +680,7 @@ class TestMonthSplitBy(object):
         assert len(result) == 2
         assert assert_subframe(result[0], 0, 1, 10, 0)
         assert assert_subframe(result[1], 2, 3, 0, 10)
+
 
 class TestMultipliedFreqSplitBy(object):
 
@@ -738,6 +741,90 @@ class TestMultipliedFreqSplitBy(object):
         assert assert_subframe(result[0], 0, 1, 0, 0)
         assert assert_subframe(result[1], 2, 3, 0, 0)
         assert assert_subframe(result[2], 4, 4, 0, 1)
+
+    def test_splitby_different_multiple_freqs1(self):
+        f = _Frame(base_unit_freq='D', start='31 Dec 2016', end='30 Jan 2017')
+        result = f.do_split_by(0, len(f) - 1, Splitter('2W'))
+        assert len(result) == 3
+        assert assert_subframe(result[0], 0, 8, 5, 0)
+        assert assert_subframe(result[1], 9, 22, 0, 0)
+        assert assert_subframe(result[2], 23, 30, 0, 6)
+
+    @pytest.mark.xfail(reason='Case not covered by _check_splitby_freq')
+    def test_splitby_different_multiple_freqs2(self):
+        f = _Frame(base_unit_freq='12H', start='02 Jan 2017 12:05',
+                   end='04 Jan 2017 10:00')
+        result = f.do_split_by(0, len(f) - 1, Splitter('D'))
+        assert len(result) == 3
+        assert assert_subframe(result[0], 0, 0, 1, 0)
+        assert assert_subframe(result[1], 1, 2, 0, 0)
+        assert assert_subframe(result[2], 3, 3, 0, 1)
+
+    def test_splitby_different_multiple_freqs2b(self):
+        f = _Frame(base_unit_freq='12H', start='02 Jan 2017 13:05',
+                   end='04 Jan 2017 10:00')
+        # these 12H periods are not aligned with boundaries of days
+        with pytest.raises(UnsupportedPeriodError):
+            f.do_split_by(0, len(f) - 1, Splitter('D'))
+
+    @pytest.mark.xfail(reason='Case not covered by _check_splitby_freq')
+    def test_splitby_different_multiple_freqs3(self):
+        f = _Frame(base_unit_freq='12H', start='02 Jan 2017',
+                   end='30 Jan 2017')
+        result = f.do_split_by(0, len(f) - 1, Splitter('2W'))
+        assert len(result) == 3
+        assert assert_subframe(result[0], 0, 27, 0, 0)
+        assert assert_subframe(result[1], 28, 55, 0, 0)
+        assert assert_subframe(result[2], 56, 57, 0, 26)
+
+    def test_splitby_different_multiple_freqs3b(self):
+        f = _Frame(base_unit_freq='12H', start='02 Jan 2017 01:00',
+                   end='30 Jan 2017')
+        # these 12H periods are not aligned with boundaries of days, and,
+        # consequently. of weeks
+        with pytest.raises(UnsupportedPeriodError):
+            f.do_split_by(0, len(f) - 1, Splitter('2W'))
+
+    def test_splitby_different_multiple_freqs4(self):
+        f = _Frame(base_unit_freq='9H', start='02 Jan 2017',
+                   end='30 Jan 2017')
+        with pytest.raises(UnsupportedPeriodError):
+            f.do_split_by(0, len(f) - 1, Splitter('D'))
+        with pytest.raises(UnsupportedPeriodError):
+            f.do_split_by(0, len(f) - 1, Splitter('2W'))
+
+    def test_splitby_different_multiple_freqs5(self):
+        f = _Frame(base_unit_freq='48H', start='02 Jan 2017',
+                   end='30 Jan 2017')
+        with pytest.raises(UnsupportedPeriodError):
+            f.do_split_by(0, len(f) - 1, Splitter('D'))
+
+    @pytest.mark.xfail(reason='Case not covered by _check_splitby_freq')
+    def test_splitby_different_multiple_freqs6(self):
+        f = _Frame(base_unit_freq='48H', start='02 Jan 2017',
+                   end='30 Jan 2017')
+        result = f.do_split_by(0, len(f) - 1, Splitter('4D'))
+
+    def test_splitby_different_multiple_freqs6b(self):
+        f = _Frame(base_unit_freq='48H', start='02 Jan 2017 01:00',
+                   end='30 Jan 2017')
+        # these 48H periods are not aligned with boundaries of days
+        with pytest.raises(UnsupportedPeriodError):
+            f.do_split_by(0, len(f) - 1, Splitter('4D'))
+
+    @pytest.mark.xfail(reason='Case not covered by _check_splitby_freq')
+    def test_splitby_different_multiple_freqs7(self):
+        f = _Frame(base_unit_freq='7H', start='02 Jan 2017',
+                   end='30 Jan 2017')
+        # These 7H periods are not aligned with days, but aligned with weeks
+        result = f.do_split_by(0, len(f) - 1, Splitter('W'))
+
+    def test_splitby_different_multiple_freqs7b(self):
+        f = _Frame(base_unit_freq='7H', start='03 Jan 2017 00:00',
+                   end='30 Jan 2017')
+        # these 7H periods are not aligned with boundaries of weeks
+        with pytest.raises(UnsupportedPeriodError):
+            f.do_split_by(0, len(f) - 1, Splitter('W'))
 
     # CORNER CASES
 
