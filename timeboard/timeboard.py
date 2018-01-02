@@ -63,7 +63,7 @@ class Timeboard(object):
         If there are several keys in `amendments` which refer to the same 
         workshift, the actual label would be unpredictable, therefore a 
         KeyError is raised.
-    workshift_ts : {'start' | 'end'}, optional (default 'start')
+    workshift_ref : {'start' | 'end'}, optional (default 'start')
         Define what point in time will be used to represent a workshift. 
         The respective point in time will be returned by `to_timestamp{}`
         method of a workshift or by calling `get_timestamp` on a workshift. 
@@ -109,7 +109,7 @@ class Timeboard(object):
                  amendments=None,
                  default_selector=None,
                  default_activity=None,
-                 workshift_ts='start'):
+                 workshift_ref='start'):
         if isinstance(layout, Organizer):
             org = layout
         elif _is_iterable(layout):
@@ -129,10 +129,10 @@ class Timeboard(object):
                             "`items` method is needed but not found.")
         self._custom_selector = default_selector
         self._frame = _Frame(base_unit_freq, start, end)
-        self._timeline = _Timeline(frame=self._frame, organizer=org)
+        self._timeline = _Timeline(frame=self._frame, organizer=org,
+                                   workshift_ref=workshift_ref)
         self._timeline.amend(amendments)
         self._base_unit_freq = base_unit_freq
-        self._workshift_ts = workshift_ts
         self._repr = "Timeboard({!r}, {!r}, {!r}, {!r})"\
                      .format(base_unit_freq, start, end, layout)
 
@@ -158,12 +158,18 @@ class Timeboard(object):
     def __str__(self):
         return self.compact_str + "\n\n{}".format(self.to_dataframe())
 
-    def to_dataframe(self):
-        df = self._timeline.to_dataframe()
+    def to_dataframe(self, first_ws=None, last_ws=None):
+        if first_ws is None:
+            first_ws=0
+        if last_ws is None:
+            last_ws = len(self._timeline)-1
+        assert (first_ws >=0 and last_ws >=0 and first_ws <= last_ws)
+        df = self._timeline.to_dataframe(first_ws, last_ws)
         for activity, schedule in self._schedules.items():
             #TODO: refactor to use already computed duty indexes from _Schedule
-            df[activity]=list(self._timeline.labels.apply(
-                schedule._selector))
+            df[activity]=list(self._timeline.labels.iloc[
+                              first_ws:last_ws+1].apply(
+                              schedule._selector))
         return df
 
     @property
@@ -177,10 +183,6 @@ class Timeboard(object):
     @property
     def end_time(self):
         return self._frame.end_time
-
-    @property
-    def workshift_ts(self):
-        return self._workshift_ts
 
     @property
     def default_selector(self):

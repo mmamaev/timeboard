@@ -589,13 +589,16 @@ class _Timeline(object):
     end_time : Timestamp
         When the last workshift ends.
     """
-    def __init__(self, frame, organizer=None, data=None):
+    def __init__(self, frame, organizer=None, workshift_ref=None, data=None):
         self._frame = frame
         self._frameband = pd.Series(index=frame, data=arange(len(frame)))
         self._wsband = pd.Series(index=arange(len(frame)), data=data)
         if organizer is not None:
             self._organize(organizer)
-
+        if workshift_ref is None:
+            self._workshift_ref = 'start'
+        else:
+            self._workshift_ref = workshift_ref
 
     @property
     def frame(self):
@@ -658,6 +661,25 @@ class _Timeline(object):
         Timestamp
         """
         return self._frameband.index[self._get_ws_last_baseunit(n)].end_time
+
+    def get_ws_ref_time(self, n):
+        """The reference time of the n-th workshift.
+        
+        Calculated as defined by timeboard's `workshift_ref` attribute.
+
+        Parameters
+        ----------
+        n : int
+            Zero-based sequence number of a workshift on the timeline.
+
+        Returns
+        -------
+        Timestamp
+        """
+        if self._workshift_ref == 'end' :
+            return self.get_ws_end_time(n)
+        else:
+            return self.get_ws_start_time(n)
 
     def get_ws_duration(self, n):
         """The duration of the n-th workshift counted in base units.
@@ -886,20 +908,35 @@ class _Timeline(object):
         #     "\n\tstructure run: {:.5f}".format(span_first, span_last,
         #                     timer1-timer0, timer2-timer1, timer3-timer2)
 
-    def to_dataframe(self):
-        my_base_units = self.frame[self._wsband.index]
-        ws_bounds = np.concatenate((np.array(self._wsband.index),
-                                  [len(self.frame)]))
+    def to_dataframe(self, first_ws=None, last_ws=None):
+        if first_ws is None:
+            first_ws=0
+        if last_ws is None:
+            last_ws = len(self._wsband)-1
+        assert (first_ws >=0 and last_ws >=0 and first_ws <= last_ws)
+        if last_ws == len(self._wsband)-1 :
+            ws_bounds = np.concatenate((np.array(self._wsband.index[first_ws:]),
+                                      [len(self.frame)]))
+        else:
+            ws_bounds = np.array(self._wsband.index[first_ws: last_ws+2])
         durations = [ws_bounds[i+1] - ws_bounds[i]
                      for i in range(len(ws_bounds)-1)]
         start_times = self.frame[ws_bounds[:-1]].to_timestamp(how='start')
         end_times = self.frame[ws_bounds[1:]-1].to_timestamp(how='end')
-        #index = start_times
-        data = {'start' : start_times,
+        if self._workshift_ref == 'end':
+            ref_times = end_times
+        else:
+            ref_times = start_times
+        data = {'workshift' : ref_times,
+                'start' : start_times,
                 'end' : end_times,
                 'duration' : durations,
-                'label' : np.array(self.labels)}
-        return pd.DataFrame(data=data).set_index('start')
+                'label' : np.array(self.labels.iloc[first_ws:last_ws+1]),
+                }
+        return pd.DataFrame(data=data,
+                            columns=['workshift', 'start',
+                                     'duration', 'end', 'label']
+                            ).set_index('workshift')
 
 class _Schedule(object):
     """Duty schedule of workshifts.

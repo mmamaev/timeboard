@@ -48,7 +48,7 @@ class Interval(object):
     
     """
 
-    def __init__(self, timeboard, bounds, schedule):
+    def __init__(self, timeboard, bounds, schedule=None):
 
         def handle_bound(bound):
         #TODO: add support of clipping interval to timeline's bounds
@@ -81,7 +81,10 @@ class Interval(object):
         self._tb = timeboard
         self._loc = locs
         self._length = self._loc[1] - self._loc[0] + 1
-        self._schedule = schedule
+        if schedule is None:
+            self._schedule = timeboard.default_schedule
+        else:
+            self._schedule = schedule
         self._duty_idx = {
             'on': self._schedule.on_duty_index,
             'off': self._schedule.off_duty_index,
@@ -111,14 +114,16 @@ class Interval(object):
     def __repr__(self):
         return "Interval(tb, {!r})\ntb={!r}".format(self._loc, self._tb)
 
+    @property
+    def compact_str(self):
+        return "Interval [{}]: {} -> {}".format(
+            self._length,
+            Workshift(self._tb, self._loc[0]).compact_str,
+            Workshift(self._tb, self._loc[1]).compact_str)
+
     def __str__(self):
-        return "Interval of {}'{}': {} -> {}" \
-                .format(self.length,
-                        self._tb.base_unit_freq,
-                        str(get_period(self.start_time,
-                                       freq=self._tb.base_unit_freq)),
-                        str(get_period(self.end_time,
-                                       freq=self._tb.base_unit_freq)))
+        return self.compact_str + "\n\n{}".format(
+            self._tb.to_dataframe(self._loc[0], self._loc[1]))
 
     @property
     def start_time(self):

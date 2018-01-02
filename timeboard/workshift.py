@@ -48,8 +48,9 @@ class Workshift(object):
     calling Workshift() constructor directly. 
     """
 
-    def __init__(self, timeboard, location, schedule):
-
+    def __init__(self, timeboard, location, schedule=None):
+        if schedule is None:
+            schedule = timeboard.default_schedule
         try:
             self._label = schedule.label(location)
         except TypeError:
@@ -86,17 +87,15 @@ class Workshift(object):
     def to_timestamp(self):
         """The characteristic time used to represent the workshift. 
         
-        The rule to calculate the timestamp is defined by `workshift_ts` 
+        The rule to calculate the timestamp is defined by `workshift_ref` 
         parameter of the timeboard.
         
         Returns
         -------
         Timestamp
         """
-        if self._tb.workshift_ts == 'end':
-            return self.end_time
-        else:
-            return self.start_time
+        # TODO: Refactor. _Timeline methods should not be called from this class
+        return self._tb._timeline.get_ws_ref_time(self._loc)
 
     def to_period(self):
         """Present workshift as a period with base unit frequency"""
@@ -105,15 +104,20 @@ class Workshift(object):
     def __repr__(self):
         return "Workshift(tb, {!r})\ntb={!r}".format(self._loc, self._tb)
 
-    def __str__(self):
+    @property
+    def compact_str(self):
         duration_str = ''
         if self.duration != 1:
             duration_str = str(self.duration) + 'x'
-        return "Workshift {}{} at {}".\
+        return "{}'{}' at {}".\
                 format(duration_str,
                        self._tb.base_unit_freq,
                        get_period(self.to_timestamp(),
                                   freq=self._tb.base_unit_freq))
+
+    def __str__(self):
+        return "Workshift " + self.compact_str + "\n\n{}".format(
+            self._tb.to_dataframe(self._loc, self._loc))
 
     @property
     def label(self):
