@@ -1,4 +1,4 @@
-from timeboard.core import _Timeline, _Frame, Organizer, _to_iterable
+from timeboard.core import _Timeline, _Frame, Organizer, Pattern, _to_iterable
 from timeboard.exceptions import OutOfBoundsError
 import pandas as pd
 import pytest
@@ -104,6 +104,16 @@ class TestOrganizeSimple(object):
         t = _Timeline(frame=f, organizer=org)
         assert t.labels.eq([1, 2, 3, 1, 2, 3, 1, 2, 3, 1]).all()
 
+    def test_organize_pattern_with_memory(self):
+        f = _Frame(base_unit_freq='D', start='02 Jan 2017',
+                   end='22 Jan 2017')
+        p = Pattern([1, 2, 3])
+        org = Organizer(split_by='W', structure=[p, [9], p])
+        t = _Timeline(frame=f, organizer=org)
+        assert t.labels.eq([1, 2, 3, 1, 2, 3, 1,
+                            9, 9, 9, 9, 9, 9, 9,
+                            2, 3, 1, 2, 3, 1, 2]).all()
+
 
 class TestOrganizeRecursive(object):
 
@@ -129,6 +139,14 @@ class TestOrganizeRecursive(object):
         org_ext = Organizer(split_by='M', structure=[org_int])
         t = _Timeline(frame=f, organizer=org_ext)
         assert t.labels.eq([2, 3, 1, 2, 3, 1, 1, 2, 3, 1]).all()
+
+    def test_organize_recursive_with_memory(self):
+        f = _Frame(base_unit_freq='D', start='29 Nov 2017', end='06 Dec 2017')
+        p = Pattern(['a', 'b', 'c', 'd'])
+        org_int = Organizer(split_by='W', structure=[[1, 2], p])
+        org_ext = Organizer(split_by='M', structure=[p, org_int])
+        t = _Timeline(frame=f, organizer=org_ext)
+        assert t.labels.eq(['a', 'b', 1, 2, 1, 'c', 'd', 'a']).all()
 
     def test_organize_recursive_complex(self):
         f = _Frame(base_unit_freq='D', start='27 Dec 2016', end='01 Feb 2017')

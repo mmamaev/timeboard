@@ -49,7 +49,7 @@ def _to_iterable(x):
     else:
         return [x]
 
-def _skiperator(values, direction='forward', skip=0):
+def _skiperator(values, skip=0):
     """Build a skip-and-cycle generator
     
     Return a generator that cycles through `values` 
@@ -58,9 +58,6 @@ def _skiperator(values, direction='forward', skip=0):
     Parameters
     ----------
     values: iterable
-    direction: {'forward', 'reverse'}, optional (default 'forward')
-        - 'forward' to iterate through values left to right,
-        - 'reverse' to iterate right to left.
     skip: int, optional (default 0) 
         Number of steps to skip at the beginning.
 
@@ -85,8 +82,6 @@ def _skiperator(values, direction='forward', skip=0):
         return _counter
 
     pattern = values
-    if direction == 'reverse':
-        pattern = values[::-1]
     counter = make_counter()
     return dropwhile(counter, cycle(pattern))
 
@@ -769,7 +764,7 @@ class _Timeline(object):
         ------
         KeyError
             If there are several keys in `amendments` which refer to the same 
-            workshift (the actual label would be unpredictable).
+            workshift (the final label would be unpredictable).
         OutOfBoundsError (LookupError)
             If there is a key in `amendments` referring outside the timeline
             and `not_in_range` parameter value is anything but 'ignore'.
@@ -827,7 +822,6 @@ class _Timeline(object):
                                    "where left dangle could not be "
                                    "calculated".format(subframe))
         pattern_iterator = _skiperator(pattern,
-                                       direction='forward',
                                        skip=subframe.skip_left)
         self._wsband.loc[subframe.first: subframe.last] = [
             next(pattern_iterator)
@@ -1207,3 +1201,30 @@ class Splitter(_SplitterBase):
             how = how_functions[how]
         return super(Splitter, cls).__new__(cls, each, at, how)
 
+
+class Pattern(object):
+    """Pattern which remembers the last assigned label.
+    
+    Parameters
+    ----------
+    labels : iterable
+        An iterable of workshift labels
+    """
+    def __init__(self, labels):
+        self._labels = labels
+        self._label_generator = cycle(labels)
+
+    def __next__(self):
+        return next(self._label_generator)
+
+    def next(self):
+        return self.__next__()
+
+    def __iter__(self):
+        return self
+
+    def __len__(self):
+        return len(self._labels)
+
+    def __getitem__(self, i):
+        return self._labels[i]

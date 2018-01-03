@@ -1,4 +1,4 @@
-from timeboard.core import _Timeline, _skiperator, _Frame, _Subframe
+from timeboard.core import _Timeline, _skiperator, _Frame, _Subframe, Pattern
 import pytest
 
 
@@ -24,20 +24,6 @@ class TestSkiperator(object):
         for i in range(10):
             result.append(next(g))
         assert result == [2, 3, 1, 2, 3, 1, 2, 3, 1, 2]
-
-    def test_skiperator_reverse(self):
-        g = _skiperator([1, 2, 3], direction='reverse')
-        result = []
-        for i in range(10):
-            result.append(next(g))
-        assert result == [3, 2, 1, 3, 2, 1, 3, 2, 1, 3]
-
-    def test_skiperator_reverse_skip(self):
-        g = _skiperator([1, 2, 3], direction='reverse', skip=2)
-        result = []
-        for i in range(10):
-            result.append(next(g))
-        assert result == [1, 3, 2, 1, 3, 2, 1, 3, 2, 1]
 
     def test_skiperator_one_value(self):
         g = _skiperator([1])
@@ -70,11 +56,6 @@ class TestSkiperator(object):
 
     def test_skiperator_empty(self):
         g = _skiperator([])
-        with pytest.raises(StopIteration):
-            next(g)
-
-    def test_skiperator_empty_reverse(self):
-        g = _skiperator([], direction='reverse')
         with pytest.raises(StopIteration):
             next(g)
 
@@ -165,3 +146,97 @@ class TestApplyPattern(object):
         t = timeline_10d()
         with pytest.raises(IndexError):
            t._apply_pattern(p, _Subframe(0, len(t.frame)-1))
+
+
+class TestApplyPatternObject(object):
+
+    def test_apply_pattern_basic(self):
+        p = Pattern([1,2,3])
+        t = timeline_10d()
+        t._apply_pattern(p, _Subframe(0, len(t.frame)-1))
+        assert t.labels.eq([1, 2, 3, 1, 2, 3, 1, 2, 3, 1]).all()
+
+    def test_apply_pattern_skip(self):
+        p = Pattern([1,2,3])
+        t = timeline_10d()
+        t._apply_pattern(p, _Subframe(0, len(t.frame)-1, skip_left=2))
+        assert t.labels.eq([3, 1, 2, 3, 1, 2, 3, 1, 2, 3]).all()
+
+    def test_apply_pattern_span_skip(self):
+        p = Pattern([1,2,3])
+        t = timeline_10d()
+        t._apply_pattern(p, _Subframe(1, 6, skip_left=2))
+        assert t[1:7].eq([3, 1, 2, 3, 1, 2]).all()
+
+    def test_apply_pattern_short(self):
+        p = Pattern([1])
+        t = timeline_10d()
+        t._apply_pattern(p, _Subframe(0, len(t.frame) - 1))
+        assert t.labels.eq([1, 1, 1, 1, 1, 1, 1, 1, 1, 1]).all()
+
+    def test_apply_pattern_toolong(self):
+        p = Pattern(range(15))
+        t = timeline_10d()
+        t._apply_pattern(p, _Subframe(0, len(t.frame) - 1))
+        assert t.labels.eq(range(10)).all()
+
+    def test_apply_pattern_toolong_skip(self):
+        p = Pattern(range(15))
+        t = timeline_10d()
+        t._apply_pattern(p, _Subframe(0, len(t.frame) - 1, skip_left=3))
+        assert t.labels.eq(range(3, 13)).all()
+
+    def test_apply_pattern_toolong_skip_more(self):
+        p = Pattern(range(15))
+        t = timeline_10d()
+        t._apply_pattern(p, _Subframe(0, len(t.frame) - 1, skip_left=10))
+        assert t.labels.eq([10, 11, 12, 13, 14, 0, 1, 2, 3, 4]).all()
+
+    def test_apply_pattern_empty(self):
+        p = Pattern([])
+        t = timeline_10d()
+        with pytest.raises(IndexError):
+           t._apply_pattern(p, _Subframe(0, len(t.frame)-1))
+
+    def test_apply_pattern_with_memory(self):
+        p = Pattern([0, 1])
+        t = timeline_10d()
+        t._apply_pattern(p, _Subframe(0, 4))
+        t._apply_pattern([9],_Subframe(5, 6))
+        t._apply_pattern(p, _Subframe(7, 9))
+        assert t.labels.eq([0, 1, 0, 1, 0, 9, 9, 1, 0, 1]).all()
+
+    def test_apply_pattern_with_memory_long(self):
+        p = Pattern([0, 1, 2, 3, 4, 5])
+        t = timeline_10d()
+        t._apply_pattern(p, _Subframe(0, 4))
+        t._apply_pattern([9],_Subframe(5, 6))
+        t._apply_pattern(p, _Subframe(7, 9))
+        assert t.labels.eq([0, 1, 2, 3, 4, 9, 9, 5, 0, 1]).all()
+
+    def test_apply_pattern_with_memory_skip(self):
+        p = Pattern([0, 1])
+        t = timeline_10d()
+        t._apply_pattern(p, _Subframe(0, 4, skip_left=3) )
+        t._apply_pattern([9],_Subframe(5, 6))
+        t._apply_pattern(p, _Subframe(7, 9))
+        assert t.labels.eq([1, 0, 1, 0, 1, 9, 9, 0, 1, 0]).all()
+
+    def test_apply_pattern_with_memory_skip_long(self):
+        p = Pattern([0, 1, 2, 3, 4, 5])
+        t = timeline_10d()
+        t._apply_pattern(p, _Subframe(0, 4, skip_left=3))
+        t._apply_pattern([9],_Subframe(5, 6))
+        t._apply_pattern([9],_Subframe(5, 6))
+        t._apply_pattern(p, _Subframe(7, 9))
+        assert t.labels.eq([3, 4, 5, 0, 1, 9, 9, 2, 3, 4]).all()
+
+    def test_apply_pattern_with_memory_skip_2(self):
+        # this situation is not natural as dangles do not appear in interior
+        # subframes
+        p = Pattern([0, 1, 2, 3, 4, 5])
+        t = timeline_10d()
+        t._apply_pattern(p, _Subframe(0, 4, skip_left=3))
+        t._apply_pattern([9],_Subframe(5, 6))
+        t._apply_pattern(p, _Subframe(7, 9, skip_left=2))
+        assert t.labels.eq([3, 4, 5, 0, 1, 9, 9, 4, 5, 0]).all()
