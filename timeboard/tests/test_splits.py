@@ -193,7 +193,7 @@ class TestDaysSplitByAtPointsCornerCases(object):
         result = f.do_split_by(0, len(f) - 1,
                                Marker('W', at=[{'days': 2, 'hours': 24},
                                                {'days': 5, 'hours': 25}]))
-        # However adding to many hours does move the split to the next day
+        # However adding to many hours does move the mark to the next day
         # this is same as days:3 and days:6
         # Subframes will be Thu to Sat, Sun to Wed
         assert len(result) == 5
@@ -207,12 +207,11 @@ class TestDaysSplitByAtPointsCornerCases(object):
 
     def test_days_splitby_weekly_atpoints_excessive3(self):
         f = _Frame(base_unit_freq='D', start='02 Jan 2017', end='15 Jan 2017')
-        result = f.do_split_by(0, len(f) - 1,
-                               Marker('W', at=[{'days': 7}]))
-        # Split points which go outside the period of splitter freq
+        result = f.do_split_by(0, len(f) - 1, Marker('W', at=[{'days': 7}]))
+        # Points which dall outside the period of marker freq
         # will be ignored
-        # Here `how` returns empty list, hence no split is done and dangles
-        # are undefined
+        # Here `how` returns empty list, hence no partitioning is done and
+        # dangles are undefined
         assert len(result) == 1
         assert assert_subframe(result[0], 0, 13, -1, -1)
 
@@ -220,7 +219,7 @@ class TestDaysSplitByAtPointsCornerCases(object):
         f = _Frame(base_unit_freq='D', start='02 Jan 2017', end='15 Jan 2017')
         result = f.do_split_by(0, len(f) - 1,
                                Marker('W', at=[{'days': 5}, {'days': 16}]))
-        # Split points which go outside the period of splitter freq
+        # Points which fall outside the period of marker freq
         # will be ignored
         # Here only 'days':5 will be taken into account
         assert len(result) == 3
@@ -230,11 +229,12 @@ class TestDaysSplitByAtPointsCornerCases(object):
 
     def test_days_splitby_weekly_atpoints_duplicates(self):
         f = _Frame(base_unit_freq='D', start='02 Jan 2017', end='15 Jan 2017')
-        result = f.do_split_by(0, len(f) - 1,
-                               Marker('W', at=[{'days': 2},
-                                               {'days': 2, 'hours': 4},
-                                               {'days': 5},
-                                               {'days': 4, 'hours': 25}]))
+        result = f.do_split_by(0, len(f) - 1, Marker('W', at=[{'days': 2},
+                                                              {'days': 2,
+                                                               'hours': 4},
+                                                              {'days': 5},
+                                                              {'days': 4,
+                                                               'hours': 25}]))
         # 'at' contains points referring to the same days
         # The result will be the same as with at=[{'days': 2}, {'days': 5}]
         assert len(result) == 5
@@ -248,8 +248,7 @@ class TestDaysSplitByAtPointsCornerCases(object):
 
     def test_days_splitby_weekly_atpoints_onlyzero(self):
         f = _Frame(base_unit_freq='D', start='02 Jan 2017', end='15 Jan 2017')
-        result = f.do_split_by(0, len(f) - 1,
-                               Marker('W', at=[{'days': 0}]))
+        result = f.do_split_by(0, len(f) - 1, Marker('W', at=[{'days': 0}]))
         # Here result will be the same as with at=None
         assert len(result) == 2
         assert assert_subframe(result[0], 0, 6, 0, 0)
@@ -257,11 +256,10 @@ class TestDaysSplitByAtPointsCornerCases(object):
 
     def test_days_splitby_weekly_atpoints_negative(self):
         f = _Frame(base_unit_freq='D', start='02 Jan 2017', end='15 Jan 2017')
-        result = f.do_split_by(0, len(f) - 1,
-                               Marker('W', at=[{'days': -1}]))
+        result = f.do_split_by(0, len(f) - 1, Marker('W', at=[{'days': -1}]))
         # Negative offset falls out of a period.
-        # Here `how` returns empty list and no split is done, dangles are
-        # undefined
+        # Here `how` returns empty list and no partitioning is done,
+        # dangles are undefined
         assert len(result) == 1
         assert assert_subframe(result[0], 0, 13, -1, -1)
 
@@ -280,8 +278,7 @@ class TestDaysSplitByAtPointsCornerCases(object):
                       ' However, it does implement Timestamp + float offset')
     def test_days_splitby_weekly_atpoints_float(self):
         f = _Frame(base_unit_freq='D', start='02 Jan 2017', end='15 Jan 2017')
-        result = f.do_split_by(0, len(f) - 1,
-                               Marker('W', at=[{'weeks': 0.29}]))
+        result = f.do_split_by(0, len(f) - 1, Marker('W', at=[{'weeks': 0.29}]))
         # 0.29 of a week is 2+ days, so the result is the same as with 'days':2
         assert len(result) == 3
         assert assert_subframe(result[0], 0, 1, 5, 0)
@@ -291,20 +288,17 @@ class TestDaysSplitByAtPointsCornerCases(object):
     def test_days_splitby_weekly_atpoints_badkeyword(self):
         f = _Frame(base_unit_freq='D', start='02 Jan 2017', end='15 Jan 2017')
         with pytest.raises(TypeError):
-            f.do_split_by(0, len(f) - 1,
-                          Marker('W', at=[{'nonsense': 1}]))
+            f.do_split_by(0, len(f) - 1, Marker('W', at=[{'nonsense': 1}]))
 
     def test_days_splitby_weekly_atpoints_badvalue(self):
         f = _Frame(base_unit_freq='D', start='02 Jan 2017', end='15 Jan 2017')
         with pytest.raises(TypeError):
-            f.do_split_by(0, len(f) - 1,
-                          Marker('W', at=[{'days': 'nonsense'}]))
+            f.do_split_by(0, len(f) - 1, Marker('W', at=[{'days': 'nonsense'}]))
 
     def test_days_splitby_weekly_atpoints_missedlist(self):
         f = _Frame(base_unit_freq='D', start='02 Jan 2017', end='15 Jan 2017')
         with pytest.raises(TypeError):
-            f.do_split_by(0, len(f) - 1,
-                          Marker('W', at={'days': 2}))
+            f.do_split_by(0, len(f) - 1, Marker('W', at={'days': 2}))
 
 
 class TestDaysSplitByMonthly(object):
@@ -319,9 +313,9 @@ class TestDaysSplitByMonthly(object):
 
     def test_days_splitby_monthly_atpoints(self):
         f = _Frame(base_unit_freq='D', start='31 Dec 2016', end='01 Mar 2017')
-        # split at 10th (=1+9) and 20th (=1+19) day of each month
+        # set mark at 10th (=1+9) and 20th (=1+19) day of each month
         result = f.do_split_by(0, len(f) - 1,
-                               Marker('M', at=[{'days':9}, {'days':19}]))
+                               Marker('M', at=[{'days': 9}, {'days': 19}]))
         assert len(result) == 5
         assert assert_subframe(result[0], 0, 9, 11, 0)
         assert assert_subframe(result[1], 10, 19, 0, 0)
@@ -331,25 +325,25 @@ class TestDaysSplitByMonthly(object):
 
     def test_days_splitby_monthly_at_day30(self):
         f = _Frame(base_unit_freq='D', start='31 Dec 2016', end='01 Mar 2017')
-        # split at 30th (=1+29) day of each month
-        # no split point in February, there is just Jan 30
-        result = f.do_split_by(0, len(f) - 1,
-                               Marker('M', at=[{'days':29}]))
+        # set marks at 30th (=1+29) day of each month
+        # no mark in February, there is just Jan 30
+        result = f.do_split_by(0, len(f) - 1, Marker('M', at=[{'days': 29}]))
         assert len(result) == 2
         assert assert_subframe(result[0], 0, 29, 1, 0)
         assert assert_subframe(result[1], 30, 60, 0, 28)
 
     def test_days_splitby_monthly_at_weekdays(self):
         f = _Frame(base_unit_freq='D', start='31 Dec 2016', end='01 Mar 2017')
-        # split at second Monday and last Thursday
+        # set mark on second Monday and last Thursday
         # 09.01.17, 26.01.17, 13.02.17, 23.02.17
         # left dangle from 29.12  == 2; right dangle thru 12.03 == 11
-        result = f.do_split_by(0, len(f) - 1,
-                               Marker(each='M',
-                                      at=[{'month': 1, 'week': 2, 'weekday': 1},
-                                  {'month': 1, 'week': -1, 'weekday': 4}],
-                                      how='nth_weekday_of_month')
-                               )
+        result = f.do_split_by(0, len(f) - 1, Marker(each='M',
+                                                     at=[{'month': 1, 'week': 2,
+                                                          'weekday': 1},
+                                                         {'month': 1,
+                                                          'week': -1,
+                                                          'weekday': 4}],
+                                                     how='nth_weekday_of_month'))
         assert len(result) == 5
         assert assert_subframe(result[0], 0, 8, 2, 0)
         assert assert_subframe(result[1], 9, 25, 0, 0)
@@ -369,7 +363,7 @@ class TestDaysSplitByAnnually(object):
 
     def test_days_splitby_annually_at_specific_date(self):
         f = _Frame(base_unit_freq='D', start='01 Jan 2015', end='31 Dec 2017')
-        # split at Apr 11
+        # set mark on Apr 11
         result = f.do_split_by(0, len(f) - 1,
                                Marker('A', at=[{'months': 3, 'days': 10}]))
         assert len(result) == 4
@@ -387,14 +381,15 @@ class TestDaysSplitByAnnually(object):
 
     def test_days_splitby_annually_at_month_weekdays(self):
         f = _Frame(base_unit_freq='D', start='01 Jan 2015', end='31 Dec 2017')
-        # split at last Monday in May and first Monday in September
+        # mark last Monday in May and first Monday in September
         # 25.05.15, 07.09.15, 30.05.16, 05.09.16, 29.05.17, 04.09.17
-        result = f.do_split_by(0, len(f) - 1,
-                               Marker(each='A',
-                                      at=[{'month': 5, 'week': -1, 'weekday': 1},
-                                  {'month': 9, 'week': 1, 'weekday': 1}],
-                                      how='nth_weekday_of_month')
-                               )
+        result = f.do_split_by(0, len(f) - 1, Marker(each='A',
+                                                     at=[{'month': 5,
+                                                          'week': -1,
+                                                          'weekday': 1},
+                                                         {'month': 9, 'week': 1,
+                                                          'weekday': 1}],
+                                                     how='nth_weekday_of_month'))
         assert len(result) == 7
         assert assert_subframe(result[0], 0, 143, 122, 0)
         assert assert_subframe(result[1], 144, 248, 0, 0)
@@ -406,17 +401,18 @@ class TestDaysSplitByAnnually(object):
 
     def test_days_splitby_annually_at_month_weekdays_shift(self):
         f = _Frame(base_unit_freq='D', start='01 Jan 2015', end='31 Dec 2017')
-        # split at Wednesday after last Monday in May and at Thursday before
+        # mark Wednesday after last Monday in May and Thursday before
         # first Monday in September
         # 25.05.15+2, 07.09.15-4, 30.05.16+2, 05.09.16-4, 29.05.17+2, 04.09.17-4
-        result = f.do_split_by(0, len(f) - 1,
-                               Marker(each='A',
-                                      at=[{'month': 5, 'week': -1, 'weekday': 1,
-                                   'shift': 2},
-                                  {'month': 9, 'week': 1, 'weekday': 1,
-                                   'shift': -4}],
-                                      how='nth_weekday_of_month')
-                               )
+        result = f.do_split_by(0, len(f) - 1, Marker(each='A',
+                                                     at=[{'month': 5,
+                                                          'week': -1,
+                                                          'weekday': 1,
+                                                          'shift': 2},
+                                                         {'month': 9, 'week': 1,
+                                                          'weekday': 1,
+                                                          'shift': -4}],
+                                                     how='nth_weekday_of_month'))
         assert len(result) == 7
         assert assert_subframe(result[0], 0, 145, 126, 0)
         assert assert_subframe(result[1], 146, 244, 0, 0)
@@ -428,14 +424,13 @@ class TestDaysSplitByAnnually(object):
 
     def test_days_splitby_annually_at_easter_western(self):
         f = _Frame(base_unit_freq='D', start='31 Dec 2013', end='01 Jan 2017')
-        # split at Good Friday, Easter and Easter Monday in 2014, 2015, 2016
-        result = f.do_split_by(0, len(f) - 1,
-                               Marker(each='A',
-                                      at=[{'days': -2}, {'days': 0},
-                                            {'days': 1}],
-                                      how='from_easter_western'
-                                      )
-                               )
+        # mark Good Friday, Easter and Easter Monday in 2014, 2015, 2016
+        result = f.do_split_by(0, len(f) - 1, Marker(each='A',
+                                                     at=[{'days': -2},
+                                                         {'days': 0},
+                                                         {'days': 1}],
+                                                     how='from_easter_western'
+                                                     ))
         result_dates = map(lambda x: (f[x.first], f[x.last]), result)
         assert len(result) == 10
         assert result_dates[1][0] == Period('2014-04-18', 'D')
@@ -450,14 +445,13 @@ class TestDaysSplitByAnnually(object):
 
     def test_days_splitby_annually_at_easter_orthodox(self):
         f = _Frame(base_unit_freq='D', start='31 Dec 2013', end='01 Jan 2017')
-        # split at Good Friday, Easter and Easter Monday in 2014, 2015, 2016
-        result = f.do_split_by(0, len(f) - 1,
-                               Marker(each='A',
-                                      at=[{'days': -2}, {'days': 0},
-                                            {'days': 1}],
-                                      how='from_easter_orthodox'
-                                      )
-                               )
+        # mark Good Friday, Easter and Easter Monday in 2014, 2015, 2016
+        result = f.do_split_by(0, len(f) - 1, Marker(each='A',
+                                                     at=[{'days': -2},
+                                                         {'days': 0},
+                                                         {'days': 1}],
+                                                     how='from_easter_orthodox'
+                                                     ))
         result_dates = map(lambda x: (f[x.first], f[x.last]), result)
         assert len(result) == 10
         assert result_dates[1][0] == Period('2014-04-18', 'D')
@@ -474,24 +468,22 @@ class TestDaysSplitByAtWeekdaysCornerCases(object):
 
     def test_days_splitby_monthly_at_weekdays_outside(self):
         f = _Frame(base_unit_freq='D', start='31 Dec 2016', end='01 Mar 2017')
-        result = f.do_split_by(0, len(f) - 1,
-                               Marker(each='M',
-                                      at=[{'month': 2, 'week': 2, 'weekday': 1}],
-                                      how='nth_weekday_of_month')
-                               )
+        result = f.do_split_by(0, len(f) - 1, Marker(each='M',
+                                                     at=[{'month': 2, 'week': 2,
+                                                          'weekday': 1}],
+                                                     how='nth_weekday_of_month'))
         # month=2 is outside the single month which is a period of `each`
-        # therefore `how` returns empty list and no split is done, dangles
-        # are undefined
+        # therefore `how` returns empty list and no partitioning is done,
+        # dangles are undefined
         assert len(result) == 1
         assert assert_subframe(result[0], 0, 60, -1, -1)
 
     def test_days_splitby_monthly_at_weekdays_gaps(self):
         f = _Frame(base_unit_freq='D', start='01 Jan 2017', end='01 Mar 2017')
-        result = f.do_split_by(0, len(f) - 1,
-                               Marker(each='M',
-                                      at=[{'month': 1, 'week': 5, 'weekday': 2}],
-                                      how='nth_weekday_of_month')
-                               )
+        result = f.do_split_by(0, len(f) - 1, Marker(each='M',
+                                                     at=[{'month': 1, 'week': 5,
+                                                          'weekday': 2}],
+                                                     how='nth_weekday_of_month'))
         # 5th Tuesday is only in January (31 Jan)
         # Previous 5th Tuesday was in November 2016 and next will be
         # only in May 2017 - both fell outside the envelope
@@ -502,11 +494,10 @@ class TestDaysSplitByAtWeekdaysCornerCases(object):
 
     def test_days_splitby_monthly_at_weekdays_gaps2(self):
         f = _Frame(base_unit_freq='D', start='31 Dec 2016', end='01 Mar 2017')
-        result = f.do_split_by(0, len(f) - 1,
-                               Marker(each='M',
-                                      at=[{'month': 1, 'week': 5, 'weekday': 2}],
-                                      how='nth_weekday_of_month')
-                               )
+        result = f.do_split_by(0, len(f) - 1, Marker(each='M',
+                                                     at=[{'month': 1, 'week': 5,
+                                                          'weekday': 2}],
+                                                     how='nth_weekday_of_month'))
         # 5th Tuesday is only in January (31 Jan)
         # Previous 5th Tuesday was in November 2016 and next will be
         # So we can provide skip_left but cannot calculate skip_right
@@ -516,11 +507,10 @@ class TestDaysSplitByAtWeekdaysCornerCases(object):
 
     def test_days_splitby_monthly_at_weekdays_gaps3(self):
         f = _Frame(base_unit_freq='D', start='31 Dec 2016', end='01 Mar 2017')
-        result = f.do_split_by(0, len(f) - 1,
-                               Marker(each='A',
-                                      at=[{'month': 1, 'week': 5, 'weekday': 2}],
-                                      how='nth_weekday_of_month')
-                               )
+        result = f.do_split_by(0, len(f) - 1, Marker(each='A',
+                                                     at=[{'month': 1, 'week': 5,
+                                                          'weekday': 2}],
+                                                     how='nth_weekday_of_month'))
         # Here we look for 5th Tue in each January. There is only one January
         # in the frame which by the way has 5th Tuesday on Jan 31.
         # But what about dangles? Envelope is 2015-2018
@@ -533,11 +523,11 @@ class TestDaysSplitByAtWeekdaysCornerCases(object):
 
     def test_days_splitby_monthly_at_weekdays_gaps3n(self):
         f = _Frame(base_unit_freq='D', start='31 Dec 2016', end='01 Mar 2017')
-        result = f.do_split_by(0, len(f) - 1,
-                               Marker(each='A',
-                                      at=[{'month': 1, 'week': -5, 'weekday': 2}],
-                                      how='nth_weekday_of_month')
-                               )
+        result = f.do_split_by(0, len(f) - 1, Marker(each='A',
+                                                     at=[{'month': 1,
+                                                          'week': -5,
+                                                          'weekday': 2}],
+                                                     how='nth_weekday_of_month'))
         # Here we look for minus 5th Tue in each January. There is only one
         # January in the frame which by the way such Tuesday on Jan 3.
         # But what about dangles? Envelope is 2015-2018
@@ -551,11 +541,10 @@ class TestDaysSplitByAtWeekdaysCornerCases(object):
 
     def test_days_splitby_monthly_at_weekdays_gaps4(self):
         f = _Frame(base_unit_freq='D', start='31 Dec 2016', end='01 Mar 2017')
-        result = f.do_split_by(0, len(f) - 1,
-                               Marker(each='A',
-                                      at=[{'month': 1, 'week': 5, 'weekday': 7}],
-                                      how='nth_weekday_of_month')
-                               )
+        result = f.do_split_by(0, len(f) - 1, Marker(each='A',
+                                                     at=[{'month': 1, 'week': 5,
+                                                          'weekday': 7}],
+                                                     how='nth_weekday_of_month'))
         # Here we look for 5th Sun in each January. There is only one January
         # in the frame which by the way has 5th Sunday on Jan 29.
         # But what about dangles? Envelope is 2015-2018
@@ -568,11 +557,11 @@ class TestDaysSplitByAtWeekdaysCornerCases(object):
 
     def test_days_splitby_monthly_at_weekdays_gaps4n(self):
         f = _Frame(base_unit_freq='D', start='31 Dec 2016', end='01 Mar 2017')
-        result = f.do_split_by(0, len(f) - 1,
-                               Marker(each='A',
-                                      at=[{'month': 1, 'week': -5, 'weekday': 7}],
-                                      how='nth_weekday_of_month')
-                               )
+        result = f.do_split_by(0, len(f) - 1, Marker(each='A',
+                                                     at=[{'month': 1,
+                                                          'week': -5,
+                                                          'weekday': 7}],
+                                                     how='nth_weekday_of_month'))
         # Here we look for -5th Sun in each January. There is only one January
         # in the frame which by the way has such Sunday on Jan 1.
         # But what about dangles? Envelope is 2015-2018
@@ -587,25 +576,24 @@ class TestDaysSplitByAtWeekdaysCornerCases(object):
         f = _Frame(base_unit_freq='D', start='31 Dec 2016', end='01 Mar 2017')
         for badmnth in [-1,0,13, 6.5, 'Jan']:
             with pytest.raises(AssertionError):
-                 f.do_split_by(0, len(f) - 1,
-                               Marker(each='A',
-                                      at=[{'month': badmnth, 'week': 1, 'weekday': 7}],
-                                      how='nth_weekday_of_month')
-                               )
+                f.do_split_by(0, len(f) - 1, Marker(each='A',
+                                                    at=[{'month': badmnth,
+                                                         'week': 1,
+                                                         'weekday': 7}],
+                                                    how='nth_weekday_of_month'))
         for badweek in [-6, 0, 6, 3.5]:
             with pytest.raises(AssertionError):
-                 f.do_split_by(0, len(f) - 1,
-                               Marker(each='A',
-                                      at=[{'month': 1, 'week': badweek, 'weekday': 7}],
-                                      how='nth_weekday_of_month')
-                               )
+                f.do_split_by(0, len(f) - 1, Marker(each='A',
+                                                    at=[{'month': 1,
+                                                         'week': badweek,
+                                                         'weekday': 7}],
+                                                    how='nth_weekday_of_month'))
         for badwday in [-1, 0, 8, 2.5, 'Mon']:
             with pytest.raises(AssertionError):
-                 f.do_split_by(0, len(f) - 1,
-                               Marker(each='A',
-                                      at=[{'month': 1, 'week': 1, 'weekday': badwday}],
-                                      how='nth_weekday_of_month')
-                               )
+                f.do_split_by(0, len(f) - 1, Marker(each='A',
+                                                    at=[{'month': 1, 'week': 1,
+                                                         'weekday': badwday}],
+                                                    how='nth_weekday_of_month'))
 
 
 class TestHoursSplitBy(object):

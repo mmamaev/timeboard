@@ -92,14 +92,12 @@ def _check_splitby_freq(base_unit_freq, split_by_freq):
     will not result in a situation when a base unit belongs to more 
     than one span at the same time. 
     
-    An example of such ambiguous split is when base_unit_freq='W' and
+    An example of such ambiguous partitioning is when base_unit_freq='W' and
     split_by='M'. Most likely there will be a base unit (week) that falls into 
     two spans (months) simultaneously.
     
     Return True if `split_by` value is ok.
     """
-    # TODO: add support of freq multiplicators, i.e. (D,4D) or (2D,4D)
-    #       is_subperiod function does not support this
     if bool(
         pd.tseries.frequencies.is_subperiod(base_unit_freq, split_by_freq)
         # Some combinations of arguments result in is_subperiod function
@@ -352,8 +350,8 @@ class _Frame(pd.PeriodIndex):
             subframes = [_Subframe(span_first, span_last, 0, 0)]
         return subframes
 
-    def do_split_by(self, span_first, span_last, splitter):
-        """Partition the (part of) frame using a Splitter.
+    def do_split_by(self, span_first, span_last, marker):
+        """Partition the (part of) frame on the marks produced by `Marker`.
         
         Parameters
         ----------
@@ -363,13 +361,14 @@ class _Frame(pd.PeriodIndex):
         span_last: int>=0
             Position of the base unit which ends the part of the  frame  
             to be partitioned.
-        splitter: Marker
+        marker: Marker
         
         Raises
         ------
         UnsupportedPeriodError (ValueError)
-            If `splitter` specifies a partitioning period which is not a 
-            multiple of frame's `base_unit_freq`.
+            If `marker` uses a period which is not guaranteed to be a 
+            multiple of frame's `base_unit_freq` aligned with boundaries of
+            base units.
         
         Returns
         -------
@@ -385,7 +384,7 @@ class _Frame(pd.PeriodIndex):
         the last subframe, respectively.
         
         For example, if `base_unit_freq`='D', and the span contains the days
-        from 01 Jan until 31 Jan 2017, and `splitter.each`='W', the first 
+        from 01 Jan until 31 Jan 2017, and `marker.each`='W', the first 
         subframe will contain only one day 01 Jan, Sunday. 
         The first six days of this week (26-31 Dec) are outside the span. 
         The number of such fell out days (6) is recorded in subframe's 
@@ -397,11 +396,11 @@ class _Frame(pd.PeriodIndex):
         in this subframe, to 5. All subframes in between represent a full week
         each, and their `skip_left` and `skip_right` attributes are zeroed. 
         """
-        if not _check_splitby_freq(self._base_unit_freq, splitter.each):
+        if not _check_splitby_freq(self._base_unit_freq, marker.each):
             raise UnsupportedPeriodError('Ambiguous organizing: '
                                          '{} is not a subperiod of {}'
                                          .format(self._base_unit_freq,
-                                                 splitter.each))
+                                                 marker.each))
         self.check_span(span_first, span_last)
         span_start_ts = self[span_first].start_time
         span_end_ts = self[span_last].end_time
@@ -409,21 +408,21 @@ class _Frame(pd.PeriodIndex):
         right_dangle_undefined = False
 
         at_points = pd.DatetimeIndex([])
-        if splitter.at:
+        if marker.at:
             envelope_margin = 1
             envelope_start_ts = span_start_ts - \
-                                envelope_margin * get_freq_delta(splitter.each)
+                                envelope_margin * get_freq_delta(marker.each)
             envelope_end_ts = span_end_ts + \
-                              envelope_margin * get_freq_delta(splitter.each)
-            stencil = _Frame(base_unit_freq=splitter.each,
+                              envelope_margin * get_freq_delta(marker.each)
+            stencil = _Frame(base_unit_freq=marker.each,
                              start=envelope_start_ts,
                              end=envelope_end_ts)
 
-            for kwargs in splitter.at:
+            for kwargs in marker.at:
                 at_points = at_points.append(
-                                 splitter.how(stencil,
-                                              normalize_by=self._base_unit_freq,
-                                              **kwargs)
+                                 marker.how(stencil,
+                                            normalize_by=self._base_unit_freq,
+                                            **kwargs)
                             )
             at_points = pd.DatetimeIndex(np.sort(at_points))
             at_points = at_points[
@@ -444,7 +443,7 @@ class _Frame(pd.PeriodIndex):
                 return [_Subframe(span_first, span_last, -1, -1)]
 
         else:
-            stencil = _Frame(base_unit_freq=splitter.each,
+            stencil = _Frame(base_unit_freq=marker.each,
                              start=span_start_ts,
                              end=span_end_ts)
             left_stencil_bound = stencil[0].start_time
@@ -866,8 +865,7 @@ class _Timeline(object):
         subframe_seq = []
         #timer0 = timeit.default_timer()
         if organizer.split_by is not None:
-            subframe_seq = self.frame.do_split_by(span_first,
-                                                  span_last,
+            subframe_seq = self.frame.do_split_by(span_first, span_last,
                                                   organizer.split_by)
         if organizer.split_at is not None:
             subframe_seq = self.frame.do_split_at(span_first,
@@ -1005,18 +1003,22 @@ class _Schedule(object):
 
 
 class Organizer(object):
-    """Container class defining rules for setting up timeline's layout.
+    """Container class which defines the layout of the timeline.
+    
+    `Organizer` tells how to organize a frame into a timeline, that is how 
+    to create workshifts and label them.
     
     Parameters
     ----------
     split_by: Marker or str
-        A Splitter or a pandas-compatible calendar frequency (accepts same 
+        A `Marker` or a pandas-compatible calendar frequency (accepts same 
         kind of values as `base_unit_freq` of timeboard). The latter is 
-        equivalent to `Splitter(each=split_by)`.
+        equivalent to `Marker(each=split_by)`.
     split_at: Iterable of Timestamp-like
-    structure: Iterable of {Organizer | Iterable}
-        An element of `structure` is either another organizer or a pattern.
-        Pattern itself is an iterable of workshift labels.
+    structure: Iterable 
+        An element of `structure` is either another organizer, or 
+        a workshift label, or a pattern. Pattern itself is an iterable of 
+        workshift labels.
               
     Raises
     ------
@@ -1029,11 +1031,11 @@ class Organizer(object):
         
     Notes
     -----
-    Firstly, organizer tells how to partition timeboard's frame into chunks (
-    spans); this is defined by `split_by` or `split_at` parameter. 
+    Firstly, organizer tells how to partition timeboard's frame into chunks 
+    (spans); this is defined by `split_by` or `split_at` parameter. 
     
     Given `split_by` parameter, the frame is partitioned into spans 
-    whose bounds are calculated according to the rules set by the Splitter. 
+    bounded by the marks set by the `Marker`. 
     
     If, instead, `split_at` is given,  
     the frame is partitioned at the explicitly specified points in time. 
@@ -1055,7 +1057,7 @@ class Organizer(object):
     
     If the element of `structure` is some other single value, it is considered 
     a label. In this case all the span becomes a single workshift which 
-    receives this label. Such a workshift comprises several base units 
+    receives this label. Such a compound workshift comprises several base units 
     (unless the span itself consists of a single base unit).
     
     Once `structure` is exhausted , it is re-enacted in cycles. The same 
