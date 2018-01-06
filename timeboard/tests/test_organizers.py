@@ -1,4 +1,4 @@
-from timeboard.core import _Timeline, _Frame, Organizer, Pattern, _to_iterable
+from timeboard.core import _Timeline, _Frame, Organizer, RememberingPattern, _to_iterable
 from timeboard.exceptions import OutOfBoundsError
 import pandas as pd
 import pytest
@@ -107,7 +107,7 @@ class TestOrganizeSimple(object):
     def test_organize_pattern_with_memory(self):
         f = _Frame(base_unit_freq='D', start='02 Jan 2017',
                    end='22 Jan 2017')
-        p = Pattern([1, 2, 3])
+        p = RememberingPattern([1, 2, 3])
         org = Organizer(split_by='W', structure=[p, [9], p])
         t = _Timeline(frame=f, organizer=org)
         assert t.labels.eq([1, 2, 3, 1, 2, 3, 1,
@@ -142,7 +142,7 @@ class TestOrganizeRecursive(object):
 
     def test_organize_recursive_with_memory(self):
         f = _Frame(base_unit_freq='D', start='29 Nov 2017', end='06 Dec 2017')
-        p = Pattern(['a', 'b', 'c', 'd'])
+        p = RememberingPattern(['a', 'b', 'c', 'd'])
         org_int = Organizer(split_by='W', structure=[[1, 2], p])
         org_ext = Organizer(split_by='M', structure=[p, org_int])
         t = _Timeline(frame=f, organizer=org_ext)
@@ -257,9 +257,9 @@ class TestApplyAmendments(object):
             pytest.fail(msg='DID NOT RAISE for bad timestamp')
 
 
-class TestOrganizeWithAggregation(object):
+class TestOrganizeCompoundWorkshifts(object):
 
-    def test_organize_aggregate_all(self):
+    def test_organize_compound_all(self):
         f = _Frame(base_unit_freq='D', start='31 Dec 2016', end='10 Jan 2017')
         org = Organizer(split_by='W', structure=[1, 2])
         t = _Timeline(frame=f, organizer=org)
@@ -267,7 +267,7 @@ class TestOrganizeWithAggregation(object):
         assert t._frameband.eq([0,0,2,2,2,2,2,2,2,9,9]).all()
         assert (t._wsband.index == [0, 2, 9]).all()
 
-    def test_organize_aggregate_alternate(self):
+    def test_organize_compound_alternate(self):
         f = _Frame(base_unit_freq='D', start='31 Dec 2016', end='10 Jan 2017')
         org = Organizer(split_by='W', structure=[100,[1, 2, 3]])
         t = _Timeline(frame=f, organizer=org)
@@ -275,7 +275,7 @@ class TestOrganizeWithAggregation(object):
         assert t._frameband.eq([0,0,2,3,4,5,6,7,8,9,9]).all()
         assert (t._wsband.index == [0, 2,3,4,5,6,7,8, 9]).all()
 
-    def test_organize_aggregate_when_strings_are_labels(self):
+    def test_organize_compound_when_strings_are_labels(self):
         f = _Frame(base_unit_freq='D', start='31 Dec 2016', end='10 Jan 2017')
         org = Organizer(split_by='W', structure=['abc', 'x'])
         t = _Timeline(frame=f, organizer=org)

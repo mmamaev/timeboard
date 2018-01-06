@@ -103,7 +103,7 @@ class Timeboard(object):
     See also
     --------
     Organizer - define rule for marking up the reference frame into workshifts.
-    Splitter - define rule for partitioning the reference frame.
+    Marker - define rule for partitioning the reference frame.
     """
     def __init__(self, base_unit_freq, start, end, layout,
                  amendments=None,

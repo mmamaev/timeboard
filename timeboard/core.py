@@ -12,7 +12,6 @@ from itertools import cycle, dropwhile
 from collections import Iterable, namedtuple
 import re
 import six
-from math import fmod
 #import timeit
 
 SMALLEST_TIMEDELTA = pd.Timedelta(1, unit='s')
@@ -88,7 +87,7 @@ def _skiperator(values, skip=0):
 
 def _check_splitby_freq(base_unit_freq, split_by_freq):
     """
-    Check if the value of `split_by` from some Splitter can be used 
+    Check if the value of `split_by` from some Marker can be used 
     with the given `base_unit_freq`, meaning that partitioning of a timeline 
     will not result in a situation when a base unit belongs to more 
     than one span at the same time. 
@@ -364,7 +363,7 @@ class _Frame(pd.PeriodIndex):
         span_last: int>=0
             Position of the base unit which ends the part of the  frame  
             to be partitioned.
-        splitter: Splitter
+        splitter: Marker
         
         Raises
         ------
@@ -887,7 +886,7 @@ class _Timeline(object):
             elif _is_iterable(layout):
                 self._apply_pattern(layout, subframe)
             else:
-                # aggregate subframe into one workshift, use layout as label
+                # make compound workshift from the subframe, use layout as label
                 self._wsband.loc[subframe.first] = layout
                 self._wsband.drop(index=arange(subframe.first+1,
                                                subframe.last+1), inplace=True)
@@ -1010,7 +1009,7 @@ class Organizer(object):
     
     Parameters
     ----------
-    split_by: Splitter or str
+    split_by: Marker or str
         A Splitter or a pandas-compatible calendar frequency (accepts same 
         kind of values as `base_unit_freq` of timeboard). The latter is 
         equivalent to `Splitter(each=split_by)`.
@@ -1070,8 +1069,8 @@ class Organizer(object):
             raise TypeError("structure parameter must be iterable")
         self._split_by = split_by
         self._split_at = split_at
-        if split_by is not None and not isinstance(split_by, Splitter):
-            self._split_by = Splitter(split_by)
+        if split_by is not None and not isinstance(split_by, Marker):
+            self._split_by = Marker(split_by)
         self._split_at = _to_iterable(split_at)
         self._structure = structure
 
@@ -1095,29 +1094,32 @@ class Organizer(object):
         return "Organizer({}, structure={!r})".format(s, self.structure)
 
 
-_SplitterBase = namedtuple('Splitter', ['each', 'at', 'how'])
-class Splitter(_SplitterBase):
-    """Container class defining how to partition a timeboard's frame.
-
+_MarkerBase = namedtuple('Marker', ['each', 'at', 'how'])
+class Marker(_MarkerBase):
+    """Container class defining a markup of a timeboard's frame.
+    
+    Markup is an ordered sequence of marks placed at points of time 
+    calculated as specified by parameters of a `Marker`.
+    
     Parameters
     ----------
     each : str
         Pandas-compatible calendar frequency; accepts same values as 
         `base_unit_freq` of timeline (timeboard).
     at : list of dict, optional
-        Each dictionary is a suite of keyword arguments used for calling 
+        Each dictionary is a collection of keyword arguments used for calling 
         `how` function. 
     how : str or function, optional
         'from_start_of_each' (default) : keyword arguments in `at` define an 
         offset (number of hours, days, etc.) from the start of `each` period.
+        'from_easter_western' : keyword arguments in `at` define an offset 
+        from the Western Easter in `each` period.
+        'from_easter_orthodox' :  keyword arguments in `at` define an offset 
+        from the Orthodox Easter in `each` period.
         'nth_weekday_of_month' : keyword arguments in `at` define N-th weekday 
         of M-th month from the start of `each` period.
-        'from_easter_western' : keyword arguments in `at` define an offset 
-        in days from the Western Easter in `each` period.
-        'from_easter_orthodox' :  keyword arguments in `at` define an offset 
-        in days from the Orthodox Easter in `each` period.
         
-        The above strings effectively substitute their name-sake 
+        The above strings are effectively substituted by their name-sake 
         functions from module `when`.
         
         Alternatively, a user-defined function may be supplied as the value of 
@@ -1131,59 +1133,70 @@ class Splitter(_SplitterBase):
     
     Notes
     -----
-    The rule set by Splitter is to be applied to a span, which is a part of a 
-    timeboard's frame or the whole frame. The rule specifies how to partition 
-    a span into subframes:
+    The markup defined by a `Marker` is to be applied to a span, which is a 
+    part of a timeboard's frame, or to the whole frame. Locations of marks are 
+    calculated as follows. 
     
-    In each period of frequency `each` located partly or wholly within the span 
-    find split points defined by `at` parameter. Each dictionary in `at` list is 
-    a suite of keywords which specify how to find a split point within the 
-    period. The interpretation of these keywords is specific to function 
-    `how`. 
+    In each calendar period of frequency `each` located partly or wholly within 
+    the span find points in time defined by `at` parameter. Each dictionary in 
+    `at` list is a collection of keyword arguments which defines one point in 
+    time. Hence, the number of points sought in each `each` period is equal 
+    to the length of `at` list. 
     
-    Split the span into subframes. The first subframe starts on the 
-    first base unit of the span. The second subframe starts on the base unit 
-    of the first split point. The last subframe starts on the base unit of 
-    the last split point and ends on the last base unit of the span. If no 
-    valid split points are found, no partitioning is done (only one 
-    subframe is created which contains the whole span).
+    The interpretation of keyword arguments stored in `at` is defined by 
+    parameter `how`. 
     
-    If `at` parameter is not provided or `at` list is empty, the span 
-    will be split in periods specified by `each`.
+    The location of every point in time which has been calculated by the above 
+    procedure is inspected. If it is within the `each` period in which it was 
+    being sought and within the span, the point becomes a mark. Otherwise 
+    it is ignored.
+    
+    If `at` parameter is not provided or `at` list is empty, the marks are 
+    set on the start times of calendar periods specified by `each`.
+    
+    `Organizer` uses markup defined by `Marker` to partition the frame into 
+    subframes. The first subframe always starts on the first base unit 
+    of the span. The second subframe starts on the base unit which contains 
+    the first mark. The last subframe starts on the base unit containing 
+    the last mark and ends on the last base unit of the span. If no marks 
+    have been set, only one subframe is created which contains the whole span.
     
     Examples
     --------
-    Splitter(each='W')
-        Partition a span into weeks (start a subframe on each Monday at 00:00).
+    Marker(each='W')
+        Mark a span by weeks (set a mark on each Monday at 00:00).
         
-    Splitter(each='W', at=[{'days': 2}, {'days': 5}])  
-        Partition a span on each Wednesday and each Saturday at 00:00.
+    Marker(each='W', at=[{'days': 2}, {'days': 5}])  
+        Set a mark on each Wednesday and each Saturday at 00:00. Note that 
+        there is no mark on Monday because now `at` list is not empty but 
+        Monday is not explicitly specified in the list.
         
-    Splitter(each='W', at=[{'days': 0}, {'days': 2}, {'days': 5}])  
-        Partition a span on each Moday, Wednesday, and Saturday.  
+    Marker(each='W', at=[{'days': 0}, {'days': 2}, {'days': 5}])  
+        Set a mark on each Monday, Wednesday, and Saturday at 00:00.  
         
-    Splitter(each='W', at=[{'days': 7}])  
-        No partitioning will be done. Adding 7 days to the start of the week 
-        places the split point into the next week, i.e. outside the current 
-        'each' period, hence this split point is not valid.
+    Marker(each='W', at=[{'days': 7}])  
+        No marks will be set. Adding 7 days to the start of the week 
+        places the candidate point into the next week, i.e. outside the current 
+        'each' period, hence this point is not a valid mark.
         
-    Splitter(each='D')
-        Partition a span into days (start a subframe at each midnight).
+    Marker(each='D')
+        Mark a span by days (set a mark at each midnight).
           
-    Splitter(each='D', at=[{'hours': 9}, {'hours':18}])
-        Partition a span at 09:00 and 18:00 on each day (but not at the 
-        midnight)
+    Marker(each='D', at=[{'hours': 9}, {'hours':18}])
+        Set marks at 09:00 and 18:00 on each day (but not at the 
+        midnight).
         
-    Splitter(each='M', at=[{'days': 30}])
-        Partition a span on the 31st day of each month. If there is no 31st 
-        day, there is no split point in this month. For example, if the span 
-        is a year, subframes will start on Jan 1, Jan 31, Mar 31, May 31, 
-        Jul 31, Aug 31, Oct 31, Dec 31.
+    Marker(each='M', at=[{'days': 30}])
+        Set a mark on the beginning of the 31st day of each month. If there 
+        is no 31st day, there will be no mark in this month. For example, 
+        if the span is a calendar year, marks will be set on Jan 31, 
+        Mar 31, May 31, Jul 31, Aug 31, Oct 31, and Dec 31.
         
-    Splitter(each='A', at=[{'month': 5, 'week': -1, 'weekday': 1},
-                           {'month': 9, 'week': 1, 'weekday': 1}],
-                       how='nth_weekday_of_month')
-        Partition a span on the last Monday in May and the first Monday in 
+    Marker(each='A', 
+           at=[{'month': 5, 'week': -1, 'weekday': 1},
+               {'month': 9, 'week': 1, 'weekday': 1}],
+           how='nth_weekday_of_month')
+        Set marks on the last Monday in May and the first Monday in 
         September of each year.
     """
     __slots__ = ()
@@ -1199,11 +1212,11 @@ class Splitter(_SplitterBase):
             how = from_start_of_each
         elif not callable(how):
             how = how_functions[how]
-        return super(Splitter, cls).__new__(cls, each, at, how)
+        return super(Marker, cls).__new__(cls, each, at, how)
 
 
-class Pattern(object):
-    """Pattern which remembers the last assigned label.
+class RememberingPattern(object):
+    """Pattern keeping track of assigned labels across invocations.
     
     Parameters
     ----------
