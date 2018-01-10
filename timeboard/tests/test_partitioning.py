@@ -738,7 +738,7 @@ class TestMultipliedFreqSplitBy(object):
         assert assert_subframe(result[1], 9, 22, 0, 0)
         assert assert_subframe(result[2], 23, 30, 0, 6)
 
-    @pytest.mark.xfail(reason='Case not covered by _check_splitby_freq')
+    @pytest.mark.xfail(reason='Case not covered by _check_groupby_freq')
     def test_splitby_different_multiple_freqs2(self):
         f = _Frame(base_unit_freq='12H', start='02 Jan 2017 12:05',
                    end='04 Jan 2017 10:00')
@@ -755,7 +755,7 @@ class TestMultipliedFreqSplitBy(object):
         with pytest.raises(UnsupportedPeriodError):
             f.partition_with_marker(0, len(f) - 1, Marker('D'))
 
-    @pytest.mark.xfail(reason='Case not covered by _check_splitby_freq')
+    @pytest.mark.xfail(reason='Case not covered by _check_groupby_freq')
     def test_splitby_different_multiple_freqs3(self):
         f = _Frame(base_unit_freq='12H', start='02 Jan 2017',
                    end='30 Jan 2017')
@@ -787,7 +787,7 @@ class TestMultipliedFreqSplitBy(object):
         with pytest.raises(UnsupportedPeriodError):
             f.partition_with_marker(0, len(f) - 1, Marker('D'))
 
-    @pytest.mark.xfail(reason='Case not covered by _check_splitby_freq')
+    @pytest.mark.xfail(reason='Case not covered by _check_groupby_freq')
     def test_splitby_different_multiple_freqs6(self):
         f = _Frame(base_unit_freq='48H', start='02 Jan 2017',
                    end='30 Jan 2017')
@@ -800,7 +800,7 @@ class TestMultipliedFreqSplitBy(object):
         with pytest.raises(UnsupportedPeriodError):
             f.partition_with_marker(0, len(f) - 1, Marker('4D'))
 
-    @pytest.mark.xfail(reason='Case not covered by _check_splitby_freq')
+    @pytest.mark.xfail(reason='Case not covered by _check_groupby_freq')
     def test_splitby_different_multiple_freqs7(self):
         f = _Frame(base_unit_freq='7H', start='02 Jan 2017',
                    end='30 Jan 2017')

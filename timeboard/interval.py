@@ -3,7 +3,7 @@ from .exceptions import (OutOfBoundsError,
                          VoidIntervalError,
                          UnsupportedPeriodError)
 from .workshift import Workshift
-from .core import _Frame, _check_splitby_freq, get_period
+from .core import _Frame, _check_groupby_freq, get_period
 
 class Interval(object):
     """A series of workshifts within the timeboard.
@@ -289,7 +289,7 @@ class Interval(object):
         if period not in SUPPORTED_PERIODS:
             raise UnsupportedPeriodError('Period "{}" is not supported'.
                                          format(period))
-        if not _check_splitby_freq(self._tb.base_unit_freq, period):
+        if not _check_groupby_freq(self._tb.base_unit_freq, period):
             raise UnsupportedPeriodError('Period "{}" is not a superperiod '
                                          'of timeboard\'s base unit "{}"'.
                                          format(period, self._tb.base_unit_freq))

@@ -85,21 +85,21 @@ def _skiperator(values, skip=0):
     return dropwhile(counter, cycle(pattern))
 
 
-def _check_splitby_freq(base_unit_freq, split_by_freq):
+def _check_groupby_freq(base_unit_freq, group_by_freq):
     """
-    Check if the value of `marker` from some Marker can be used 
+    Check if the value of `each` attribute from some Marker can be used 
     with the given `base_unit_freq`, meaning that partitioning of a timeline 
     will not result in a situation when a base unit belongs to more 
     than one span at the same time. 
     
-    An example of such ambiguous partitioning is when base_unit_freq='W' and
-    marker='M'. Most likely there will be a base unit (week) that falls into 
-    two spans (months) simultaneously.
+    An example of such ambiguous partitioning is when `base_unit_freq='W'` and
+    `marker.each='M'`. Most likely there will be a base unit (week) that falls 
+    into two spans (months) simultaneously.
     
     Return True if `marker` value is ok.
     """
     if bool(
-        pd.tseries.frequencies.is_subperiod(base_unit_freq, split_by_freq)
+        pd.tseries.frequencies.is_subperiod(base_unit_freq, group_by_freq)
         # Some combinations of arguments result in is_subperiod function
         # returning nothing (NoneType)
         ):
@@ -108,11 +108,11 @@ def _check_splitby_freq(base_unit_freq, split_by_freq):
         # is_subperiod does not support frequency multiplicators,
         # i.e. (D,4D) or (2D,4D). So we will handle this manually.
         try:
-            get_freq_delta(split_by_freq)  # make sure this is a valid freq
+            get_freq_delta(group_by_freq)  # make sure this is a valid freq
         except ValueError:
             return False
         bu_match = re.match(r"(^\d*)([A-Z-]+)", base_unit_freq)
-        sb_match = re.match(r"(^\d*)([A-Z-]+)", split_by_freq)
+        sb_match = re.match(r"(^\d*)([A-Z-]+)", group_by_freq)
         if bu_match and sb_match:
             if bu_match.group(1) == '':
                 bu_freq_factor = 1
@@ -128,7 +128,7 @@ def _check_splitby_freq(base_unit_freq, split_by_freq):
             if bu_freq_denomination == sb_freq_denomination:
                 return sb_freq_factor % bu_freq_factor == 0
             elif bu_freq_factor == 1:
-                return _check_splitby_freq(bu_freq_denomination,
+                return _check_groupby_freq(bu_freq_denomination,
                                            sb_freq_denomination)
             else:
                 # there can be the possibility of valid splitting
@@ -396,7 +396,7 @@ class _Frame(pd.PeriodIndex):
         in this subframe, to 5. All subframes in between represent a full week
         each, and their `skip_left` and `skip_right` attributes are zeroed. 
         """
-        if not _check_splitby_freq(self._base_unit_freq, marker.each):
+        if not _check_groupby_freq(self._base_unit_freq, marker.each):
             raise UnsupportedPeriodError('Ambiguous organizing: '
                                          '{} is not a subperiod of {}'
                                          .format(self._base_unit_freq,
