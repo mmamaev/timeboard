@@ -117,7 +117,7 @@ class Timeboard(object):
                 warnings.warn("Received 'layout' as an Organizer wrapped in "
                               "a list. Probably you do not want a list here.",
                               SyntaxWarning)
-            org = Organizer(split_at=[], structure=[layout])
+            org = Organizer(marks=[], structure=[layout])
         else:
             raise TypeError("`layout` must be either an iterable "
                             "representing a pattern, "

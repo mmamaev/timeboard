@@ -10,7 +10,7 @@ import pytest
 @pytest.fixture(scope='module')
 def tb_10_8_6_hours(workshift_ref='start'):
     shifts = tb.Marker(each='D', at=[{'hours': 2}, {'hours': 8}, {'hours': 18}])
-    daily = tb.Organizer(split_by=shifts, structure=[1, 0])
+    daily = tb.Organizer(marker=shifts, structure=[1, 0])
     return tb.Timeboard(base_unit_freq='H',
                         start='01 Oct 2017', end='06 Oct 2017',
                         layout=daily,

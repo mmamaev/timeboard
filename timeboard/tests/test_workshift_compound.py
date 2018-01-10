@@ -9,7 +9,7 @@ import pandas as pd
 
 @pytest.fixture(scope='module')
 def tb_12_days():
-    org = Organizer(split_by='W', structure=[100, [0, 0, 1, 1]])
+    org = Organizer(marker='W', structure=[100, [0, 0, 1, 1]])
     return tb.Timeboard(base_unit_freq='D',
                         start='31 Dec 2016', end='12 Jan 2017',
                         layout=org)
@@ -118,7 +118,7 @@ class TestRollForwardCompound(object):
         assert new_ws._loc == 8
 
     def test_rollforward_trivial_0_to_next(self):
-        org = Organizer(split_by='W', structure=[False, [0, 0, 1, 1]])
+        org = Organizer(marker='W', structure=[False, [0, 0, 1, 1]])
         clnd =  tb.Timeboard(base_unit_freq='D',
                             start='31 Dec 2016', end='12 Jan 2017',
                             layout=org)
@@ -143,7 +143,7 @@ class TestRollForwardCompound(object):
                                                                       '2017')
 
     def test_rollforward_off_0(self):
-        org = Organizer(split_by='W', structure=[False, [0, 0, 1, 1]])
+        org = Organizer(marker='W', structure=[False, [0, 0, 1, 1]])
         clnd =  tb.Timeboard(base_unit_freq='D',
                             start='31 Dec 2016', end='12 Jan 2017',
                             layout=org)
@@ -162,7 +162,7 @@ class TestRollForwardCompound(object):
         assert new_ws_list == [4, 5, 4, 5, 2, 4]
 
     def test_rollforward_off_n(self):
-        org = Organizer(split_by='W', structure=[False, [0, 0, 1, 1]])
+        org = Organizer(marker='W', structure=[False, [0, 0, 1, 1]])
         clnd =  tb.Timeboard(base_unit_freq='D',
                             start='31 Dec 2016', end='12 Jan 2017',
                             layout=org)
@@ -209,7 +209,7 @@ class TestRollBackCompound(object):
         assert new_ws_list == [8, 6, 8, 6, 8, 8]
 
     def test_rollback_off_0(self):
-        org = Organizer(split_by='W', structure=[False, [0, 0, 1, 1]])
+        org = Organizer(marker='W', structure=[False, [0, 0, 1, 1]])
         clnd =  tb.Timeboard(base_unit_freq='D',
                             start='31 Dec 2016', end='12 Jan 2017',
                             layout=org)

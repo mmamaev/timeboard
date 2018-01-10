@@ -94,7 +94,7 @@ class TestTBConstructor(object):
 class TestTBConstructorWithOrgs:
 
     def test_tb_constructor_week5x8(self):
-        week5x8 = tb.Organizer(split_by='W', structure=[[1, 1, 1, 1, 1, 0, 0]])
+        week5x8 = tb.Organizer(marker='W', structure=[[1, 1, 1, 1, 1, 0, 0]])
         amendments = pd.Series(index=pd.date_range(start='01 Jan 2017',
                                                 end='10 Jan 2017',
                                                 freq='D'),

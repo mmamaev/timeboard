@@ -228,7 +228,7 @@ class TestIntervalCount:
 
 @pytest.fixture(scope='module')
 def tb_281116_020517_8x5():
-    week5x8 = tb.Organizer(split_by='W', structure=[[1,1,1,1,1,0,0]])
+    week5x8 = tb.Organizer(marker='W', structure=[[1, 1, 1, 1, 1, 0, 0]])
     amendments = pd.Series(index = pd.date_range(start='01 Jan 2017',
                                                  end='10 Jan 2017',
                                                  freq='D'),
@@ -248,7 +248,7 @@ class TestIntervalDaysCountPeriodsM:
         assert ivl.count_periods('M', duty='any') == 3.0/31.0 + 3.0 + 1.0/30.0
 
     def test_interval_d_count_periods_m_with_gap(self):
-        week5x8 = tb.Organizer(split_by='W', structure=[[1, 1, 1, 1, 1, 0, 0]])
+        week5x8 = tb.Organizer(marker='W', structure=[[1, 1, 1, 1, 1, 0, 0]])
         amendments = pd.Series(index=pd.date_range(start='01 Feb 2017',
                                                    end='28 Feb 2017',
                                                    freq='D'),

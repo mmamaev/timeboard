@@ -19,8 +19,8 @@ Firstly, you need to construct a timeboard (calendar).
 
 Kind of a teaser, before we look at the actual quick examples, remember the mechanic in the dealership from the question above? His workshift schedule for 2017 (assuming he does not take vacations) will be:
 
->>> biweekly = tb.Organizer(split_by='W', structure=[[1, 1, 0, 0, 0, 1, 1],
-                                                     [0, 0, 1, 1, 1, 0, 0]])
+>>> biweekly = tb.Organizer(marker='W', structure=[[1, 1, 0, 0, 0, 1, 1],
+                                                   [0, 0, 1, 1, 1, 0, 0]])
 >>> clnd = tb.Timeboard(base_unit_freq='D', 
                         start='01 Jan 2017', end='31 Dec 2017', 
                         layout=biweekly)

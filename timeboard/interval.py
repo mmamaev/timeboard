@@ -51,7 +51,6 @@ class Interval(object):
     def __init__(self, timeboard, bounds, schedule=None):
 
         def handle_bound(bound):
-        #TODO: add support of clipping interval to timeline's bounds
             if isinstance(bound, Workshift):
                 loc = bound._loc
             elif isinstance(bound, int):

@@ -87,16 +87,16 @@ def _skiperator(values, skip=0):
 
 def _check_splitby_freq(base_unit_freq, split_by_freq):
     """
-    Check if the value of `split_by` from some Marker can be used 
+    Check if the value of `marker` from some Marker can be used 
     with the given `base_unit_freq`, meaning that partitioning of a timeline 
     will not result in a situation when a base unit belongs to more 
     than one span at the same time. 
     
     An example of such ambiguous partitioning is when base_unit_freq='W' and
-    split_by='M'. Most likely there will be a base unit (week) that falls into 
+    marker='M'. Most likely there will be a base unit (week) that falls into 
     two spans (months) simultaneously.
     
-    Return True if `split_by` value is ok.
+    Return True if `marker` value is ok.
     """
     if bool(
         pd.tseries.frequencies.is_subperiod(base_unit_freq, split_by_freq)
@@ -350,7 +350,7 @@ class _Frame(pd.PeriodIndex):
             subframes = [_Subframe(span_first, span_last, 0, 0)]
         return subframes
 
-    def do_split_by(self, span_first, span_last, marker):
+    def partition_with_marker(self, span_first, span_last, marker):
         """Partition the (part of) frame on the marks produced by `Marker`.
         
         Parameters
@@ -476,11 +476,11 @@ class _Frame(pd.PeriodIndex):
         subframes[-1].skip_right = skipped_units_after
         return subframes
 
-    def do_split_at(self, span_first, span_last, split_at):
+    def partition_at_marks(self, span_first, span_last, marks):
         """Partition the (part of) frame ar specified points in time.
         
         Take a part of the frame (a "span") and partition it into 
-        a list of subframes at points in time listed in `split_at`.
+        a list of subframes at points in time listed in `marks`.
 
         Parameters
         ----------
@@ -490,7 +490,7 @@ class _Frame(pd.PeriodIndex):
         span_last: int>=0
             Position of the base unit which ends the part of the  frame  
             to be partitioned.
-        split_at: Iterable of Timestamp-like 
+        marks: Iterable of Timestamp-like 
             List of points in time referring to base units that will 
             become the first elements of subframes. A point in time may fall 
             anywhere within the base unit.
@@ -501,7 +501,7 @@ class _Frame(pd.PeriodIndex):
         
         Notes
         -----
-        Any elements of `split_at` that do not define a start of 
+        Any elements of `marks` that do not define a start of 
         a subframe within the span are ignored.
         These are:
           - points referring to a base unit already designated as the 
@@ -512,7 +512,7 @@ class _Frame(pd.PeriodIndex):
         [(span_start, span_end)] is returned. 
         """
         return self._create_subframes(span_first, span_last,
-                                      map(get_timestamp, split_at))
+                                      map(get_timestamp, marks))
 
 
 class _Subframe:
@@ -940,13 +940,12 @@ class _Timeline(object):
             span_last = len(self) - 1
         subframe_seq = []
         #timer0 = timeit.default_timer()
-        if organizer.split_by is not None:
-            subframe_seq = self.frame.do_split_by(span_first, span_last,
-                                                  organizer.split_by)
-        if organizer.split_at is not None:
-            subframe_seq = self.frame.do_split_at(span_first,
-                                                  span_last,
-                                                  organizer.split_at)
+        if organizer.marker is not None:
+            subframe_seq = self.frame.partition_with_marker(span_first, span_last,
+                                                            organizer.marker)
+        if organizer.marks is not None:
+            subframe_seq = self.frame.partition_at_marks(span_first, span_last,
+                                                         organizer.marks)
         #timer1 = timeit.default_timer()
         #timer2 = None
         # TODO: SPEED UP.
@@ -1082,16 +1081,16 @@ class _Schedule(object):
 class Organizer(object):
     """Container class which defines the layout of the timeline.
     
-    `Organizer` tells how to organize a frame into a timeline, that is how 
+    `Organizer` tells how to organize a frame into a timeline, that is, how 
     to create workshifts and label them.
     
     Parameters
     ----------
-    split_by: Marker or str
+    marker: Marker or str
         A `Marker` or a pandas-compatible calendar frequency (accepts same 
-        kind of values as `base_unit_freq` of timeboard). The latter is 
-        equivalent to `Marker(each=split_by)`.
-    split_at: Iterable of Timestamp-like
+        kind of values as `base_unit_freq` of timeboard). The variant of 
+        `marker=freq` is silently converted  to `marker=Marker(each=freq)`.
+    marks: Iterable of Timestamp-like
     structure: Iterable 
         An element of `structure` is either another organizer, or 
         a workshift label, or a pattern. Pattern itself is an iterable of 
@@ -1100,7 +1099,7 @@ class Organizer(object):
     Raises
     ------
     ValueError
-        If both `split_by` and `split_at` are specified.
+        If both `marker` and `marks` are specified.
         
     Attributes
     ----------
@@ -1109,21 +1108,24 @@ class Organizer(object):
     Notes
     -----
     Firstly, organizer tells how to partition timeboard's frame into chunks 
-    (spans); this is defined by `split_by` or `split_at` parameter. 
+    (spans). Secondly, organizer defines how to organize each span into 
+    workshifts and what labels they receive.
     
-    Given `split_by` parameter, the frame is partitioned into spans 
-    bounded by the marks set by the `Marker`. 
+    Spans created by organizer begin at base units called marks. The 
+    locations of the marks are defined by either `marker` or `marks` parameter. 
     
-    If, instead, `split_at` is given,  
-    the frame is partitioned at the explicitly specified points in time. 
+    Given `marker` parameter, the mark locations are computed according to 
+    the rules set by the `Marker` object. 
     
-    One and only one of `split_by` or `split_at` parameters must be supplied.
+    If, instead, `marks` is given, it is a list of explicitly specified 
+    points in time which will serve as marks. 
+    
+    One and only one of `marker` or `marks` parameters must be supplied.
 
-    Secondly, organizer tells what to do with each of the identified spans; 
-    this is specified by `structure` parameter which is an iterable. For each 
-    span a next element is taken from `structure`. This element is either  
-    another `Organizer`, or a pattern (an iterable of workshift labels), 
-    or a single label.
+    What to do with each of the identified spans is specified by `structure` 
+    parameter which is an iterable. For each span a next element is taken 
+    from `structure`. This element is either another `Organizer`, or a pattern 
+    (an iterable of workshift labels), or a single label.
     
     If an element of `structure` is an `Organizer`, it is used to further 
     partition this span of the frame into sub-spans. 
@@ -1140,36 +1142,36 @@ class Organizer(object):
     Once `structure` is exhausted , it is re-enacted in cycles. The same 
     approach applies for pattern when setting workshift labels.
     """
-    def __init__(self, split_by=None, split_at=None, structure=None):
-        if (split_by is None) == (split_at is None):
-            raise ValueError("One and only one of 'split_by' or 'split_at' "
+    def __init__(self, marker=None, marks=None, structure=None):
+        if (marker is None) == (marks is None):
+            raise ValueError("One and only one of 'marker' or 'marks' "
                              "must be specified ")
         if not _is_iterable(structure):
             raise TypeError("structure parameter must be iterable")
-        self._split_by = split_by
-        self._split_at = split_at
-        if split_by is not None and not isinstance(split_by, Marker):
-            self._split_by = Marker(split_by)
-        self._split_at = _to_iterable(split_at)
+        self._marker = marker
+        self._marks = marks
+        if marker is not None and not isinstance(marker, Marker):
+            self._marker = Marker(marker)
+        self._marks = _to_iterable(marks)
         self._structure = structure
 
     @property
-    def split_by(self):
-        return self._split_by
+    def marker(self):
+        return self._marker
 
     @property
-    def split_at(self):
-        return self._split_at
+    def marks(self):
+        return self._marks
 
     @property
     def structure(self):
         return self._structure
 
     def __repr__(self):
-        if self.split_by is not None:
-            s = "split_by={!r}".format(self.split_by)
+        if self.marker is not None:
+            s = "marker={!r}".format(self.marker)
         else:
-            s = "split_at={!r}".format(self.split_at)
+            s = "marks={!r}".format(self.marks)
         return "Organizer({}, structure={!r})".format(s, self.structure)
 
 
