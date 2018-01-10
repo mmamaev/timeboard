@@ -151,6 +151,14 @@ class TestRollForward(object):
             new_ws_list.append(ws.rollforward(duty=duty)._loc)
         assert new_ws_list == [4, 2, 2, 4, 2, 4]
 
+    def test_rollforward_off_0_after_last_on_element(self):
+        clnd = tb_12_days()
+        ws = clnd('11 Jan 2017')
+        assert ws.rollforward(duty='off')._loc == 11
+        assert ws.rollforward(duty='any')._loc == 11
+        with pytest.raises(OutOfBoundsError):
+            assert ws.rollforward(duty='on')
+
     def test_rollforward_on_n(self):
         clnd = tb_12_days()
         ws = clnd('04 Jan 2017')
@@ -182,6 +190,14 @@ class TestRollForward(object):
         for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
             new_ws_list.append(ws.rollforward(steps=-2, duty=duty)._loc)
         assert new_ws_list == [4, 5, 5, 4, 6, 4]
+
+    def test_rollforward_off_n_negative_after_last_on_element(self):
+        clnd = tb_12_days()
+        ws = clnd('12 Jan 2017')
+        assert ws.rollforward(steps=-2, duty='off')._loc == 9
+        assert ws.rollforward(steps=-2, duty='any')._loc == 10
+        with pytest.raises(OutOfBoundsError):
+            ws.rollforward(steps=-2, duty='on')
 
     def test_rollforward_n_off_limits(self):
         clnd = tb_12_days()
@@ -236,6 +252,14 @@ class TestRollBack(object):
             new_ws_list.append(ws.rollback(duty=duty)._loc)
         assert new_ws_list == [10, 12, 12, 10, 12, 10]
 
+    def test_rollback_off_0_at_first_element(self):
+        clnd = tb_12_days()
+        ws = clnd('31 Dec 2016')
+        assert ws.rollback(duty='off')._loc == 0
+        assert ws.rollback(duty='any')._loc == 0
+        with pytest.raises(OutOfBoundsError):
+            ws.rollback(duty='on')
+
     def test_rollback_on_n(self):
         clnd = tb_12_days()
         ws = clnd('10 Jan 2017')
@@ -267,6 +291,14 @@ class TestRollBack(object):
         for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
             new_ws_list.append(ws.rollback(steps=-2, duty=duty)._loc)
         assert new_ws_list == [10, 8, 8, 10, 7, 10]
+
+    def test_rollback_off_n_negative_at_first_element(self):
+        clnd = tb_12_days()
+        ws = clnd('31 Dec 2016')
+        assert ws.rollback(steps=-2, duty='off')._loc == 3
+        assert ws.rollback(steps=-2, duty='any')._loc == 2
+        with pytest.raises(OutOfBoundsError):
+            ws.rollback(steps=-2, duty='on')
 
     def test_rollback_alt_off_limits(self):
         clnd = tb_12_days()

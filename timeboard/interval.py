@@ -302,9 +302,14 @@ class Interval(object):
 
         period_index = _Frame(start=ivl_duty_start_ts, end=ivl_duty_end_ts,
                               base_unit_freq=period)
-        len_of_1st_period = self._tb.get_interval(
-            (period_index[0].start_time, period_index[0].end_time),
-            clip_period=False, schedule=self._schedule).count(duty=duty)
+        first_period_ivl = self._tb.get_interval(
+            period_index[0],
+            clip_period=False, schedule=self._schedule)
+        len_of_1st_period = first_period_ivl.count(duty=duty)
+        last_period_ivl = self._tb.get_interval(
+            period_index[-1],
+            clip_period=False, schedule=self._schedule)
+        len_of_last_period = last_period_ivl.count(duty=duty)
 
         if ivl_duty_end_ts <= period_index[0].end_time:
             ivl_units_in_only_period = self.count(duty=duty)
@@ -312,15 +317,12 @@ class Interval(object):
 
         result = 0.0
         ivl_units_in_1st_period = self._tb.get_interval(
-            (ivl_duty_start_ts, period_index[0].end_time),
+            (ivl_duty_start_ts, first_period_ivl.end_time),
             clip_period=False, schedule=self._schedule).count(duty=duty)
         result += ivl_units_in_1st_period / len_of_1st_period
 
         ivl_units_in_last_period = self._tb.get_interval(
-            (period_index[-1].start_time, ivl_duty_end_ts),
-            clip_period=False, schedule=self._schedule).count(duty=duty)
-        len_of_last_period = self._tb.get_interval(
-            (period_index[-1].start_time, period_index[-1].end_time),
+            (last_period_ivl.start_time, ivl_duty_end_ts),
             clip_period=False, schedule=self._schedule).count(duty=duty)
         result += ivl_units_in_last_period / len_of_last_period
 
@@ -329,7 +331,7 @@ class Interval(object):
 
             def duty_is_present(p):
                 return self._tb.get_interval(
-                    (p.start_time, p.end_time),
+                    p,
                     clip_period=False,
                     schedule=self._schedule).count(duty=duty) > 0
 

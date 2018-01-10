@@ -134,7 +134,7 @@ def _check_splitby_freq(base_unit_freq, split_by_freq):
                 # there can be the possibility of valid splitting
                 # but it depends on the alignment of the frame's start_time
                 # which we do not check here
-                # For example '12H' frame can be split by 'D' only if it
+                # For example '12H' frame can be partitioned by 'D' only if it
                 # starts at 00:00 or 12:00;
                 # see more examples in test_splits::TestMultipliedFreqSplitBy
                 return False
@@ -690,7 +690,7 @@ class _Timeline(object):
                self._get_ws_first_baseunit(n) + 1
 
     def get_ws_position(self, point_in_time):
-        """Get position of the workshift containing the given point in time.
+        """Get position of the workshift which contains the given point in time.
         
         Parameters
         ----------
@@ -710,9 +710,86 @@ class _Timeline(object):
             base_unit = self.frame.get_loc(get_timestamp(point_in_time))
         except KeyError:
             raise OutOfBoundsError("Point in time {} is not within the "
-                                   "timeline {}".format(point_in_time, self))
+                                   "timeline".format(point_in_time))
         ws_idx = self._frameband.iloc[base_unit]
         return self._wsband.index.get_loc(ws_idx)
+
+    def get_ws_pos_by_ref_after(self, point_in_time):
+        """Find the workshift with reference time on or after the point in time.
+        
+        If there is no workshift whose reference time is exactly equal 
+        to the given point in time, return the position of the earliest 
+        workshift whose reference time is in the future of the point in time.
+        
+        Parameters
+        ----------
+        point_in_time : Timestamp-like
+
+        Returns
+        -------
+        int >=0
+            Zero-based sequence number of a workshift on the timeline.
+
+        Raises
+        ------
+        OutOfBoundsError
+            If the point in time is not within the timeline or there is no 
+            workshift whose reference time is on or after the point in time.
+        """
+
+        point_in_time = get_timestamp(point_in_time)
+        candidate = self.get_ws_position(point_in_time)
+        while True:
+            try:
+                ref_time = self.get_ws_ref_time(candidate)
+            except IndexError:
+                raise OutOfBoundsError("No workshift with reference time "
+                                       "after {}".format(point_in_time))
+            if ref_time >= point_in_time:
+                break
+            candidate += 1
+
+        return candidate
+
+    def get_ws_pos_by_ref_before(self, point_in_time):
+        """Find the workshift with reference time on or before the point in time.
+
+        If there is no workshift whose reference time is exactly equal 
+        to the given point in time, return the position of the latest 
+        workshift whose reference time is in the past of the point in time.
+
+        Parameters
+        ----------
+        point_in_time : Timestamp-like
+
+        Returns
+        -------
+        int >=0
+            Zero-based sequence number of a workshift on the timeline.
+
+        Raises
+        ------
+        OutOfBoundsError
+            If the point in time is not within the timeline or there is no 
+            workshift whose reference time is on or before the point in time.
+        """
+        point_in_time = get_timestamp(point_in_time)
+        candidate = self.get_ws_position(point_in_time)
+        while True:
+            try:
+                ref_time = self.get_ws_ref_time(candidate)
+            except IndexError:
+                raise OutOfBoundsError("No workshift with reference time "
+                                       "before {}".format(point_in_time))
+            if ref_time <= point_in_time:
+                break
+            if candidate <=0:
+                raise OutOfBoundsError("No workshift with reference time "
+                                       "before {}".format(point_in_time))
+            candidate -= 1
+
+        return candidate
+
 
     @property
     def labels(self):
@@ -857,7 +934,6 @@ class _Timeline(object):
         ----
         Nothing is returned; the timeline is modified in-place.
         """
-        #TODO: introduce concept of workshifts of varied length (>1 BU per workshift
         if span_first is None:
             span_first = 0
         if span_last is None:
@@ -918,16 +994,17 @@ class _Timeline(object):
             ref_times = end_times
         else:
             ref_times = start_times
-        data = {'workshift' : ref_times,
+        data = {'loc' : range(first_ws, last_ws+1),
+                'workshift' : ref_times,
                 'start' : start_times,
                 'end' : end_times,
                 'duration' : durations,
                 'label' : np.array(self.labels.iloc[first_ws:last_ws+1]),
                 }
         return pd.DataFrame(data=data,
-                            columns=['workshift', 'start',
+                            columns=['loc','workshift', 'start',
                                      'duration', 'end', 'label']
-                            ).set_index('workshift')
+                            ).set_index('loc')
 
 class _Schedule(object):
     """Duty schedule of workshifts.

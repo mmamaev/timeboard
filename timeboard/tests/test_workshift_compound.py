@@ -1,5 +1,4 @@
 import timeboard as tb
-from timeboard.workshift import Workshift
 from timeboard.exceptions import OutOfBoundsError
 from timeboard.timeboard import _Location, LOC_WITHIN, OOB_LEFT, OOB_RIGHT
 from timeboard.core import get_timestamp, Organizer
@@ -19,7 +18,7 @@ def tb_12_days():
     # WS No. 0       1   2   3   4   5   6   7   8
     # WS Idx 0       2   3   4   5   6   7   8   9
 
-class TestWorkshiftConstructor(object):
+class TestWorkshiftCompoundConstructor(object):
 
     def test_locate(self):
         clnd = tb_12_days()
@@ -41,7 +40,7 @@ class TestWorkshiftConstructor(object):
         loc = clnd._locate('30 Dec 2016')
         assert loc == _Location(None, OOB_LEFT)
 
-    def test_workshift_constructor_ordinary(self):
+    def test_workshift_ordinary_constructor(self):
         clnd = tb_12_days()
         ws = clnd.get_workshift('04 Jan 2017')
         assert ws._loc == 3
@@ -55,7 +54,7 @@ class TestWorkshiftConstructor(object):
         wsx = clnd('04 Jan 2017')
         assert wsx._loc == ws._loc
 
-    def test_workshift_constructor_agg(self):
+    def test_workshift_compound_constructor(self):
         clnd = tb_12_days()
         ws = clnd.get_workshift('11 Jan 2017')
         assert ws._loc == 8
@@ -70,7 +69,7 @@ class TestWorkshiftConstructor(object):
         assert wsx._loc == ws._loc
         assert wsx._label == ws._label
 
-    def test_workshift_constructor_agg_at_start(self):
+    def test_workshift_constructor_compound_at_start(self):
         clnd = tb_12_days()
         ws = clnd.get_workshift('31 Dec 2016')
         assert ws._loc == 0
@@ -85,7 +84,7 @@ class TestWorkshiftConstructor(object):
         assert wsx._loc == ws._loc
         assert wsx._label == ws._label
 
-    def test_workshift_constructor_agg_at_end(self):
+    def test_workshift_constructor_compound_at_end(self):
         clnd = tb_12_days()
         ws = clnd.get_workshift('12 Jan 2017')
         assert ws._loc == 8
@@ -101,7 +100,7 @@ class TestWorkshiftConstructor(object):
         assert wsx._label == ws._label
 
 
-class TestRollForward(object):
+class TestRollForwardCompound(object):
 
     def test_rollforward_trivial_0_to_self(self):
         clnd = tb_12_days()
@@ -153,62 +152,36 @@ class TestRollForward(object):
         for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
             new_ws_list.append(ws.rollforward(duty=duty)._loc)
         assert new_ws_list == [3, 0, 0, 3, 0, 3]
-#
-#     def test_rollforward_on_n(self):
-#         clnd = tb_12_days()
-#         ws = clnd('04 Jan 2017')
-#         new_ws_list = []
-#         for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
-#             new_ws_list.append(ws.rollforward(steps=2, duty=duty)._loc)
-#         assert new_ws_list == [10, 8, 10, 8, 6, 10]
-#
-#     def test_rollforward_off_n(self):
-#         clnd = tb_12_days()
-#         ws = clnd('03 Jan 2017')
-#         new_ws_list = []
-#         for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
-#             new_ws_list.append(ws.rollforward(steps=2, duty=duty)._loc)
-#         assert new_ws_list == [10, 6, 6, 10, 5, 10]
-#
-#     def test_rollforward_on_n_negative(self):
-#         clnd = tb_12_days()
-#         ws = clnd('10 Jan 2017')
-#         new_ws_list = []
-#         for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
-#             new_ws_list.append(ws.rollforward(steps=-2, duty=duty)._loc)
-#         assert new_ws_list == [4, 8, 4, 8, 8, 4]
-#
-#     def test_rollforward_off_n_negative(self):
-#         clnd = tb_12_days()
-#         ws = clnd('08 Jan 2017')
-#         new_ws_list = []
-#         for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
-#             new_ws_list.append(ws.rollforward(steps=-2, duty=duty)._loc)
-#         assert new_ws_list == [4, 5, 5, 4, 6, 4]
-#
-#     def test_rollforward_n_off_limits(self):
-#         clnd = tb_12_days()
-#         with pytest.raises(OutOfBoundsError):
-#             clnd('10 Jan 2017').rollforward(1)
-#
-#     def test_rollforward_alt_off_limits(self):
-#         clnd = tb_12_days()
-#         with pytest.raises(OutOfBoundsError):
-#             clnd('11 Jan 2017').rollforward(duty='alt')
-#
-#     def test_rollforward_n_negative_off_limits(self):
-#         clnd = tb_12_days()
-#         with pytest.raises(OutOfBoundsError):
-#             clnd('01 Jan 2017').rollforward(-1)
-#
-#     def test_rollforward_no_such_duty(self):
-#         clnd = tb.Timeboard(base_unit_freq='D',
-#                             start='31 Dec 2016', end='12 Jan 2017',
-#                             layout=[0])
-#         with pytest.raises(OutOfBoundsError):
-#             clnd('31 Dec 2016').rollforward()
-#
-class TestRollBack(object):
+
+    def test_rollforward_on_n(self):
+        clnd = tb_12_days()
+        ws = clnd('31 Dec 2016')
+        new_ws_list = []
+        for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
+            new_ws_list.append(ws.rollforward(steps=2, duty=duty)._loc)
+        assert new_ws_list == [4, 5, 4, 5, 2, 4]
+
+    def test_rollforward_off_n(self):
+        org = Organizer(split_by='W', structure=[False, [0, 0, 1, 1]])
+        clnd =  tb.Timeboard(base_unit_freq='D',
+                            start='31 Dec 2016', end='12 Jan 2017',
+                            layout=org)
+        ws = clnd('31 Dec 2016')
+        new_ws_list = []
+        for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
+            new_ws_list.append(ws.rollforward(steps=2, duty=duty)._loc)
+        assert new_ws_list == [7, 2, 2, 7, 2, 7]
+
+    def test_rollforward_on_n_negative_from_last_element(self):
+        clnd = tb_12_days()
+        ws = clnd('11 Jan 2017')
+        assert ws.rollforward(steps=-2, duty='on')._loc == 4
+        assert ws.rollforward(steps=-2, duty='any')._loc == 6
+        with pytest.raises(OutOfBoundsError):
+            ws.rollforward(steps=-2, duty='off')
+
+
+class TestRollBackCompound(object):
 
     def test_rollback_trivial_0_to_self(self):
         clnd = tb_12_days()
@@ -245,61 +218,39 @@ class TestRollBack(object):
         for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
             new_ws_list.append(ws.rollback(duty=duty)._loc)
         assert new_ws_list == [7, 8, 8, 7, 8, 7]
-#
-#     def test_rollback_on_n(self):
-#         clnd = tb_12_days()
-#         ws = clnd('10 Jan 2017')
-#         new_ws_list = []
-#         for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
-#             new_ws_list.append(ws.rollback(steps=2, duty=duty)._loc)
-#         assert new_ws_list == [4, 6, 4, 6, 8, 4]
-#
-#     def test_rollback_off_n(self):
-#         clnd = tb_12_days()
-#         ws = clnd('11 Jan 2017')
-#         new_ws_list = []
-#         for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
-#             new_ws_list.append(ws.rollback(steps=2, duty=duty)._loc)
-#         assert new_ws_list == [4, 8, 8, 4, 9, 4]
-#
-#     def test_rollback_on_n_negative(self):
-#         clnd = tb_12_days()
-#         ws = clnd('04 Jan 2017')
-#         new_ws_list = []
-#         for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
-#             new_ws_list.append(ws.rollback(steps=-2, duty=duty)._loc)
-#         assert new_ws_list == [10, 6, 10, 6, 6, 10]
-#
-#     def test_rollback_off_n_negative(self):
-#         clnd = tb_12_days()
-#         ws = clnd('05 Jan 2017')
-#         new_ws_list = []
-#         for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
-#             new_ws_list.append(ws.rollback(steps=-2, duty=duty)._loc)
-#         assert new_ws_list == [10, 8, 8, 10, 7, 10]
-#
-#     def test_rollback_alt_off_limits(self):
-#         clnd = tb_12_days()
-#         with pytest.raises(OutOfBoundsError):
-#             clnd('31 Dec 2016').rollback(duty='alt')
-#
-#     def test_rollback_n_off_limits(self):
-#         clnd = tb_12_days()
-#         with pytest.raises(OutOfBoundsError):
-#             clnd('01 Jan 2017').rollback(1)
-#
-#     def test_rollback_n_negative_off_limits(self):
-#         clnd = tb_12_days()
-#         with pytest.raises(OutOfBoundsError):
-#             clnd('10 Jan 2017').rollback(-1)
-#
-#     def test_rollback_only_alt(self):
-#         clnd = tb.Timeboard(base_unit_freq='D',
-#                             start='31 Dec 2016', end='12 Jan 2017',
-#                             layout=[0])
-#         with pytest.raises(OutOfBoundsError):
-#             clnd('10 Jan 2017').rollback()
-#
+
+    def test_rollback_on_n(self):
+        clnd = tb_12_days()
+        ws = clnd('11 Jan 2017')
+        new_ws_list = []
+        for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
+            new_ws_list.append(ws.rollback(steps=2, duty=duty)._loc)
+        assert new_ws_list == [4, 2, 4, 2, 6, 4]
+
+    def test_rollback_off_n(self):
+        clnd = tb_12_days()
+        ws = clnd('07 Jan 2017')
+        new_ws_list = []
+        for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
+            new_ws_list.append(ws.rollback(steps=2, duty=duty)._loc)
+        assert new_ws_list == [0, 2, 2, 0, 4, 0]
+
+    def test_rollback_on_n_negative(self):
+        clnd = tb_12_days()
+        ws = clnd('05 Jan 2017')
+        new_ws_list = []
+        for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
+            new_ws_list.append(ws.rollback(steps=-2, duty=duty)._loc)
+        assert new_ws_list == [8, 6, 8, 6, 6, 8]
+
+    def test_rollback_off_n_negative(self):
+        clnd = tb_12_days()
+        ws = clnd('03 Jan 2017')
+        new_ws_list = []
+        for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
+            new_ws_list.append(ws.rollback(steps=-2, duty=duty)._loc)
+        assert new_ws_list == [4, 6, 6, 4, 4, 4]
+
 
 
 

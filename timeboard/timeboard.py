@@ -217,12 +217,19 @@ class Timeboard(object):
         except:
             raise
 
-    def _locate(self, point_in_time):
-        """Find workshift by timestamp
+    def _locate(self, point_in_time, by_ref=None):
+        """Find workshift location by timestamp.
         
         Parameters
         ----------
         point_in_time : Timestamp-like
+        by_ref : {'before' | 'after'}, optional
+            If not specified, search for the workshift which contains the 
+            given point in time.
+            If specified, search for the workshift whose reference time is 
+            either before or after the given point in time. The both options 
+            accept the workshift whose reference time is equal to the point 
+            in time.
         
         Returns 
         -------
@@ -233,16 +240,20 @@ class Timeboard(object):
             If the workshift is found, its zero-based position on the 
             timeline is returned in `position` field and `LOC_WITHIN` constant 
             is returned in `where` field. 
-            If `point_in_time` is outside the timeline, `position` field 
-            is set to `None` and `where` field contains indication whether 
-            the point in time is in the future(`where=OOB_RIGHT`) or in the 
-            past (`where=OOB_LEFT`)
-            
+            Otherwise `position` field  is set to `None` and `where` field 
+            contains indication whether the point in time is located to the 
+            future of all workshifts (`where=OOB_RIGHT`) or to the past 
+            (`where=OOB_LEFT`)
         """
         pit_ts = get_timestamp(point_in_time)
+        get_ws_pos_function = self._timeline.get_ws_position
+        if by_ref == 'before':
+            get_ws_pos_function = self._timeline.get_ws_pos_by_ref_before
+        elif by_ref == 'after':
+            get_ws_pos_function = self._timeline.get_ws_pos_by_ref_after
 
         try:
-            loc = self._timeline.get_ws_position(pit_ts)
+            loc = get_ws_pos_function(pit_ts)
             if loc < 0:
                 raise RuntimeError("_Frame.get_loc returned negative {}"
                                    " for PiT {}".format(loc, point_in_time))
@@ -251,6 +262,10 @@ class Timeboard(object):
             if pit_ts < self.start_time:
                 return _Location(None, OOB_LEFT)
             elif pit_ts > self.end_time:
+                return _Location(None, OOB_RIGHT)
+            elif by_ref == 'before':
+                return _Location(None, OOB_LEFT)
+            elif by_ref == 'after':
                 return _Location(None, OOB_RIGHT)
             else:
                 raise RuntimeError("PiT {} is within frame but _Frame.get_loc"
@@ -532,19 +547,21 @@ class Timeboard(object):
     def _get_interval_locs_by_period(self, period_ref, period_freq,
                                      clip_period, drop_head, drop_tail):
         p = get_period(period_ref, freq=period_freq)
-        locs = [self._locate(p.start_time), self._locate(p.end_time)]
-        result0 = locs[0].position
-        result1 = locs[1].position
+        locs = [self._locate(p.start_time, by_ref='after'),
+                self._locate(p.end_time, by_ref='before')]
+        print p.start_time, p.end_time, locs
+        position0 = locs[0].position
+        position1 = locs[1].position
         if clip_period:
             if locs[0].where == OOB_LEFT and locs[1].where != OOB_LEFT:
-                result0 = 0
+                position0 = 0
                 drop_head = False
             if locs[1].where == OOB_RIGHT and locs[0].where != OOB_RIGHT:
-                result1 = len(self._timeline) - 1
+                position1 = len(self._timeline) - 1
                 drop_tail = False
         return self._strip_interval_locs(
-                                         [_Location(result0, locs[0].where),
-                                          _Location(result1, locs[1].where)],
+                                         [_Location(position0, locs[0].where),
+                                          _Location(position1, locs[1].where)],
                                          drop_head, drop_tail)
 
     def _strip_interval_locs(self, locs, drop_head, drop_tail):

@@ -97,10 +97,6 @@ class Workshift(object):
         # TODO: Refactor. _Timeline methods should not be called from this class
         return self._tb._timeline.get_ws_ref_time(self._loc)
 
-    def to_period(self):
-        """Present workshift as a period with base unit frequency"""
-        return get_period(self.to_timestamp(), freq=self._tb.base_unit_freq)
-
     def __repr__(self):
         return "Workshift(tb, {!r})\ntb={!r}".format(self._loc, self._tb)
 
@@ -116,8 +112,8 @@ class Workshift(object):
                                   freq=self._tb.base_unit_freq))
 
     def __str__(self):
-        return "Workshift " + self.compact_str + "\n\n{}".format(
-            self._tb.to_dataframe(self._loc, self._loc))
+        return "Workshift " + self.compact_str + \
+               "\n\n{}".format(self._tb.to_dataframe(self._loc, self._loc))
 
     @property
     def label(self):
@@ -190,20 +186,23 @@ class Workshift(object):
             `rollback` differs from `rollforward` only in the definition of 
             the zero step workshift and the default direction of stepping.
         """
-        idx = self._schedule.on_duty_index
+        schedule = self._schedule
+        idx = schedule.on_duty_index
         if (duty == 'off') or (duty == 'same' and self.is_off_duty) or (
                         duty == 'alt' and self.is_on_duty):
-            idx = self._schedule.off_duty_index
+            idx = schedule.off_duty_index
         elif duty == 'any':
-            idx = self._schedule.index
+            idx = schedule.index
 
         len_idx = len(idx)
         i = searchsorted(idx, self._loc)
-
         if i == len_idx or i + steps < 0 or i + steps >= len_idx:
-            return self._tb._handle_out_of_bounds()
+            return self._tb._handle_out_of_bounds("Rollforward of ws {} with "
+                       "steps={}, duty={}, schedule={}"
+                       ".".format(self.to_timestamp(), steps, duty,
+                                  schedule.activity))
 
-        return Workshift(self._tb, idx[i + steps], self._schedule)
+        return Workshift(self._tb, idx[i + steps], schedule)
 
     def rollback(self, steps=0, duty='on'):
         """
@@ -261,13 +260,13 @@ class Workshift(object):
             the zero step workshift and the default direction of stepping.
         """
         # TODO: Optimize rollback and rolloforward to compy with DRY?
-
-        idx = self._schedule.on_duty_index
+        schedule = self._schedule
+        idx = schedule.on_duty_index
         if (duty == 'off') or (duty == 'same' and self.is_off_duty) or (
                         duty == 'alt' and self.is_on_duty):
-            idx = self._schedule.off_duty_index
+            idx = schedule.off_duty_index
         elif duty == 'any':
-            idx = self._schedule.index
+            idx = schedule.index
 
         # TODO: Optimize this search
         len_idx = len(idx)
@@ -276,9 +275,12 @@ class Workshift(object):
             i -= 1
 
         if i == -1 or i - steps < 0 or i - steps >= len_idx:
-            return self._tb._handle_out_of_bounds()
+            return self._tb._handle_out_of_bounds("Rollback of ws {} with "
+                       "steps={}, duty={}, schedule={}"
+                       ".".format(self.to_timestamp(), steps, duty,
+                                  schedule.activity))
 
-        return Workshift(self._tb, idx[i - steps], self._schedule)
+        return Workshift(self._tb, idx[i - steps], schedule)
 
     def __add__(self, other):
         """ws + n is the same as ws.rollforward(n, duty='on')"""
