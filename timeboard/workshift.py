@@ -61,10 +61,6 @@ class Workshift(object):
             raise OutOfBoundsError("Workshift location {} "
                                    "is outside timeboard {}".
                                    format(location, timeboard.compact_str))
-        # negative locations are not allowed? why?
-        # if location <0:
-        #     raise OutOfBoundsError("Received location={}. Negative location is "
-        #                            "not allowed.".format(location))
         self._tb = timeboard
         self._loc = location
         self._schedule = schedule
@@ -98,7 +94,7 @@ class Workshift(object):
         return self._tb._timeline.get_ws_ref_time(self._loc)
 
     def __repr__(self):
-        return "Workshift(tb, {!r})\ntb={!r}".format(self._loc, self._tb)
+        return "Workshift({}) of ".format(self._loc) + self.compact_str
 
     @property
     def compact_str(self):
@@ -112,7 +108,7 @@ class Workshift(object):
                                   freq=self._tb.base_unit_freq))
 
     def __str__(self):
-        return "Workshift " + self.compact_str + \
+        return "Workshift({}) of ".format(self._loc) + self.compact_str + \
                "\n\n{}".format(self._tb.to_dataframe(self._loc, self._loc))
 
     @property

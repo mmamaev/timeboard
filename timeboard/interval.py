@@ -75,8 +75,8 @@ class Interval(object):
 
         locs = (handle_bound(bound0), handle_bound(bound1))
         if locs[0] > locs[1]:
-            raise VoidIntervalError('Attempted to create void interval '
-                                    '({},{})'.format(locs[0], locs[1]))
+            raise VoidIntervalError('Attempted to create void interval with '
+                                    '{!r}'.format(locs))
         self._tb = timeboard
         self._loc = locs
         self._length = self._loc[1] - self._loc[0] + 1
@@ -111,14 +111,16 @@ class Interval(object):
         return left_bound, right_bound
 
     def __repr__(self):
-        return "Interval(tb, {!r})\ntb={!r}".format(self._loc, self._tb)
+        return self.compact_str
 
     @property
     def compact_str(self):
-        return "Interval [{}]: {} -> {}".format(
-            self._length,
+        return "Interval{!r}: {} -> {} [{}]".format(
+            self._loc,
             Workshift(self._tb, self._loc[0]).compact_str,
-            Workshift(self._tb, self._loc[1]).compact_str)
+            Workshift(self._tb, self._loc[1]).compact_str,
+            self._length,
+        )
 
     def __str__(self):
         return self.compact_str + "\n\n{}".format(
@@ -197,24 +199,25 @@ class Interval(object):
             duty_idx_bounds = self._duty_loc[duty]
             duty_idx = self._duty_idx[duty]
         except KeyError:
-            raise ValueError('Invalid duty parameter "{}"'.format(duty))
+            raise ValueError('Invalid `duty` parameter {!r}'.format(duty))
         if duty_idx_bounds[0] is None or duty_idx_bounds[1] is None:
             return self._tb._handle_out_of_bounds(
-                'Duty {} not found in interval {}'.format(duty, self))
+                'Duty {!r} not found in interval {}'.format(duty,
+                                                            self.compact_str))
 
         if n > 0:
             loc_in_duty_idx = duty_idx_bounds[0] + n - 1
         elif n < 0:
             loc_in_duty_idx = duty_idx_bounds[1] + n + 1
         else:
-            raise ValueError("Parameter 'n' must not be zero")
+            raise ValueError("Parameter `n` must not be zero")
 
         if (loc_in_duty_idx < duty_idx_bounds[0] or
             loc_in_duty_idx > duty_idx_bounds[1]):
 
             return self._tb._handle_out_of_bounds(
-                'No "{}" workshift seq.n. {} in the interval {}'.
-                format(duty, n, self))
+                'No {} {!r} workshifts in the interval {}'.
+                format(n, duty, self.compact_str))
 
         return Workshift(self._tb, duty_idx[loc_in_duty_idx], self._schedule)
 
@@ -235,7 +238,7 @@ class Interval(object):
         try:
             duty_idx_bounds = self._duty_loc[duty]
         except KeyError:
-            raise ValueError('Invalid duty parameter "{}"'.format(duty))
+            raise ValueError('Invalid duty parameter {!r}'.format(duty))
         if duty_idx_bounds[0] is None or duty_idx_bounds[1] is None:
             return 0
         else:
@@ -287,11 +290,11 @@ class Interval(object):
         SUPPORTED_PERIODS = ('S', 'T', 'min', 'H', 'D', 'W', 'M', 'Q', 'A', 'Y')
         #TODO: support shifted periods (i.e. W-TUE, A-MAR)
         if period not in SUPPORTED_PERIODS:
-            raise UnsupportedPeriodError('Period "{}" is not supported'.
+            raise UnsupportedPeriodError('Period {!r} is not supported'.
                                          format(period))
         if not _check_groupby_freq(self._tb.base_unit_freq, period):
-            raise UnsupportedPeriodError('Period "{}" is not a superperiod '
-                                         'of timeboard\'s base unit "{}"'.
+            raise UnsupportedPeriodError('Period {!r} is not a superperiod '
+                                         'of timeboard\'s base unit {!r}'.
                                          format(period, self._tb.base_unit_freq))
         try:
             ivl_duty_start_ts = self.first(duty).to_timestamp()

@@ -9,7 +9,7 @@ import pandas as pd
 import numpy as np
 from numpy import nonzero, arange
 from itertools import cycle, dropwhile
-from collections import Iterable, namedtuple
+from collections import Iterable, OrderedDict
 import re
 import six
 #import timeit
@@ -859,7 +859,7 @@ class _Timeline(object):
                 else:
                     continue
             if loc in amendments_located:
-                raise KeyError("Amendments key '{}' is a duplicate reference "
+                raise KeyError("Amendments key {!r} is a duplicate reference "
                                "to workshift {}".format(point_in_time, loc))
             amendments_located[loc] = value
 
@@ -965,10 +965,6 @@ class _Timeline(object):
                                                subframe.last+1), inplace=True)
                 self._frameband.iloc[subframe.first:
                                      subframe.last+1] = subframe.first
-                # self.reset()
-                # raise TypeError('Organizer.layout may contain either '
-                #                 'patterns (iterables of labels) or  '
-                #                 'other Organizers')
         # timer3 = timeit.default_timer()
         # print "_organize ({},{})\n\tsplit: {:.5f}\n\tstructure init: {:.5f}" \
         #     "\n\tstructure run: {:.5f}".format(span_first, span_last,
@@ -1167,17 +1163,54 @@ class Organizer(object):
     def structure(self):
         return self._structure
 
-    def __repr__(self):
+    def _repr_builder(self, repr_objects=None):
+        if repr_objects is None:
+            repr_objects =  OrderedDict()
+        my_name = "org_{}".format(id(self))
+        if my_name in repr_objects:
+            return repr_objects
+
         if self.marker is not None:
-            s = "marker={!r}".format(self.marker)
+            if self.marker.at:
+                marker_name = "mrk_{}".format(id(self.marker))
+                if marker_name not in repr_objects:
+                   repr_objects[marker_name] = "{!r}".format(self.marker)
+                arg_m = "marker={}".format(marker_name)
+            else:
+                arg_m = "marker={!r}".format(self.marker)
         else:
-            s = "marks={!r}".format(self.marks)
-        return "Organizer({}, structure={!r})".format(s, self.structure)
+            arg_m = "marks={!r}".format(self.marks)
+
+        elem_reprs = []
+        for elem in self.structure:
+            if isinstance(elem, Organizer):
+                org_name = "org_{}".format(id(elem))
+                if org_name not in repr_objects:
+                    repr_objects = elem._repr_builder(repr_objects)
+                elem_reprs.append(org_name)
+            elif isinstance(elem, RememberingPattern):
+                rp_name = "rp_{}".format(id(elem))
+                if rp_name not in repr_objects:
+                   repr_objects[rp_name] = "{!r}".format(elem)
+                elem_reprs.append(rp_name)
+            else:
+                elem_reprs.append("{!r}".format(elem))
+        arg_s = "[" + ", ".join(elem_reprs) + "]"
+        repr_objects[my_name] = "Organizer({}, structure={})".format(arg_m,
+                                                                    arg_s)
+        return repr_objects
+
+    def __repr__(self):
+        repr_objects = self._repr_builder()
+        _, my_line = repr_objects.popitem()
+        my_object_lines = ""
+        for obj_name, obj_repr in repr_objects.items():
+            my_object_lines += "{} = {}\n".format(obj_name, obj_repr)
+        return my_object_lines + my_line
 
 
-_MarkerBase = namedtuple('Marker', ['each', 'at', 'how'])
-class Marker(_MarkerBase):
-    """Container class defining a markup of a timeboard's frame.
+class Marker(object):
+    """Container class defining the markup of a timeboard's frame.
     
     Markup is an ordered sequence of marks placed at points of time 
     calculated as specified by parameters of a `Marker`.
@@ -1280,20 +1313,40 @@ class Marker(_MarkerBase):
         Set marks on the last Monday in May and the first Monday in 
         September of each year.
     """
-    __slots__ = ()
 
-    def __new__(cls, each, at=None, how=None):
+    def __init__(self, each, at=None, how='from_start_of_each'):
+        self._each = each
+        self._at = at
         how_functions = {
             'from_start_of_each': from_start_of_each,
             'nth_weekday_of_month': nth_weekday_of_month,
             'from_easter_western': from_easter_western,
             'from_easter_orthodox': from_easter_orthodox,
         }
-        if how is None:
-            how = from_start_of_each
-        elif not callable(how):
-            how = how_functions[how]
-        return super(Marker, cls).__new__(cls, each, at, how)
+        if not callable(how):
+            self._how = how_functions[how]
+            self._how_str = how
+        else:
+            self._how = how
+            self._how_str = str(how)
+
+    @property
+    def each(self):
+        return self._each
+
+    @property
+    def at(self):
+        return self._at
+
+    @property
+    def how(self):
+        return self._how
+
+    def __repr__(self):
+        at_how_repr = ""
+        if self.at:
+            at_how_repr = ", at={!r}, how={!r}".format(self.at, self._how_str)
+        return "Marker(each={!r}{})".format(self.each, at_how_repr)
 
 
 class RememberingPattern(object):
@@ -1322,3 +1375,6 @@ class RememberingPattern(object):
 
     def __getitem__(self, i):
         return self._labels[i]
+
+    def __repr__(self):
+        return "RememberingPattern({!r})".format(self._labels)

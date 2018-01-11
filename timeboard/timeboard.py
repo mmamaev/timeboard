@@ -133,8 +133,6 @@ class Timeboard(object):
                                    workshift_ref=workshift_ref)
         self._timeline.amend(amendments)
         self._base_unit_freq = base_unit_freq
-        self._repr = "Timeboard({!r}, {!r}, {!r}, {!r})"\
-                     .format(base_unit_freq, start, end, layout)
 
         if default_activity is None:
             default_activity = 'on_duty'
@@ -143,6 +141,18 @@ class Timeboard(object):
                                            self._default_activity,
                                            self.default_selector)
         self._schedules = {self._default_activity : self._default_schedule}
+
+        if _is_iterable(layout):
+            org_repr = ""
+            org_arg = "{!r}".format(org)
+        else:
+            org_name = "org_{}".format(id(org))
+            repr_objects = org._repr_builder()
+            org_repr = "\n".join(["{} = {}".format(k, v)
+                                  for k, v in repr_objects.items()]) + "\n"
+            org_arg = org_name
+        self._repr = "{}Timeboard({!r}, start={!r}, end={!r}, layout={})"\
+                     .format(org_repr, base_unit_freq, start, end, org_arg)
 
 
     def __repr__(self):
@@ -273,7 +283,7 @@ class Timeboard(object):
 
     def _handle_out_of_bounds(self, msg=None):
         if msg is None:
-            message = "Point in time is outside {}".format(self)
+            message = "Point in time is outside {}".format(self.compact_str)
         else:
             message = msg
         raise OutOfBoundsError(message)
@@ -549,7 +559,6 @@ class Timeboard(object):
         p = get_period(period_ref, freq=period_freq)
         locs = [self._locate(p.start_time, by_ref='after'),
                 self._locate(p.end_time, by_ref='before')]
-        print p.start_time, p.end_time, locs
         position0 = locs[0].position
         position1 = locs[1].position
         if clip_period:
