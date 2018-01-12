@@ -23,7 +23,7 @@ class TestCalendarsRU(object):
             2008: 250, 2009: 249, 2010: 249, 2011: 248, 2012: 249, 2013: 247,
             2014: 247, 2015: 247, 2016: 247, 2017: 247, 2018: 247
         }
-        for year, bdays in bdays_in_year.iteritems():
+        for year, bdays in bdays_in_year.items():
             assert clnd.get_interval('01 Jan {}'.format(year),
                                      period='A').count() == bdays
 
@@ -109,14 +109,14 @@ class TestCalendarsRU(object):
     def test_calendar_RU_week8x5_select_years(self):
 
         clnd = RU.Weekly8x5('01 Jan 2010', '31 Dec 2015')
-        assert clnd.start_time == datetime.datetime(2010, 01, 01, 0, 0, 0)
+        assert clnd.start_time == datetime.datetime(2010, 1, 1, 0, 0, 0)
         assert clnd.end_time > datetime.datetime(2015, 12, 31, 23, 59, 59)
-        assert clnd.end_time < datetime.datetime(2016, 01, 01, 0, 0, 0)
+        assert clnd.end_time < datetime.datetime(2016, 1, 1, 0, 0, 0)
         # if only year is given, the 1st of Jan is implied at the both ends
         clnd = RU.Weekly8x5('2010', '2015')
-        assert clnd.start_time == datetime.datetime(2010, 01, 01, 0, 0, 0)
-        assert clnd.end_time > datetime.datetime(2015, 01, 01, 23, 59, 59)
-        assert clnd.end_time < datetime.datetime(2015, 01, 02, 0, 0, 0)
+        assert clnd.start_time == datetime.datetime(2010, 1, 1, 0, 0, 0)
+        assert clnd.end_time > datetime.datetime(2015, 1, 1, 23, 59, 59)
+        assert clnd.end_time < datetime.datetime(2015, 1, 2, 0, 0, 0)
 
     def test_calendar_RU_week8x5_OOB(self):
         with pytest.raises(OutOfBoundsError):

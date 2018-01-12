@@ -11,9 +11,9 @@ class TestTBConstructor(object):
                             start='01 Jan 2017', end='12 Jan 2017',
                             layout=[1])
         assert clnd._timeline.labels.eq([1]*12).all()
-        assert clnd.start_time == datetime.datetime(2017, 01, 01, 0, 0, 0)
-        assert clnd.end_time > datetime.datetime(2017, 01, 12, 23, 59, 59)
-        assert clnd.end_time < datetime.datetime(2017, 01, 13, 0, 0, 0)
+        assert clnd.start_time == datetime.datetime(2017, 1, 1, 0, 0, 0)
+        assert clnd.end_time > datetime.datetime(2017, 1, 12, 23, 59, 59)
+        assert clnd.end_time < datetime.datetime(2017, 1, 13, 0, 0, 0)
         assert clnd.base_unit_freq == 'D'
 
     def test_tb_constructor_trivial_with_amendments(self):
@@ -69,7 +69,7 @@ class TestTBConstructor(object):
         sdl = clnd.default_schedule
         selector = clnd.default_selector
         assert selector(clnd._timeline[1])
-        assert map(selector, clnd._timeline.labels) == [False, True] * 6
+        assert [selector(x) for x in clnd._timeline.labels] == [False, True] * 6
         assert (sdl.on_duty_index == [1, 3, 5, 7, 9, 11]).all()
         assert (sdl.off_duty_index == [0, 2, 4, 6, 8, 10]).all()
 
@@ -85,8 +85,8 @@ class TestTBConstructor(object):
         sdl = clnd.default_schedule
         selector = clnd.default_selector
         assert not selector(clnd._timeline[1])
-        assert map(selector, clnd._timeline.labels) == [False, False, False,
-                                                   True] * 3
+        assert [selector(x) for x in clnd._timeline.labels] == [False, False,
+                                                                False, True] * 3
         assert (sdl.on_duty_index == [3, 7, 11]).all()
         assert (sdl.off_duty_index == [0, 1, 2, 4, 5, 6, 8, 9, 10]).all()
 
@@ -105,8 +105,8 @@ class TestTBConstructorWithOrgs:
                             amendments=amendments)
 
         assert clnd.start_time == datetime.datetime(2016, 12, 28, 0, 0, 0)
-        assert clnd.end_time > datetime.datetime(2017, 04, 02, 23, 59, 59)
-        assert clnd.end_time < datetime.datetime(2017, 04, 03, 0, 0, 0)
+        assert clnd.end_time > datetime.datetime(2017, 4, 2, 23, 59, 59)
+        assert clnd.end_time < datetime.datetime(2017, 4, 3, 0, 0, 0)
         assert clnd.base_unit_freq == 'D'
         assert clnd('28 Dec 2016').is_on_duty
         assert clnd('30 Dec 2016').is_on_duty

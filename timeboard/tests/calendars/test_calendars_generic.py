@@ -23,7 +23,7 @@ class TestCalendarUtils(object):
         result = nth_weekday_of_month(2017, date_tuples_2017.keys(), label=5)
         valid_dates = [x for x in  date_tuples_2017.values() if x is not None]
         assert sorted(result.keys()) == sorted(valid_dates)
-        assert result.values().count(5) == len(result)
+        assert list(result.values()).count(5) == len(result)
 
     def test_nth_weekday_negative(self):
 
@@ -39,7 +39,7 @@ class TestCalendarUtils(object):
         result = nth_weekday_of_month(2017, date_tuples_2017.keys(), label=5)
         valid_dates = [x for x in  date_tuples_2017.values() if x is not None]
         assert sorted(result.keys()) == sorted(valid_dates)
-        assert result.values().count(5) == len(result)
+        assert list(result.values()).count(5) == len(result)
 
     def test_nth_weekday_shift(self):
         date_tuples_2017={
@@ -50,7 +50,7 @@ class TestCalendarUtils(object):
         result = nth_weekday_of_month(2017, date_tuples_2017.keys())
         valid_dates = [x for x in  date_tuples_2017.values() if x is not None]
         assert sorted(result.keys()) == sorted(valid_dates)
-        assert result.values().count(0) == len(result)
+        assert list(result.values()).count(0) == len(result)
 
     def test_nth_weekday_bad_n(self):
         with pytest.raises(OutOfBoundsError):

@@ -431,7 +431,7 @@ class TestDaysSplitByAnnually(object):
                                                          {'days': 1}],
                                                                how='from_easter_western'
                                                                ))
-        result_dates = map(lambda x: (f[x.first], f[x.last]), result)
+        result_dates = [(f[x.first], f[x.last]) for x in result]
         assert len(result) == 10
         assert result_dates[1][0] == Period('2014-04-18', 'D')
         assert result_dates[2][0] == Period('2014-04-20', 'D') #easter
@@ -452,7 +452,7 @@ class TestDaysSplitByAnnually(object):
                                                          {'days': 1}],
                                                                how='from_easter_orthodox'
                                                                ))
-        result_dates = map(lambda x: (f[x.first], f[x.last]), result)
+        result_dates = [(f[x.first], f[x.last]) for x in result]
         assert len(result) == 10
         assert result_dates[1][0] == Period('2014-04-18', 'D')
         assert result_dates[2][0] == Period('2014-04-20', 'D') #easter

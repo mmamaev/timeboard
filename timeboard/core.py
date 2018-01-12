@@ -112,24 +112,27 @@ def _check_groupby_freq(base_unit_freq, group_by_freq):
         except ValueError:
             return False
         bu_match = re.match(r"(^\d*)([A-Z-]+)", base_unit_freq)
-        sb_match = re.match(r"(^\d*)([A-Z-]+)", group_by_freq)
-        if bu_match and sb_match:
+        gb_match = re.match(r"(^\d*)([A-Z-]+)", group_by_freq)
+        if bu_match and gb_match:
             if bu_match.group(1) == '':
                 bu_freq_factor = 1
             else:
                 bu_freq_factor = int(bu_match.group(1))
-            if sb_match.group(1) == '':
-                sb_freq_factor = 1
+            if gb_match.group(1) == '':
+                gb_freq_factor = 1
             else:
-                sb_freq_factor = int(sb_match.group(1))
+                gb_freq_factor = int(gb_match.group(1))
+            if bu_freq_factor == 1 and gb_freq_factor == 1:
+                # there is no freq multipliers, hence we drop the case
+                return False
             bu_freq_denomination = bu_match.group(2)
-            sb_freq_denomination = sb_match.group(2)
+            gb_freq_denomination = gb_match.group(2)
 
-            if bu_freq_denomination == sb_freq_denomination:
-                return sb_freq_factor % bu_freq_factor == 0
+            if bu_freq_denomination == gb_freq_denomination:
+                return gb_freq_factor % bu_freq_factor == 0
             elif bu_freq_factor == 1:
                 return _check_groupby_freq(bu_freq_denomination,
-                                           sb_freq_denomination)
+                                           gb_freq_denomination)
             else:
                 # there can be the possibility of valid splitting
                 # but it depends on the alignment of the frame's start_time
@@ -512,7 +515,7 @@ class _Frame(pd.PeriodIndex):
         [(span_start, span_end)] is returned. 
         """
         return self._create_subframes(span_first, span_last,
-                                      map(get_timestamp, marks))
+                                      [get_timestamp(m) for m in marks])
 
 
 class _Subframe:
@@ -863,8 +866,8 @@ class _Timeline(object):
                                "to workshift {}".format(point_in_time, loc))
             amendments_located[loc] = value
 
-        self._wsband.iloc[amendments_located.keys()] = \
-            amendments_located.values()
+        self._wsband.iloc[list(amendments_located.keys())] = \
+            list(amendments_located.values())
 
     def _apply_pattern(self, pattern, subframe):
         """Set workshift labels from a pattern.
@@ -1084,13 +1087,14 @@ class Organizer(object):
     ----------
     marker: Marker or str
         A `Marker` or a pandas-compatible calendar frequency (accepts same 
-        kind of values as `base_unit_freq` of timeboard). The variant of 
+        kind of values as `base_unit_freq` of timeboard). Under the hood
         `marker=freq` is silently converted  to `marker=Marker(each=freq)`.
     marks: Iterable of Timestamp-like
     structure: Iterable 
-        An element of `structure` is either another organizer, or 
-        a workshift label, or a pattern. Pattern itself is an iterable of 
-        workshift labels.
+        An element of `structure` is either another `Organizer`, or 
+        a single workshift label, or a pattern. Pattern is an iterable of 
+        workshift labels, such as an explicit list of labels or an instance of 
+        `RememberingPattern`.
               
     Raises
     ------
@@ -1105,13 +1109,14 @@ class Organizer(object):
     -----
     Firstly, organizer tells how to partition timeboard's frame into chunks 
     (spans). Secondly, organizer defines how to organize each span into 
-    workshifts and what labels they receive.
+    workshifts and what labels they will receive.
     
-    Spans created by organizer begin at base units called marks. The 
-    locations of the marks are defined by either `marker` or `marks` parameter. 
+    Spans created by organizer begin on base units referred to by points in 
+    time called marks. The locations of the marks are defined by either 
+    `marker` or `marks` parameter. 
     
     Given `marker` parameter, the mark locations are computed according to 
-    the rules set by the `Marker` object. 
+    the rules set by the `Marker` object passed as the value of `marker`. 
     
     If, instead, `marks` is given, it is a list of explicitly specified 
     points in time which will serve as marks. 
@@ -1124,14 +1129,14 @@ class Organizer(object):
     (an iterable of workshift labels), or a single label.
     
     If an element of `structure` is an `Organizer`, it is used to further 
-    partition this span of the frame into sub-spans. 
+    partition this span into sub-spans. 
     
     If it is a pattern, the recursive partitioning does not happen. Instead, 
     each base unit of the span becomes a workshift. The labels for these 
     workshifts are taken from the pattern. 
     
     If the element of `structure` is some other single value, it is considered 
-    a label. In this case all the span becomes a single workshift which 
+    a label. In this case the whole span becomes a single workshift which 
     receives this label. Such a compound workshift comprises several base units 
     (unless the span itself consists of a single base unit).
     
@@ -1164,6 +1169,32 @@ class Organizer(object):
         return self._structure
 
     def _repr_builder(self, repr_objects=None):
+        """Auxiliary function generation of __repr__ mock code.
+        
+        Generate __repr__ strings for auxiliary objects used to create this 
+        organizer and store them in the ordered dictionary. The order of the 
+        dictionary keys preserves the order in which the auxiliary objects 
+        are to be instantiated. The last element is the code to instantiate 
+        self.
+        
+        The dictionary key is object's name assembled as "{type}_{id}", where 
+        {type} is 'org' for Organizer, 'mrk' for Marker, 'rp' for 
+        RememberingPattern, and {id} is object's id. 
+        
+        The value is the code instantiating this object's. The code may refer 
+        to objects already included in the dictionary.
+        
+        Parameters
+        ----------
+        repr_objects : OrderedDict
+            Already created dictionary of objects' __repr__ strings (for 
+            recursive organizing).
+            
+        Returns
+        -------
+        OrderedDict
+        
+        """
         if repr_objects is None:
             repr_objects =  OrderedDict()
         my_name = "org_{}".format(id(self))
