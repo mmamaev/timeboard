@@ -1013,7 +1013,7 @@ class _Schedule(object):
     Parameters
     ----------
     tl : _Timeline
-    activity : str
+    name : str
         A descriptive name for the schedule.
     selector : function
         Function taking one argument (workshift's label) and returning True 
@@ -1022,7 +1022,7 @@ class _Schedule(object):
 
     Attributes
     ----------
-    activity: str
+    name: str
     index: numpy ndarray
         Ascending list of all schedule's workshift positions on the timeline.
     on_duty_index: numpy ndarray
@@ -1034,17 +1034,17 @@ class _Schedule(object):
 
     Examples
     --------
-    If a timeline consists of four workshifts, and the schedule defines  
-    workshifts 0 and 2 as on duty, and the rest as off duty, the schedules's 
-    attributes are  as follows:
+    If a timeline consists of four workshifts, and the schedule's selector 
+    defines workshifts 0 and 2 as on duty, and the rest as off duty, 
+    the schedules's attributes are  as follows:
         index = np.array([0, 1, 2, 3])
         on_duty_index = np.array([0, 2])
         off_duty_index = np.array([1, 3])
     """
 
-    def __init__(self, tl, activity, selector):
+    def __init__(self, tl, name, selector):
         self._timeline = tl
-        self._activity = str(activity)
+        self._name = str(name)
         self._selector = selector
 
         on_duty_bool_index = self._timeline.labels.apply(self._selector)
@@ -1052,8 +1052,8 @@ class _Schedule(object):
         self._off_duty_index = nonzero(~on_duty_bool_index)[0]
 
     @property
-    def activity(self):
-        return self._activity
+    def name(self):
+        return self._name
 
     @property
     def on_duty_index(self):
@@ -1142,6 +1142,12 @@ class Organizer(object):
     
     Once `structure` is exhausted , it is re-enacted in cycles. The same 
     approach applies for pattern when setting workshift labels.
+    
+    See also
+    --------
+        Marker - define rules to calculate locations of marks upon the frame.
+        RememeberingPattern - keep track of assigned labels across invocations.
+
     """
     def __init__(self, marker=None, marks=None, structure=None):
         if (marker is None) == (marks is None):

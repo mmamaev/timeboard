@@ -196,7 +196,7 @@ class Workshift(object):
             return self._tb._handle_out_of_bounds("Rollforward of ws {} with "
                        "steps={}, duty={}, schedule={}"
                        ".".format(self.to_timestamp(), steps, duty,
-                                  schedule.activity))
+                                  schedule.name))
 
         return Workshift(self._tb, idx[i + steps], schedule)
 
@@ -274,7 +274,7 @@ class Workshift(object):
             return self._tb._handle_out_of_bounds("Rollback of ws {} with "
                        "steps={}, duty={}, schedule={}"
                        ".".format(self.to_timestamp(), steps, duty,
-                                  schedule.activity))
+                                  schedule.name))
 
         return Workshift(self._tb, idx[i - steps], schedule)
 

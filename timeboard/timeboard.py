@@ -26,8 +26,8 @@ class Timeboard(object):
     a workshift/an interval and then call their appropriate methods to 
     perform calculations. 
     Note that an instance of the timeboard is callable and such call is 
-    a wrapper around `get_workshift` or `get_interval` whichever will seem 
-    more appropriate.. 
+    a wrapper around `get_workshift` or `get_interval` depending on the 
+    arguments. 
     
     Parameters
     ----------
@@ -52,7 +52,7 @@ class Timeboard(object):
         the pattern. Application of `layout` pattern is repeated in cycles 
         until the end of the timeboard is reached.
         If `layout` is an Organizer, the timeboard is structured according to 
-        the rule set by the Organizer.
+        the rules defined by the Organizer.
     amendments : dict-like, optional
         Override labels set according to `layout`.
         The keys of `amendments` are Timestamp-like points in time 
@@ -69,11 +69,11 @@ class Timeboard(object):
         method of a workshift or by calling `get_timestamp` on a workshift. 
         Available  options: 'start' to use the start time of the workshift, 
         'end' to use the end time. 
-    default_activity : str, optional
-        The name for the default activity schedule. If not supplied, 'on_duty' 
+    default_name: str, optional
+        The name for the default schedule. If not supplied, 'on_duty' 
         is used.
     default_selector : function, optional
-        The selector function for the default activity schedule. This is 
+        The selector function for the default schedule. This is 
         the function which takes one argument - label of a workshift, and 
         returns True if this is an on-duty workshift, False otherwise. 
         If not supplied, the function is used that returns `bool(label)`.
@@ -103,12 +103,11 @@ class Timeboard(object):
     See also
     --------
     Organizer - define rule for marking up the reference frame into workshifts.
-    Marker - define rule for partitioning the reference frame.
     """
     def __init__(self, base_unit_freq, start, end, layout,
                  amendments=None,
                  default_selector=None,
-                 default_activity=None,
+                 default_name=None,
                  workshift_ref='start'):
         if isinstance(layout, Organizer):
             org = layout
@@ -134,13 +133,13 @@ class Timeboard(object):
         self._timeline.amend(amendments)
         self._base_unit_freq = base_unit_freq
 
-        if default_activity is None:
-            default_activity = 'on_duty'
-        self._default_activity = str(default_activity)
+        if default_name is None:
+            default_name = 'on_duty'
+        self._default_name = str(default_name)
         self._default_schedule = _Schedule(self._timeline,
-                                           self._default_activity,
+                                           self._default_name,
                                            self.default_selector)
-        self._schedules = {self._default_activity : self._default_schedule}
+        self._schedules = {self._default_name : self._default_schedule}
 
         if _is_iterable(layout):
             org_repr = ""
