@@ -69,7 +69,7 @@ class Timeboard(object):
         method of a workshift or by calling `get_timestamp` on a workshift. 
         Available  options: 'start' to use the start time of the workshift, 
         'end' to use the end time. 
-    default_name: str, optional
+    default_name : str, optional
         The name for the default schedule. If not supplied, 'on_duty' 
         is used.
     default_selector : function, optional
@@ -102,7 +102,8 @@ class Timeboard(object):
         
     See also
     --------
-    Organizer - define rule for marking up the reference frame into workshifts.
+    Organizer
+        Define rule for marking up the reference frame into workshifts.
     """
     def __init__(self, base_unit_freq, start, end, layout,
                  amendments=None,
@@ -136,8 +137,7 @@ class Timeboard(object):
         if default_name is None:
             default_name = 'on_duty'
         self._default_name = str(default_name)
-        self._default_schedule = _Schedule(self._timeline,
-                                           self._default_name,
+        self._default_schedule = _Schedule(self._timeline, self._default_name,
                                            self.default_selector)
         self._schedules = {self._default_name : self._default_schedule}
 
@@ -168,6 +168,37 @@ class Timeboard(object):
         return self.compact_str + "\n\n{}".format(self.to_dataframe())
 
     def to_dataframe(self, first_ws=None, last_ws=None):
+        """Convert (a part of) timeline into pandas dataframe.
+
+        Each workshift is represented as a row. The dataframe has the 
+        following columns:
+
+        'loc' : zero-based position of the workshift on the timeline
+        'workshift' : the reference time of the workshift
+        'start' : the start time of the workshift
+        'end' : the start time of the workshift
+        'duration' : the number of base units in the workshift
+        'label' : workshift's label
+        {schedule_name} : True if the workshift is on duty under this 
+        schedule, False otherwise.
+        
+        Each schedule is presented by its own column.
+        
+        Parameters
+        ----------
+        first_ws : int >=0, optional
+            The zero-based timeline position of the first workshift to be 
+            included into the dataframe. By default the dataframe starts 
+            with the first workshift of the timeboard.
+        last_ws :  int >=0, optional
+            The zero-based timeline position of the last workshift to be 
+            included into the dataframe. By default the dataframe ends
+            with the last workshift of the timeboard.
+
+        Returns
+        -------
+        pandas.DataFrame
+        """
         if first_ws is None:
             first_ws=0
         if last_ws is None:
@@ -297,7 +328,7 @@ class Timeboard(object):
     def get_workshift(self, point_in_time, schedule=None):
         """Get workshift by timestamp.
         
-        Takes a timestamp-like value and returns the workshift which
+        Take a timestamp-like value and return the workshift which
         contains this timestamp.
         
         Parameters
@@ -318,7 +349,7 @@ class Timeboard(object):
         See also
         --------
         timeboard.workshift.Workshift(timeboard, location)
-            This is the alternative, low-level approach to instantiating a 
+            An alternative, low-level approach to instantiating a 
             workshift. You will need to know the absolute position 
             (`location`) of the workshift within the timeline.
         """
@@ -338,77 +369,77 @@ class Timeboard(object):
         mutually exclusive. Accepted  parameters are listed below along with 
         the techniques.
         
-        - Create an interval from two points in time which refer to the first 
-        and the last workshifts of the interval.
+            - Create an interval from two points in time which refer to the first 
+            and the last workshifts of the interval.
         
-        Parameters
-        ----------
-        interval_ref : sequence of (Timestamp-like, Timestamp-like)
-            Each element is a string convertible to a timestamp, 
-            or a pandas Timestamp, or a datetime object.
-        length : parameter must be omitted
-        period : parameter must be omitted
+            Parameters
+            ----------
+            interval_ref : sequence of (Timestamp-like, Timestamp-like)
+                Each element is a string convertible to a timestamp, 
+                or a pandas Timestamp, or a datetime object.
+            length : parameter must be omitted
+            period : parameter must be omitted
         
-        - Create an interval of a specific length starting from a 
-        workshift refer to by a point in time .
+            - Create an interval of a specific length starting from a 
+            workshift refer to by a point in time .
         
-        Parameters
-        ----------
-        interval_ref : Timestamp-like
-            A string convertible to a timestamp, or a pandas Timestamp, 
-            or a datetime object.
-        length : int (!=0)
-            Number of workshifts in the interval. If `length` is positive, 
-            the interval extends into the future from the workshift 
-            referred to by `interval_ref`.  If `length` is negative, 
-            the interval extends to the past. Both length=1 and length=-1 
-            create the interval containing only one `interval_ref` workshift.
-            Zero `length` is not allowed.
-        period : parameter must be omitted
+            Parameters
+            ----------
+            interval_ref : Timestamp-like
+                A string convertible to a timestamp, or a pandas Timestamp, 
+                or a datetime object.
+            length : int (!=0)
+                Number of workshifts in the interval. If `length` is positive, 
+                the interval extends into the future from the workshift 
+                referred to by `interval_ref`.  If `length` is negative, 
+                the interval extends to the past. Both length=1 and length=-1 
+                create the interval containing only one `interval_ref` workshift.
+                Zero `length` is not allowed.
+            period : parameter must be omitted
         
-        - Create an interval aligned with a calendar period. Specify a 
-        point in time within the period and a calendar frequency of the period 
-        (i.e. 'M' for month). 
+            - Create an interval aligned with a calendar period. Specify a 
+            point in time within the period and a calendar frequency of the period 
+            (i.e. 'M' for month). 
         
-        The interval is created only if the boundaries of the calendar period 
-        are aligned with workshift boundaries, that is, no workshift has its 
-        parts located both within and outside the calendar period.
-        If the calendar period extends beyond the timeline, `clip_period` 
-        parameter is consulted. If it is True, then the calendar period is 
-        clipped at the bound(s) of the timeline, meaning that only the part of 
-        the period falling inside the timeline is considered. If 
-        `clip_period` is False, OutOfBoundsError is raised.
+            The interval is created only if the boundaries of the calendar period 
+            are aligned with workshift boundaries, that is, no workshift has its 
+            parts located both within and outside the calendar period.
+            If the calendar period extends beyond the timeline, `clip_period` 
+            parameter is consulted. If it is True, then the calendar period is 
+            clipped at the bound(s) of the timeline, meaning that only the part of 
+            the period falling inside the timeline is considered. If 
+            `clip_period` is False, OutOfBoundsError is raised.
         
-        Parameters
-        ----------
-        interval_ref : Timestamp-like
-            A string convertible to a timestamp, or a pandas Timestamp, 
-            or a datetime object.
-        period : str
-            A pandas-compatible frequency defining a calendar period (i.e. 
-            'M' for month).
-        length : parameter must be omitted
-        clip_period : bool, optional (default True)
-            If True, clip a calendar period at the bound(s) of the timeline.
-        
-        - Create an interval from a pandas Period object. The same restriction 
-        is applied as with the previous technique.
-
-        Parameters
-        ----------
-        interval_ref : pandas.Period
-        length : parameter must be omitted
-        period : parameter must be omitted
-        clip_period : bool, optional (default True)
-            If True, clip a calendar period at the bound(s) of the timeline.
-        
-        - Create the interval that spans the entire timeline.
-        
-        Parameters
-        ----------
-        interval_ref : parameter must be omitted
-        length : parameter must be omitted
-        period : parameter must be omitted
+            Parameters
+            ----------
+            interval_ref : Timestamp-like
+                A string convertible to a timestamp, or a pandas Timestamp, 
+                or a datetime object.
+            period : str
+                A pandas-compatible frequency defining a calendar period (i.e. 
+                'M' for month).
+            length : parameter must be omitted
+            clip_period : bool, optional (default True)
+                If True, clip a calendar period at the bound(s) of the timeline.
+            
+            - Create an interval from a pandas Period object. The same restriction 
+            is applied as with the previous technique.
+    
+            Parameters
+            ----------
+            interval_ref : pandas.Period
+            length : parameter must be omitted
+            period : parameter must be omitted
+            clip_period : bool, optional (default True)
+                If True, clip a calendar period at the bound(s) of the timeline.
+            
+            - Create the interval that spans the entire timeline.
+            
+            Parameters
+            ----------
+            interval_ref : parameter must be omitted
+            length : parameter must be omitted
+            period : parameter must be omitted
         
         
         Other Parameters

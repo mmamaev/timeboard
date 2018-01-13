@@ -3,7 +3,7 @@ from .exceptions import (OutOfBoundsError,
                          VoidIntervalError,
                          UnsupportedPeriodError)
 from .workshift import Workshift
-from .core import _Frame, _check_groupby_freq, get_period
+from .core import _Frame, _check_groupby_freq
 
 class Interval(object):
     """A series of workshifts within the timeboard.
@@ -12,18 +12,19 @@ class Interval(object):
     the first and the last workshifts of the interval. An interval can
     contain one or more workshifts; empty interval is not allowed.
     
-    Duty status of the workshifts within the interval is set by the given 
-    schedule.
+    Duty status of the workshifts within the interval is interpreted by the 
+    given schedule.
     
     Parameters
     ----------
     timeboard : Timeboard
-    bounds : a two-element sequence (int or Workshift, int or Workshift)
+    bounds : a two-element sequence of int>=0 or Workshift
         The two elements of `bounds` provide the positions of the first and 
         the last workshifts of the interval within the timelime. The element's 
         type is either non-negative integer or an instance of Workshift.
-    schedule: _Schedule
-        
+    schedule: _Schedule, optional
+        If not given, the timeboard's default schedule is used. 
+    
     Raises
     ------
     VoidIntervalError (ValueError)
@@ -45,7 +46,6 @@ class Interval(object):
     `get_interval` method of Timeboard class provides convenient ways to 
     instantiate an interval instead of calling Interval() constructor 
     directly. 
-    
     """
 
     def __init__(self, timeboard, bounds, schedule=None):
@@ -138,11 +138,8 @@ class Interval(object):
 
     @property
     def length(self):
+        """Number of workshifts in the interval."""
         return self._length
-
-    @property
-    def is_void(self):
-        return False
 
     #def labels(self):
     #    return self._tb._timeline.iloc[self._loc[0] : self._loc[1]+1]
@@ -273,7 +270,7 @@ class Interval(object):
         
         Notes
         -----
-        The interval is sliced into calendar periods of the specified kind
+        The interval is sliced into calendar periods of the specified frequency
         and then each slice of the interval is compared to its corresponding 
         period duty-wise. That is to say, the count of workshifts in the 
         interval's slice is divided by the total count of workshifts in the 
@@ -282,7 +279,7 @@ class Interval(object):
         the return value of the method.
         
         If a period does not contain workshifts of the required duty,
-        it is not counted.
+        it contributes zero to the returned value.
         
         Regardless of `period`, the method returns 0.0 if the interval 
         does not have workshifts with the specified duty.

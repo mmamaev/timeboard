@@ -5,19 +5,24 @@ from numpy import searchsorted
 
 
 class Workshift(object):
-    """A constituent of timeline. 
+    """A period of time during which a business agent is either on or off duty. 
     
-    Timeboard's timeline is a sequence of workshifts. Each workshift has
-    a label which defines whether this workshift is on-duty or off-duty 
-    under a certain schedule. 
-    A workshift can span one or more consecutive base units. 
+    Timeboard's timeline is a sequence of workshifts. A workshift 
+    consists of at least one base unit and may span a number of consecutive 
+    base units. 
+    
+    Each workshift has a label. The label is interpreted by a given schedule 
+    to determine whether the workshift is on duty or off duty under this 
+    schedule.  The duty statuses of the same workshift can be different 
+    under different schedules.
     
     Parameters
     ----------
     timeboard : Timeboard
     location : int (>=0)
         Position of the workshift on the timeline of the timeboard (zero-based).
-    schedule: _Schedule
+    schedule : _Schedule, optional
+        If not given, the timeboard's default schedule is used. 
         
     Raises
     ------
@@ -34,7 +39,7 @@ class Workshift(object):
         Number of base unit making up the workshift.
     label
         An application-specific label associated with the workshift. 
-        Schedule's `selector` interprets the label to identify the duty
+        Schedule's `selector` interprets the label to identify the duty status
         of the workshift under this schedule.
     is_on_duty : bool
         True if the workship is on-duty under given `schedule`.
@@ -77,11 +82,13 @@ class Workshift(object):
 
     @property
     def duration(self):
+        """Number of base units in the workshift
+        """
         # TODO: Refactor. _Timeline methods should not be called from this class
         return self._tb._timeline.get_ws_duration(self._loc)
 
     def to_timestamp(self):
-        """The characteristic time used to represent the workshift. 
+        """The characteristic time used to represent the workshift.. 
         
         The rule to calculate the timestamp is defined by `workshift_ref` 
         parameter of the timeboard.
@@ -123,10 +130,6 @@ class Workshift(object):
     def is_off_duty(self):
         return self._schedule.is_off_duty(self._loc)
 
-    @property
-    def is_void(self):
-        return False
-
     def rollforward(self, steps=0, duty='on'):
         """
         Return a workshift which is `steps` workshifts away in the future. 
@@ -135,14 +138,14 @@ class Workshift(object):
         
         Parameters
         ----------
-        steps: int, optional (default 0)
-        duty: {'on', 'off', 'same', 'alt', 'any'} , optional (default 'on')
-            'on' - step on on-duty workshifts only
-            'off' - step on off-duty workshifts only
-            'same' - step only on workshifts with the same duty status as self
-            'alt' - step only on workshifts with the duty status other than 
+        steps : int, optional (default 0)
+        duty : {'on', 'off', 'same', 'alt', 'any'} , optional (default 'on')
+            'on' : step on on-duty workshifts only
+            'off' : step on off-duty workshifts only
+            'same' : step only on workshifts with the same duty status as self
+            'alt' : step only on workshifts with the duty status other than 
             that of self
-            'any' - step on all workshifts
+            'any' : step on all workshifts
     
         Returns
         -------
@@ -166,20 +169,23 @@ class Workshift(object):
          
         If `steps` is positive, the methods counts workshifts toward the future
         stepping only on workshifts with the specified duty, and returns the 
-        last workshift on which it stepped. For example, with `steps`=1 the 
+        last workshift on which it has stepped. For example, with `steps`=1 the 
         method returns the workshift following the zero step workshift, 
         subject to duty.
         
         If `steps` is negative, the method works in the same way but moving
         toward the past from the zero step workshift. For example, with 
         `steps`=-1 the method returns the workshift preceding the zero step 
-        workshift, subject to duty.
+        workshift, subject to duty. 
+        
+        Note that the zero step workshift is sought toward the future 
+        even if `steps` is negative.
         
         See also
         --------
         + (__add__) :  `ws + n` is the same as ws.rollforward(n, duty='on')
         rollback : return a workshift from the past
-            `rollback` differs from `rollforward` only in the definition of 
+            `rollback` differs from `rollforward` in the definition of 
             the zero step workshift and the default direction of stepping.
         """
         schedule = self._schedule
@@ -208,14 +214,14 @@ class Workshift(object):
 
         Parameters
         ----------
-        steps: int, optional (default 0)
-        duty: {'on', 'off', 'same', 'alt', 'any'} , optional (default 'on')
-            'on' - step on on-duty workshifts only
-            'off' - step on off-duty workshifts only
-            'same' - step only on workshifts with the same duty status as self
-            'alt' - step only on workshifts with the duty status other than 
+        steps : int, optional (default 0)
+        duty : {'on', 'off', 'same', 'alt', 'any'} , optional (default 'on')
+            'on' : step on on-duty workshifts only
+            'off' : step on off-duty workshifts only
+            'same' : step only on workshifts with the same duty status as self
+            'alt' : step only on workshifts with the duty status other than 
             that of self
-            'any' - step on all workshifts
+            'any' : step on all workshifts
     
         Returns
         -------
@@ -239,7 +245,7 @@ class Workshift(object):
          
         If `steps` is positive, the methods counts workshifts toward the past
         stepping only on workshifts with the specified duty, and returns the 
-        last workshift on which it stepped. For example, with `steps`=1 the 
+        last workshift on which it has stepped. For example, with `steps`=1 the 
         method returns the workshift preceding the zero step workshift, 
         subject to duty.
         
@@ -247,6 +253,9 @@ class Workshift(object):
         toward the future from the zero step workshift. For example, with 
         `steps`=-1 the method returns the workshift following the zero step 
         workshift, subject to duty.
+        
+        Note that the zero step workshift is sought toward the past 
+        even if `steps` is negative.
         
         See also
         --------

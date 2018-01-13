@@ -48,7 +48,6 @@ class TestWorkshiftConstructor(object):
         assert ws.label == 1
         assert ws.is_on_duty
         assert not ws.is_off_duty
-        assert not ws.is_void
         assert ws.duration == 1
 
         wsx = clnd('04 Jan 2017')
@@ -64,7 +63,6 @@ class TestWorkshiftConstructor(object):
         assert ws.label == 1
         assert ws.is_on_duty
         assert not ws.is_off_duty
-        assert not ws.is_void
         assert ws.duration == 1
 
         wsx = clnd(pd.Timestamp('04 Jan 2017 15:00'))
@@ -80,7 +78,6 @@ class TestWorkshiftConstructor(object):
         assert ws.label == 1
         assert ws.is_on_duty
         assert not ws.is_off_duty
-        assert not ws.is_void
         assert ws.duration == 1
 
         wsx = clnd(datetime.datetime(2017,1,4,15,0,0))
@@ -97,7 +94,6 @@ class TestWorkshiftConstructor(object):
         assert ws.label == 0
         assert not ws.is_on_duty
         assert ws.is_off_duty
-        assert not ws.is_void
         assert ws.duration == 1
 
         wsx = clnd(pd.Period('05 Jan 2017', freq='W'))

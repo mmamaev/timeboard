@@ -219,7 +219,6 @@ class TestIntervalConstructorWithTS:
         assert ivl.end_time < datetime.datetime(2017, 1, 9, 0, 0, 0)
         assert ivl._loc == (2,8)
         assert ivl.length == 7
-        assert not ivl.is_void
 
         ivlx = clnd(('02 Jan 2017 15:00', '08 Jan 2017 15:00'))
         assert ivlx._loc == ivl._loc
@@ -320,7 +319,6 @@ class TestIntervalConstructorWithTS:
         assert ivl.end_time < datetime.datetime(2017, 1, 3, 0, 0, 0)
         assert ivl._loc == (2,2)
         assert ivl.length == 1
-        assert not ivl.is_void
 
     def test_interval_constructor_reverse_ts_to_same_BU(self):
         clnd = tb_12_days()
@@ -330,7 +328,6 @@ class TestIntervalConstructorWithTS:
         assert ivl.end_time < datetime.datetime(2017, 1, 3, 0, 0, 0)
         assert ivl._loc == (2,2)
         assert ivl.length == 1
-        assert not ivl.is_void
 
     def test_interval_constructor_reverse_ts(self):
         clnd = tb_12_days()
@@ -349,7 +346,6 @@ class TestIntervalConstructorDefault:
         assert ivl.end_time < datetime.datetime(2017, 1, 13, 0, 0, 0)
         assert ivl._loc == (0,12)
         assert ivl.length == 13
-        assert not ivl.is_void
 
     def test_interval_constructor_default_open_ended(self):
         clnd = tb_12_days()
@@ -359,7 +355,6 @@ class TestIntervalConstructorDefault:
         assert ivl.end_time < datetime.datetime(2017, 1, 12, 0, 0, 0)
         assert ivl._loc == (1,11)
         assert ivl.length == 11
-        assert not ivl.is_void
 
     def test_interval_constructor_default_closed_leads_to_void(self):
         clnd = tb.Timeboard(base_unit_freq='D',
@@ -383,7 +378,6 @@ class TestIntervalConstructorOtherWays:
         assert ivl.end_time < datetime.datetime(2017, 1, 9, 0, 0, 0)
         assert ivl._loc == (2,8)
         assert ivl.length == 7
-        assert not ivl.is_void
 
         ivlx = clnd('02 Jan 2017 15:00', period='W')
         assert ivlx._loc == ivl._loc
@@ -438,7 +432,6 @@ class TestIntervalConstructorOtherWays:
         assert ivl.end_time < datetime.datetime(2017, 1, 9, 0, 0, 0)
         assert ivl._loc == (2,8)
         assert ivl.length == 7
-        assert not ivl.is_void
 
         ivlx = clnd('02 Jan 2017 15:00', length=7)
         assert ivlx._loc == ivl._loc
@@ -451,7 +444,6 @@ class TestIntervalConstructorOtherWays:
         assert ivl.end_time < datetime.datetime(2017, 1, 9, 0, 0, 0)
         assert ivl._loc == (2,8)
         assert ivl.length == 7
-        assert not ivl.is_void
 
     def test_interval_constructor_with_length_one(self):
         clnd = tb_12_days()
@@ -511,7 +503,6 @@ class TestIntervalConstructorOtherWays:
         assert ivl.end_time < datetime.datetime(2017, 1, 9, 0, 0, 0)
         assert ivl._loc == (2, 8)
         assert ivl.length == 7
-        assert not ivl.is_void
 
         # if we call timeboard instance directly, it cannot figure that we
         # want a period, as only one argument is given and it can be converted
@@ -554,7 +545,6 @@ class TestIntervalConstructorOtherWays:
         assert ivl.end_time < datetime.datetime(2017, 2, 2, 0, 0, 0)
         assert ivl._loc == (1,32)
         assert ivl.length == 32
-        assert not ivl.is_void
 
         ivlx = clnd((pd.Period('05 Jan 2017 15:00', freq='M'),
                      pd.Period('19 Feb 2017 15:00', freq='M')))
@@ -614,7 +604,6 @@ class TestIntervalConstructorDirect:
         assert ivl.end_time < datetime.datetime(2017, 1, 9, 0, 0, 0)
         assert ivl._loc == (2,8)
         assert ivl.length == 7
-        assert not ivl.is_void
 
     def test_interval_direct_with_ws(self):
         clnd = tb_12_days()
@@ -626,7 +615,6 @@ class TestIntervalConstructorDirect:
         assert ivl.end_time < datetime.datetime(2017, 1, 9, 0, 0, 0)
         assert ivl._loc == (2,8)
         assert ivl.length == 7
-        assert not ivl.is_void
 
     def test_interval_direct_mixed_args(self):
         clnd = tb_12_days()
@@ -637,7 +625,6 @@ class TestIntervalConstructorDirect:
         assert ivl.end_time < datetime.datetime(2017, 1, 9, 0, 0, 0)
         assert ivl._loc == (2,8)
         assert ivl.length == 7
-        assert not ivl.is_void
 
     def test_interval_direct_same_locs(self):
         clnd = tb_12_days()
@@ -647,7 +634,6 @@ class TestIntervalConstructorDirect:
         assert ivl.end_time < datetime.datetime(2017, 1, 3, 0, 0, 0)
         assert ivl._loc == (2,2)
         assert ivl.length == 1
-        assert not ivl.is_void
 
     def test_interval_direct_reverse_locs(self):
         clnd = tb_12_days()

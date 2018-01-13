@@ -56,8 +56,8 @@ def _skiperator(values, skip=0):
     
     Parameters
     ----------
-    values: iterable
-    skip: int, optional (default 0) 
+    values : iterable
+    skip : int, optional (default 0) 
         Number of steps to skip at the beginning.
 
     Notes
@@ -86,17 +86,28 @@ def _skiperator(values, skip=0):
 
 
 def _check_groupby_freq(base_unit_freq, group_by_freq):
-    """
-    Check if the value of `each` attribute from some Marker can be used 
-    with the given `base_unit_freq`, meaning that partitioning of a timeline 
-    will not result in a situation when a base unit belongs to more 
-    than one span at the same time. 
+    """Check if frame's base unit may be grouped in periods of given frequency.
+    
+    Pass the value of `each` attribute from some Marker as `group_by_freq`
+    to check if it can be used with the given `base_unit_freq`, 
+    meaning that partitioning of a timeline will not result in a situation 
+    when a base unit belongs to more than one span at the same time. 
     
     An example of such ambiguous partitioning is when `base_unit_freq='W'` and
     `marker.each='M'`. Most likely there will be a base unit (week) that falls 
     into two spans (months) simultaneously.
     
-    Return True if `marker` value is ok.
+    Parameters
+    ----------
+    base_unit_freq : str
+        pandas-compatible period frequency for smaller periods.
+    group_by_freq : str
+        pandas-compatible period frequency for periods used as groups of the 
+        smaller periods.
+    
+    Returns
+    -------
+    True if `group_by_freq` can be used for grouping, False otherwise.
     """
     if bool(
         pd.tseries.frequencies.is_subperiod(base_unit_freq, group_by_freq)
@@ -155,15 +166,15 @@ class _Frame(pd.PeriodIndex):
     
     Parameters
     ----------
-    base_unit_freq: str
+    base_unit_freq : str
         Pandas-compatible calendar frequency (i.e. 'D' for day or '8H' for 
         8 hours regarded as one unit) defining the constituent period of 
         the frame. Pandas-native business periods (i.e. 'BM') are not supported. 
-    start: Timestamp-like
+    start : Timestamp-like
         A pandas Timestamp, a datetime object, or a string convertible to 
         Timestamp - a point in time defining the first element of the frame 
         (it may be found anywhere with this element).
-    end: Timestamp-like
+    end : Timestamp-like
         Same as start but for the last element of the frame.
     
     Raises
@@ -225,17 +236,17 @@ class _Frame(pd.PeriodIndex):
         
         Parameters
         ----------
-        span_first: int>=0
+        span_first : int>=0
             Position of the first base unit of the span in the frame.
-        span_last: int>=0
+        span_last : int>=0
             Position of the last base unit of the span in the frame.
-        points_in_time: Iterable of Timestamp-like 
+        points_in_time : Iterable of Timestamp-like 
             List of points in time referring to frame's elements that will 
             become the first elements of subframes.
             
         Returns
         -------
-        list of tuples containing indices of subframe boundaries:    
+        list of tuples containing indices of subframe boundaries :    
             [ (subfr0_start, subfr0_end), ... , (subfrN_start, subfr0_end) ]
 
         
@@ -328,11 +339,11 @@ class _Frame(pd.PeriodIndex):
          
         Parameters
         ----------
-        span_first: int>=0
+        span_first : int>=0
             Position of the first base unit of the span in the frame.
-        span_last: int>=0
+        span_last : int>=0
             Position of the last base unit of the span in the frame.
-        points_in_time: Iterable of Timestamp-like 
+        points_in_time : Iterable of Timestamp-like 
             List of points in time referring to frame's elements that will 
             become the first elements of subframes.
             
@@ -358,13 +369,13 @@ class _Frame(pd.PeriodIndex):
         
         Parameters
         ----------
-        span_first: int>=0
+        span_first : int>=0
             Position of the base unit which begins the part of the  frame  
             to be partitioned.
-        span_last: int>=0
+        span_last : int>=0
             Position of the base unit which ends the part of the  frame  
             to be partitioned.
-        marker: Marker
+        marker : Marker
         
         Raises
         ------
@@ -480,17 +491,18 @@ class _Frame(pd.PeriodIndex):
         return subframes
 
     def partition_at_marks(self, span_first, span_last, marks):
-        """Partition the (part of) frame ar specified points in time.
+        """Partition the (part of) frame at specified points in time.
         
         Take a part of the frame (a "span") and partition it into 
-        a list of subframes at points in time listed in `marks`.
+        subframes starting on the base units referred to by  
+        points in time listed in `marks`.
 
         Parameters
         ----------
-        span_first: int>=0
+        span_first : int>=0
             Position of the base unit which begins the part of the  frame  
             to be partitioned.
-        span_last: int>=0
+        span_last : int>=0
             Position of the base unit which ends the part of the  frame  
             to be partitioned.
         marks: Iterable of Timestamp-like 
@@ -523,18 +535,19 @@ class _Subframe:
     
     Parameters
     ----------
-    first: int 
+    first : int 
         Position of the first base unit of subframe within the frame.
-    last: int    
+    last : int    
         Position of the last base unit of subframe within the frame.
-    skip_left: int >=0 or -1
+    skip_left : int >=0 or -1
         Number of steps to skip if a pattern of labels is applied to  
         this subframe in 'forward' direction (left to right). 
-        If this number could not be calculated `skip_left=-1`.
-    skip_right: int >=0 or -1
+        If this number could not be calculated `skip_left` equals negative one.
+    skip_right : int >=0 or -1
         Number of steps to skip if a pattern of labels is applied to 
         this subframe in 'reverse' direction (from right to left). 
-        If this number could not be calculated, skip_right=-1`.           
+        If this number could not be calculated, `skip_right` equals negative 
+        one.           
     
     Attributes
     ----------
@@ -552,15 +565,14 @@ class _Subframe:
 
 
 class _Timeline(object):
-    """Timeline of workshifts.
-    
-    On instantiation, mark up timeboard's frame into workshifts and set 
-    their labels as prescribed by the Organizer.
+    """Timeline organizes the frame into labeled workshifts.
     
     Parameters
     ----------
     frame : _Frame
     organizer : Organizer, optional
+        Rules defining how to mark up the frame into workshifts and set their 
+        labels.
     data : optional
         Labels to initialize the timeline (a single value or an iterable 
         for the full length of the timeline).By default the timeline is 
@@ -822,7 +834,7 @@ class _Timeline(object):
         
         Parameters
         ----------
-        amendments: dictionary-like 
+        amendments : dictionary-like 
             The keys of `amendments` are Timestamp-like points in time 
             used to identify workshifts (the point in time may be located 
             anywhere within the workshift). The values of `amendments` are 
@@ -877,11 +889,11 @@ class _Timeline(object):
         idle iterations through pattern is done before a label is set for the 
         first workshift of the subframe. The value of `subframe.skip_right` 
         is currently ignored (reserved for future support of pattern 
-        application done in reverse.
+        application done in reverse).
 
         Parameters
         ----------
-        pattern: Iterable of labels
+        pattern : Iterable of labels
         subframe : Subframe
          
         Returns
@@ -921,11 +933,11 @@ class _Timeline(object):
 
         Parameters
         ----------
-        organizer: Organizer 
-        span_first: int>=0, optional
+        organizer : Organizer 
+        span_first : int>=0, optional
             Index of the first base unit of the span of the frame. 
             By  default this is the first base unit of the frame.
-        span_last: int>=0, optional
+        span_last : int>=0, optional
             Index of the last base unit of the span of the frame.. 
             By default this is the last base unit of the frame.
             
@@ -974,6 +986,33 @@ class _Timeline(object):
         #                     timer1-timer0, timer2-timer1, timer3-timer2)
 
     def to_dataframe(self, first_ws=None, last_ws=None):
+        """Convert (a part of) timeline into pandas dataframe.
+        
+        Each workshift is represented as a row. The dataframe has the 
+        following columns:
+        
+        'loc' : zero-based position of the workshift on the timeline
+        'workshift' : the reference time of the workshift
+        'start' : the start time of the workshift
+        'end' : the start time of the workshift
+        'duration' : the number of base units in the workshift
+        'label' : workshift's label
+        
+        Parameters
+        ----------
+        first_ws : int >=0, optional
+            The zero-based timeline position of the first workshift to be 
+            included into the dataframe. By default the dataframe starts 
+            with the first workshift of the timeline.
+        last_ws :  int >=0, optional
+            The zero-based timeline position of the last workshift to be 
+            included into the dataframe. By default the dataframe ends
+            with the last workshift of the timeline.
+        
+        Returns
+        -------
+        pandas.DataFrame
+        """
         if first_ws is None:
             first_ws=0
         if last_ws is None:
@@ -1012,7 +1051,7 @@ class _Schedule(object):
 
     Parameters
     ----------
-    tl : _Timeline
+    timeline : _Timeline
     name : str
         A descriptive name for the schedule.
     selector : function
@@ -1022,13 +1061,13 @@ class _Schedule(object):
 
     Attributes
     ----------
-    name: str
-    index: numpy ndarray
+    name : str
+    index : numpy ndarray
         Ascending list of all schedule's workshift positions on the timeline.
-    on_duty_index: numpy ndarray
+    on_duty_index : numpy ndarray
         Ascending list of schedule's on-duty workshift positions on the 
         timeline.
-    off_duty_index: numpy ndarray
+    off_duty_index : numpy ndarray
         Ascending list of schedule's off-duty workshift positions on the 
         timeline.
 
@@ -1036,14 +1075,14 @@ class _Schedule(object):
     --------
     If a timeline consists of four workshifts, and the schedule's selector 
     defines workshifts 0 and 2 as on duty, and the rest as off duty, 
-    the schedules's attributes are  as follows:
+    the schedules's attributes are  as follows::
         index = np.array([0, 1, 2, 3])
         on_duty_index = np.array([0, 2])
         off_duty_index = np.array([1, 3])
     """
 
-    def __init__(self, tl, name, selector):
-        self._timeline = tl
+    def __init__(self, timeline, name, selector):
+        self._timeline = timeline
         self._name = str(name)
         self._selector = selector
 
@@ -1085,12 +1124,12 @@ class Organizer(object):
     
     Parameters
     ----------
-    marker: Marker or str
+    marker : Marker or str
         A `Marker` or a pandas-compatible calendar frequency (accepts same 
         kind of values as `base_unit_freq` of timeboard). Under the hood
         `marker=freq` is silently converted  to `marker=Marker(each=freq)`.
-    marks: Iterable of Timestamp-like
-    structure: Iterable 
+    marks : Iterable of Timestamp-like
+    structure : Iterable 
         An element of `structure` is either another `Organizer`, or 
         a single workshift label, or a pattern. Pattern is an iterable of 
         workshift labels, such as an explicit list of labels or an instance of 
@@ -1145,8 +1184,10 @@ class Organizer(object):
     
     See also
     --------
-        Marker - define rules to calculate locations of marks upon the frame.
-        RememeberingPattern - keep track of assigned labels across invocations.
+    Marker
+        Define rules to calculate locations of marks upon the frame.
+    RememeberingPattern
+        Keep track of assigned labels across invocations.
 
     """
     def __init__(self, marker=None, marks=None, structure=None):
@@ -1199,7 +1240,6 @@ class Organizer(object):
         Returns
         -------
         OrderedDict
-        
         """
         if repr_objects is None:
             repr_objects =  OrderedDict()
@@ -1314,39 +1354,41 @@ class Marker(object):
     
     Examples
     --------
-    Marker(each='W')
+    `Marker(each='W')`
         Mark a span by weeks (set a mark on each Monday at 00:00).
         
-    Marker(each='W', at=[{'days': 2}, {'days': 5}])  
+    `Marker(each='W', at=[{'days': 2}, {'days': 5}])  `
         Set a mark on each Wednesday and each Saturday at 00:00. Note that 
         there is no mark on Monday because now `at` list is not empty but 
         Monday is not explicitly specified in the list.
         
-    Marker(each='W', at=[{'days': 0}, {'days': 2}, {'days': 5}])  
+    `Marker(each='W', at=[{'days': 0}, {'days': 2}, {'days': 5}])`
         Set a mark on each Monday, Wednesday, and Saturday at 00:00.  
         
-    Marker(each='W', at=[{'days': 7}])  
+    `Marker(each='W', at=[{'days': 7}])`
         No marks will be set. Adding 7 days to the start of the week 
         places the candidate point into the next week, i.e. outside the current 
         'each' period, hence this point is not a valid mark.
         
-    Marker(each='D')
+    `Marker(each='D')`
         Mark a span by days (set a mark at each midnight).
           
-    Marker(each='D', at=[{'hours': 9}, {'hours':18}])
+    `Marker(each='D', at=[{'hours': 9}, {'hours':18}])`
         Set marks at 09:00 and 18:00 on each day (but not at the 
         midnight).
         
-    Marker(each='M', at=[{'days': 30}])
+    `Marker(each='M', at=[{'days': 30}])`
         Set a mark on the beginning of the 31st day of each month. If there 
         is no 31st day, there will be no mark in this month. For example, 
         if the span is a calendar year, marks will be set on Jan 31, 
         Mar 31, May 31, Jul 31, Aug 31, Oct 31, and Dec 31.
-        
+    
+    ::
     Marker(each='A', 
            at=[{'month': 5, 'week': -1, 'weekday': 1},
                {'month': 9, 'week': 1, 'weekday': 1}],
            how='nth_weekday_of_month')
+        
         Set marks on the last Monday in May and the first Monday in 
         September of each year.
     """
