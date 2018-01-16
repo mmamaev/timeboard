@@ -65,8 +65,8 @@ class Timeboard(object):
         KeyError is raised.
     workshift_ref : {'start' | 'end'}, optional (default 'start')
         Define what point in time will be used to represent a workshift. 
-        The respective point in time will be returned by `to_timestamp{}`
-        method of a workshift or by calling `get_timestamp` on a workshift. 
+        The respective point in time will be returned by `to_timestamp()`
+        method of a Workshift or by calling `get_timestamp` on a Workshift. 
         Available  options: 'start' to use the start time of the workshift, 
         'end' to use the end time. 
     default_name : str, optional
@@ -75,8 +75,8 @@ class Timeboard(object):
     default_selector : function, optional
         The selector function for the default schedule. This is 
         the function which takes one argument - label of a workshift, and 
-        returns True if this is an on-duty workshift, False otherwise. 
-        If not supplied, the function is used that returns `bool(label)`.
+        returns True if this is an on duty workshift, False otherwise. 
+        If not supplied, the function that returns `bool(label)` is used.
     
     Raises
     ------

@@ -1258,21 +1258,32 @@ class Organizer(object):
         else:
             arg_m = "marks={!r}".format(self.marks)
 
-        elem_reprs = []
-        for elem in self.structure:
-            if isinstance(elem, Organizer):
-                org_name = "org_{}".format(id(elem))
-                if org_name not in repr_objects:
-                    repr_objects = elem._repr_builder(repr_objects)
-                elem_reprs.append(org_name)
-            elif isinstance(elem, RememberingPattern):
-                rp_name = "rp_{}".format(id(elem))
+        try:
+            len_structure = len(self.structure)
+        except TypeError:
+            if isinstance(self.structure, RememberingPattern):
+                rp_name = "rp_{}".format(id(self.structure))
                 if rp_name not in repr_objects:
-                   repr_objects[rp_name] = "{!r}".format(elem)
-                elem_reprs.append(rp_name)
+                    repr_objects[rp_name] = "{!r}".format(self.structure)
+                arg_s = rp_name
             else:
-                elem_reprs.append("{!r}".format(elem))
-        arg_s = "[" + ", ".join(elem_reprs) + "]"
+                arg_s = "{!r}".format(self.structure)
+        else:
+            elem_reprs = []
+            for elem, _ in zip(self.structure, range(len_structure)):
+                if isinstance(elem, Organizer):
+                    org_name = "org_{}".format(id(elem))
+                    if org_name not in repr_objects:
+                        repr_objects = elem._repr_builder(repr_objects)
+                    elem_reprs.append(org_name)
+                elif isinstance(elem, RememberingPattern):
+                    rp_name = "rp_{}".format(id(elem))
+                    if rp_name not in repr_objects:
+                       repr_objects[rp_name] = "{!r}".format(elem)
+                    elem_reprs.append(rp_name)
+                else:
+                    elem_reprs.append("{!r}".format(elem))
+            arg_s = "[" + ", ".join(elem_reprs) + "]"
         repr_objects[my_name] = "Organizer({}, structure={})".format(arg_m,
                                                                     arg_s)
         return repr_objects
@@ -1449,7 +1460,8 @@ class RememberingPattern(object):
     def __iter__(self):
         return self
 
-    def __len__(self):
+    @property
+    def length(self):
         return len(self._labels)
 
     def __getitem__(self, i):
