@@ -84,7 +84,6 @@ def _skiperator(values, skip=0):
     counter = make_counter()
     return dropwhile(counter, cycle(pattern))
 
-
 def _check_groupby_freq(base_unit_freq, group_by_freq):
     """Check if frame's base unit may be grouped in periods of given frequency.
     
@@ -229,83 +228,6 @@ class _Frame(pd.PeriodIndex):
     def start_times(self):
         return self._start_times
 
-    def _locate_subframes(self, span_first, span_last, points_in_time):
-        """
-        Takes a part of the frame (a "span") in order to partition it into 
-        subframes at specified points in time. 
-        
-        Parameters
-        ----------
-        span_first : int>=0
-            Position of the first base unit of the span in the frame.
-        span_last : int>=0
-            Position of the last base unit of the span in the frame.
-        points_in_time : Iterable of Timestamp-like 
-            List of points in time referring to frame's elements that will 
-            become the first elements of subframes.
-            
-        Returns
-        -------
-        list of tuples containing indices of subframe boundaries :    
-            [ (subfr0_start, subfr0_end), ... , (subfrN_start, subfr0_end) ]
-
-        
-        Notes
-        -----
-        Any elements of `points_in_time` that do not define a start of 
-        a subframe within the span are ignored.
-        These are:
-          - points referring to a base unit already designated as the 
-          first element of a subframe,
-          - points referring to `span_first` base unit,
-          - points outside the span.
-        If no usable points are found or `points_in_time` is empty,
-        [(span_start, span_end)] is returned. 
-        """
-        #timer0 = timeit.default_timer()
-        self.check_span(span_first, span_last)
-        # TODO: SPEED UP.
-        # This computation takes 0.3s for 100 Years Standard Week 8x5
-        #loc_list = [self.get_loc(t, 0) for t in points_in_time]
-        split_positions = self.get_loc_vectorized(points_in_time,
-                                                  span_first=span_first,
-                                                  span_last=span_last)
-        #timer1 = timeit.default_timer()
-        # split_positions = [int(x)
-        #                    for x in loc_list if span_first < x <= span_last]
-        #timer2 = timeit.default_timer()
-        split_positions = sorted(list(set(split_positions)))
-        #timer3 = timeit.default_timer()
-
-        start_positions = split_positions[:]
-        start_positions.insert(0, span_first)
-        end_positions = [x-1 for x in split_positions]
-        end_positions.append(span_last)
-        #timer4 = timeit.default_timer()
-        # print "_locate_subframe timers:\n\t1: {:.5f}\n\t2: {:.5f}\n\t3: {:.5f}"\
-        #       "\n\t4: {:.5f}".format(timer1-timer0, timer2-timer1,
-        #                              timer3-timer2, timer4-timer3)
-
-        return zip(start_positions, end_positions)
-
-    def check_span(self, span_first, span_last):
-        try:
-            _ = self[span_first]
-            _ = self[span_last]
-        except IndexError:
-            raise OutOfBoundsError("Span ({}, {}) not within frame"
-                                   ".".format(span_first, span_last))
-        except ValueError:
-            raise TypeError("Expected integer indices, received "
-                            "`{}` and `{}`".format(type(span_first),
-                                                   type(span_last)))
-        if span_first < 0 or span_last < 0:
-            raise OutOfBoundsError("Span boundaries must be non-negative")
-        if span_first > span_last:
-            raise VoidIntervalError("Span cannot be empty")
-
-        return True
-
     def get_loc(self, timestamp, not_in_range=None, *kwargs):
         if timestamp > self.end_time or timestamp < self.start_time:
             if not_in_range is None:
@@ -331,50 +253,116 @@ class _Frame(pd.PeriodIndex):
         result = arr[np.nonzero((arr>span_first) & (arr<=span_last))[0]]
         return result
 
-    def _create_subframes(self, span_first, span_last, points_in_time):
-        """ Wrapper around `_locate_subframes`.
+    def check_span(self, span):
+        span_first = span.first
+        span_last = span.last
+        try:
+            _ = self[span_first]
+            _ = self[span_last]
+        except IndexError:
+            raise OutOfBoundsError("Span ({}, {}) not within frame"
+                                   ".".format(span_first, span_last))
+        except ValueError:
+            raise TypeError("Expected integer indices, received "
+                            "`{}` and `{}`".format(type(span_first),
+                                                   type(span_last)))
+        if span_first < 0 or span_last < 0:
+            raise OutOfBoundsError("Span boundaries must be non-negative")
+        if span_first > span_last:
+            raise VoidIntervalError("Span cannot be empty")
+
+        return True
+
+    def _locate_subspans(self, span, points_in_time):
+        """
+        Takes a part of the frame (a "span") in order to partition it into 
+        subspans at specified points in time. 
         
-        Transform returned value of `_locate_subframes` into a list of
-         `_Subframe` objects.
-         
         Parameters
         ----------
-        span_first : int>=0
-            Position of the first base unit of the span in the frame.
-        span_last : int>=0
-            Position of the last base unit of the span in the frame.
+        span : _Span
         points_in_time : Iterable of Timestamp-like 
             List of points in time referring to frame's elements that will 
-            become the first elements of subframes.
+            become the first elements of spans.
             
         Returns
         -------
-        list of _Subframe
+        list of tuples containing indices of subspan boundaries :    
+            [ (sub0_start, sub0_end), ... , (subN_start, subN_end) ]
+
+        
+        Notes
+        -----
+        Any elements of `points_in_time` that do not define a start of 
+        a subspan within the span are ignored.
+        These are:
+          - points referring to a base unit already designated as the 
+          first element of a subspan,
+          - points referring to the first base unit of `span`,
+          - points outside `span`.
+        If no usable points are found or `points_in_time` is empty,
+        `[(span.start, span.end)]` is returned. 
+        """
+        #timer0 = timeit.default_timer()
+        self.check_span(span)
+        # TODO: SPEED UP.
+        # This computation takes 0.3s for 100 Years Standard Week 8x5
+        #loc_list = [self.get_loc(t, 0) for t in points_in_time]
+        split_positions = self.get_loc_vectorized(points_in_time,
+                                                  span_first=span.first,
+                                                  span_last=span.last)
+        #timer1 = timeit.default_timer()
+        # split_positions = [int(x)
+        #                    for x in loc_list if span_first < x <= span_last]
+        #timer2 = timeit.default_timer()
+        split_positions = sorted(list(set(split_positions)))
+        #timer3 = timeit.default_timer()
+
+        start_positions = split_positions[:]
+        start_positions.insert(0, span.first)
+        end_positions = [x-1 for x in split_positions]
+        end_positions.append(span.last)
+        #timer4 = timeit.default_timer()
+        # print "_locate_span timers:\n\t1: {:.5f}\n\t2: {:.5f}\n\t3: {:.5f}"\
+        #       "\n\t4: {:.5f}".format(timer1-timer0, timer2-timer1,
+        #                              timer3-timer2, timer4-timer3)
+
+        return zip(start_positions, end_positions)
+
+    def _create_subspans(self, span, points_in_time):
+        """ Wrapper around `_locate_subspans`.
+        
+        Transform returned value of `_locate_subspans` into a list of
+         `_Span` objects.
+         
+        Parameters
+        ----------
+        span : _Span
+        points_in_time : Iterable of Timestamp-like 
+            List of points in time referring to frame's elements that will 
+            become the first elements of spans.
+            
+        Returns
+        -------
+        list of _Span
         
         See also
         --------
-        _locate_subframes
+        _locate_subspans
         """
-        subframe_boundaries = self._locate_subframes(span_first,
-                                                     span_last,
-                                                     points_in_time)
-        subframes = [_Subframe(first, last, 0, 0)
-                     for first, last in subframe_boundaries]
-        if not subframes:
-            subframes = [_Subframe(span_first, span_last, 0, 0)]
-        return subframes
+        span_boundaries = self._locate_subspans(span, points_in_time)
+        spans = [_Span(first, last, 0, 0)
+                     for first, last in span_boundaries]
+        if not spans:
+            spans = [span]
+        return spans
 
-    def partition_with_marker(self, span_first, span_last, marker):
-        """Partition the (part of) frame on the marks produced by `Marker`.
+    def partition_with_marker(self, span, marker):
+        """Partition a span on the marks produced by `Marker`.
         
         Parameters
         ----------
-        span_first : int>=0
-            Position of the base unit which begins the part of the  frame  
-            to be partitioned.
-        span_last : int>=0
-            Position of the base unit which ends the part of the  frame  
-            to be partitioned.
+        span : _Span
         marker : Marker
         
         Raises
@@ -386,28 +374,28 @@ class _Frame(pd.PeriodIndex):
         
         Returns
         -------
-        list of _Subframe
+        list of _Span
         
         Notes
         -----
-        The first or the last of the subframes may come out as incomplete 
-        calendar periods since the span may start or end in the middle of a 
-        calendar period. The number of base units in the first or the last 
+        The first or the last of the subspans may come out as incomplete 
+        calendar periods since the parent span may start or end in the middle 
+        of a calendar period. The number of base units in the first or the last 
         calendar periods which fall outside the span is stored in `skip_left`
-        attribute of the first subframe or in `skip_right` attribute of 
-        the last subframe, respectively.
+        attribute of the first subspan or in `skip_right` attribute of 
+        the last subspan, respectively.
         
         For example, if `base_unit_freq`='D', and the span contains the days
         from 01 Jan until 31 Jan 2017, and `marker.each`='W', the first 
-        subframe will contain only one day 01 Jan, Sunday. 
+        subspan will contain only one day 01 Jan, Sunday. 
         The first six days of this week (26-31 Dec) are outside the span. 
-        The number of such fell out days (6) is recorded in subframe's 
+        The number of such fell out days (6) is recorded in subspan's 
         `skip_left` attribute. 
         
-        Analogously, the last subframe of the span will contain only two days: 
+        Analogously, the last subspan of the span will contain only two days: 
         Mon 30 Jan and Tue 31 Jan. The rest five days of this week fall out of
         the span. This is recorded in `skip_right` attribute which is set, 
-        in this subframe, to 5. All subframes in between represent a full week
+        in this subspan, to 5. All subspans in between represent a full week
         each, and their `skip_left` and `skip_right` attributes are zeroed. 
         """
         if not _check_groupby_freq(self._base_unit_freq, marker.each):
@@ -415,9 +403,9 @@ class _Frame(pd.PeriodIndex):
                                          '{} is not a subperiod of {}'
                                          .format(self._base_unit_freq,
                                                  marker.each))
-        self.check_span(span_first, span_last)
-        span_start_ts = self[span_first].start_time
-        span_end_ts = self[span_last].end_time
+        self.check_span(span)
+        span_start_ts = self[span.first].start_time
+        span_end_ts = self[span.last].end_time
         left_dangle_undefined = False
         right_dangle_undefined = False
 
@@ -454,7 +442,7 @@ class _Frame(pd.PeriodIndex):
                 right_dangle_undefined = at_points[-1] < span_end_ts
                 split_points = at_points
             else:
-                return [_Subframe(span_first, span_last, -1, -1)]
+                return [_Span(span.first, span.last, -1, -1)]
 
         else:
             stencil = _Frame(base_unit_freq=marker.each,
@@ -471,7 +459,7 @@ class _Frame(pd.PeriodIndex):
                                          start=left_stencil_bound,
                                          end=span_start_ts)
             skipped_units_before = len(left_dangle.
-                                       difference(self[span_first:]))
+                                       difference(self[span.first:]))
         else:
             skipped_units_before = 0
 
@@ -479,66 +467,61 @@ class _Frame(pd.PeriodIndex):
             skipped_units_after = -1
         elif right_stencil_bound > span_end_ts:
             right_dangle = pd.PeriodIndex(freq=self._base_unit_freq,
-                                          start=self[span_last].start_time,
+                                          start=self[span.last].start_time,
                                           end=right_stencil_bound)
             skipped_units_after = len(right_dangle.
-                                      difference(self[:span_last + 1]))
+                                      difference(self[:span.last + 1]))
         else:
             skipped_units_after = 0
-        subframes = self._create_subframes(span_first, span_last, split_points)
-        subframes[0].skip_left = skipped_units_before
-        subframes[-1].skip_right = skipped_units_after
-        return subframes
+        spans = self._create_subspans(span, split_points)
+        spans[0].skip_left = skipped_units_before
+        spans[-1].skip_right = skipped_units_after
+        return spans
 
-    def partition_at_marks(self, span_first, span_last, marks):
-        """Partition the (part of) frame at specified points in time.
+    def partition_at_marks(self, span, marks):
+        """Partition a span at specified points in time.
         
         Take a part of the frame (a "span") and partition it into 
-        subframes starting on the base units referred to by  
+        subspans starting on the base units referred to by  
         points in time listed in `marks`.
 
         Parameters
         ----------
-        span_first : int>=0
-            Position of the base unit which begins the part of the  frame  
-            to be partitioned.
-        span_last : int>=0
-            Position of the base unit which ends the part of the  frame  
-            to be partitioned.
+        span : _Span
         marks: Iterable of Timestamp-like 
             List of points in time referring to base units that will 
-            become the first elements of subframes. A point in time may fall 
+            become the first elements of subspans. A point in time may fall 
             anywhere within the base unit.
 
         Returns
         -------
-        list of _Subframe
+        list of _Span
         
         Notes
         -----
         Any elements of `marks` that do not define a start of 
-        a subframe within the span are ignored.
+        a subspan within the span are ignored.
         These are:
           - points referring to a base unit already designated as the 
-          first element of a subframe,
-          - points referring to `span_first` base unit,
-          - points outside the span.
+          first element of a subsoan,
+          - points referring to the first base unit of `span`,
+          - points outside `span`.
         If no usable points are found or `points_in_time` is empty,
-        [(span_start, span_end)] is returned. 
+        `[span]` is returned. 
         """
-        return self._create_subframes(span_first, span_last,
-                                      [get_timestamp(m) for m in marks])
+        return self._create_subspans(span,
+                                     [get_timestamp(m) for m in marks])
 
 
-class _Subframe:
+class _Span(object):
     """Container class defining a subframe within some frame.
     
     Parameters
     ----------
     first : int 
-        Position of the first base unit of subframe within the frame.
+        Position of the first base unit of the subframe within the frame.
     last : int    
-        Position of the last base unit of subframe within the frame.
+        Position of the last base unit of the subframe within the frame.
     skip_left : int >=0 or -1
         Number of steps to skip if a pattern of labels is applied to  
         this subframe in 'forward' direction (left to right). 
@@ -881,20 +864,20 @@ class _Timeline(object):
         self._wsband.iloc[list(amendments_located.keys())] = \
             list(amendments_located.values())
 
-    def _apply_pattern(self, pattern, subframe):
+    def _apply_pattern(self, pattern, span):
         """Set workshift labels from a pattern.
         
-        Pattern application is repeated in cycles until the end of the subframe 
-        is reached. If `subframe.skip_left`>0, then the respective number of
+        Pattern application is repeated in cycles until the end of the span 
+        is reached. If `span.skip_left`>0, then the respective number of
         idle iterations through pattern is done before a label is set for the 
-        first workshift of the subframe. The value of `subframe.skip_right` 
+        first workshift of the span. The value of `span.skip_right` 
         is currently ignored (reserved for future support of pattern 
         application done in reverse).
 
         Parameters
         ----------
         pattern : Iterable of labels
-        subframe : Subframe
+        span : Subframe
          
         Returns
         -------
@@ -906,26 +889,26 @@ class _Timeline(object):
         """
         # TODO: support both directions (set direction in Organizer?)
         if not pattern:
-            raise IndexError("Received empty pattern for {}".format(subframe))
-        if subframe.skip_left<0:
+            raise IndexError("Received empty pattern for {}".format(span))
+        if span.skip_left<0:
             raise OutOfBoundsError("Attemted to apply forward pattern to {}, "
                                    "where left dangle could not be "
-                                   "calculated".format(subframe))
+                                   "calculated".format(span))
         pattern_iterator = _skiperator(pattern,
-                                       skip=subframe.skip_left)
-        self._wsband.loc[subframe.first: subframe.last] = [
+                                       skip=span.skip_left)
+        self._wsband.loc[span.first: span.last] = [
             next(pattern_iterator)
-            for i in range(subframe.first, subframe.last+1)
+            for i in range(span.first, span.last + 1)
         ]
 
         # THIS VERSION IS 100 TIMES SLOWER!!!
-        # for i in range(subframe.first, subframe.last+1):
+        # for i in range(span.first, span.last+1):
         #     try:
         #         self.iloc[i] = next(pattern_iterator)
         #     except StopIteration:
         #         raise IndexError('Timeline pattern exhausted since {}'.format(i))
 
-    def _organize(self, organizer, span_first=None, span_last=None):
+    def _organize(self, organizer, span=None):
         """Mark up the frame to create workshifts.
         
         Partition the specified span of the frame into workshifts and set 
@@ -934,12 +917,7 @@ class _Timeline(object):
         Parameters
         ----------
         organizer : Organizer 
-        span_first : int>=0, optional
-            Index of the first base unit of the span of the frame. 
-            By  default this is the first base unit of the frame.
-        span_last : int>=0, optional
-            Index of the last base unit of the span of the frame.. 
-            By default this is the last base unit of the frame.
+        span : _Span
             
         Returns
         -------
@@ -949,37 +927,35 @@ class _Timeline(object):
         ----
         Nothing is returned; the timeline is modified in-place.
         """
-        if span_first is None:
-            span_first = 0
-        if span_last is None:
-            span_last = len(self) - 1
-        subframe_seq = []
+        if span is None:
+            span = _Span(0, len(self.frame) - 1)
+        span_seq = []
         #timer0 = timeit.default_timer()
         if organizer.marker is not None:
-            subframe_seq = self.frame.partition_with_marker(span_first, span_last,
-                                                            organizer.marker)
+            span_seq = self.frame.partition_with_marker(span, organizer.marker)
         if organizer.marks is not None:
-            subframe_seq = self.frame.partition_at_marks(span_first, span_last,
-                                                         organizer.marks)
+            span_seq = self.frame.partition_at_marks(span, organizer.marks)
+        # structure_iterator = _skiperator(organizer.structure,
+        #                                  skip=span.skip_left)
+        structure_iterator = cycle(organizer.structure)
         #timer1 = timeit.default_timer()
         #timer2 = None
         # TODO: SPEED UP.
         # This loop takes 0.7s for 100 Years Standard Week 8x5
-        for subframe, layout in zip(subframe_seq,
-                                    cycle(organizer.structure)):
+        for span, layout in zip(span_seq, structure_iterator):
             #if timer2 is None: timer2 = timeit.default_timer()
 
             if isinstance(layout, Organizer):
-                self._organize(layout, subframe.first, subframe.last)
+                self._organize(layout, span)
             elif _is_iterable(layout):
-                self._apply_pattern(layout, subframe)
+                self._apply_pattern(layout, span)
             else:
-                # make compound workshift from the subframe, use layout as label
-                self._wsband.loc[subframe.first] = layout
-                self._wsband.drop(index=arange(subframe.first+1,
-                                               subframe.last+1), inplace=True)
-                self._frameband.iloc[subframe.first:
-                                     subframe.last+1] = subframe.first
+                # make compound workshift from the span, use layout as label
+                self._wsband.loc[span.first] = layout
+                self._wsband.drop(index=arange(span.first+1,
+                                               span.last+1), inplace=True)
+                self._frameband.iloc[span.first:
+                                     span.last+1] = span.first
         # timer3 = timeit.default_timer()
         # print "_organize ({},{})\n\tsplit: {:.5f}\n\tstructure init: {:.5f}" \
         #     "\n\tstructure run: {:.5f}".format(span_first, span_last,
@@ -1357,11 +1333,11 @@ class Marker(object):
     set on the start times of calendar periods specified by `each`.
     
     `Organizer` uses markup defined by `Marker` to partition the frame into 
-    subframes. The first subframe always starts on the first base unit 
-    of the span. The second subframe starts on the base unit which contains 
-    the first mark. The last subframe starts on the base unit containing 
+    spans. The first span always starts on the first base unit 
+    of the frame. The second span starts on the base unit which contains 
+    the first mark. The last span starts on the base unit containing 
     the last mark and ends on the last base unit of the span. If no marks 
-    have been set, only one subframe is created which contains the whole span.
+    have been set, only one span is created which contains the whole span.
     
     Examples
     --------
@@ -1463,6 +1439,12 @@ class RememberingPattern(object):
     @property
     def length(self):
         return len(self._labels)
+
+    def __nonzero__(self):
+        return self.length > 0
+
+    def __bool__(self):
+        return self.length > 0
 
     def __getitem__(self, i):
         return self._labels[i]

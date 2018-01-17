@@ -1,4 +1,4 @@
-from timeboard.core import _Timeline, _skiperator, _Frame, _Subframe, RememberingPattern
+from timeboard.core import _Timeline, _skiperator, _Frame, _Span, RememberingPattern
 import pytest
 
 
@@ -86,13 +86,13 @@ class TestApplyPattern(object):
     def test_apply_pattern_basic(self):
         p = [1,2,3]
         t = timeline_10d()
-        t._apply_pattern(p, _Subframe(0, len(t.frame)-1))
+        t._apply_pattern(p, _Span(0, len(t.frame) - 1))
         assert t.labels.eq([1, 2, 3, 1, 2, 3, 1, 2, 3, 1]).all()
 
     def test_apply_pattern_skip(self):
         p = [1,2,3]
         t = timeline_10d()
-        t._apply_pattern(p, _Subframe(0, len(t.frame)-1, skip_left=2))
+        t._apply_pattern(p, _Span(0, len(t.frame) - 1, skip_left=2))
         assert t.labels.eq([3, 1, 2, 3, 1, 2, 3, 1, 2, 3]).all()
 
     def test_apply_pattern_as_string_skip(self):
@@ -100,52 +100,52 @@ class TestApplyPattern(object):
         # pattern as a string
         p = '123'
         t = timeline_10d()
-        t._apply_pattern(p, _Subframe(0, len(t.frame)-1, skip_left=2))
+        t._apply_pattern(p, _Span(0, len(t.frame) - 1, skip_left=2))
         assert t.labels.eq(['3', '1', '2', '3', '1', '2', '3', '1', '2', '3']).all()
 
     def test_apply_pattern_span_skip(self):
         p = [1,2,3]
         t = timeline_10d()
-        t._apply_pattern(p, _Subframe(1, 6, skip_left=2))
+        t._apply_pattern(p, _Span(1, 6, skip_left=2))
         assert t[1:7].eq([3, 1, 2, 3, 1, 2]).all()
 
     def test_apply_pattern_double(self):
         p1 = [11, 12]
         p2 = [1, 2, 3]
         t = timeline_10d()
-        t._apply_pattern(p1, _Subframe(0, len(t.frame)-1))
-        t._apply_pattern(p2, _Subframe(1, 6, skip_left=2))
+        t._apply_pattern(p1, _Span(0, len(t.frame) - 1))
+        t._apply_pattern(p2, _Span(1, 6, skip_left=2))
         assert t.labels.eq([11, 3, 1, 2, 3, 1, 2, 12, 11, 12]).all()
 
     def test_apply_pattern_short(self):
         p = [1]
         t = timeline_10d()
-        t._apply_pattern(p, _Subframe(0, len(t.frame) - 1))
+        t._apply_pattern(p, _Span(0, len(t.frame) - 1))
         assert t.labels.eq([1, 1, 1, 1, 1, 1, 1, 1, 1, 1]).all()
 
     def test_apply_pattern_toolong(self):
         p = range(15)
         t = timeline_10d()
-        t._apply_pattern(p, _Subframe(0, len(t.frame) - 1))
+        t._apply_pattern(p, _Span(0, len(t.frame) - 1))
         assert t.labels.eq(range(10)).all()
 
     def test_apply_pattern_toolong_skip(self):
         p = range(15)
         t = timeline_10d()
-        t._apply_pattern(p, _Subframe(0, len(t.frame) - 1, skip_left=3))
+        t._apply_pattern(p, _Span(0, len(t.frame) - 1, skip_left=3))
         assert t.labels.eq(range(3, 13)).all()
 
     def test_apply_pattern_toolong_skip_more(self):
         p = range(15)
         t = timeline_10d()
-        t._apply_pattern(p, _Subframe(0, len(t.frame) - 1, skip_left=10))
+        t._apply_pattern(p, _Span(0, len(t.frame) - 1, skip_left=10))
         assert t.labels.eq([10, 11, 12, 13, 14, 0, 1, 2, 3, 4]).all()
 
     def test_apply_pattern_empty(self):
         p = []
         t = timeline_10d()
         with pytest.raises(IndexError):
-           t._apply_pattern(p, _Subframe(0, len(t.frame)-1))
+           t._apply_pattern(p, _Span(0, len(t.frame) - 1))
 
 
 class TestApplyPatternObject(object):
@@ -153,82 +153,82 @@ class TestApplyPatternObject(object):
     def test_apply_pattern_basic(self):
         p = RememberingPattern([1, 2, 3])
         t = timeline_10d()
-        t._apply_pattern(p, _Subframe(0, len(t.frame)-1))
+        t._apply_pattern(p, _Span(0, len(t.frame) - 1))
         assert t.labels.eq([1, 2, 3, 1, 2, 3, 1, 2, 3, 1]).all()
 
     def test_apply_pattern_skip(self):
         p = RememberingPattern([1, 2, 3])
         t = timeline_10d()
-        t._apply_pattern(p, _Subframe(0, len(t.frame)-1, skip_left=2))
+        t._apply_pattern(p, _Span(0, len(t.frame) - 1, skip_left=2))
         assert t.labels.eq([3, 1, 2, 3, 1, 2, 3, 1, 2, 3]).all()
 
     def test_apply_pattern_span_skip(self):
         p = RememberingPattern([1, 2, 3])
         t = timeline_10d()
-        t._apply_pattern(p, _Subframe(1, 6, skip_left=2))
+        t._apply_pattern(p, _Span(1, 6, skip_left=2))
         assert t[1:7].eq([3, 1, 2, 3, 1, 2]).all()
 
     def test_apply_pattern_short(self):
         p = RememberingPattern([1])
         t = timeline_10d()
-        t._apply_pattern(p, _Subframe(0, len(t.frame) - 1))
+        t._apply_pattern(p, _Span(0, len(t.frame) - 1))
         assert t.labels.eq([1, 1, 1, 1, 1, 1, 1, 1, 1, 1]).all()
 
     def test_apply_pattern_toolong(self):
         p = RememberingPattern(range(15))
         t = timeline_10d()
-        t._apply_pattern(p, _Subframe(0, len(t.frame) - 1))
+        t._apply_pattern(p, _Span(0, len(t.frame) - 1))
         assert t.labels.eq(range(10)).all()
 
     def test_apply_pattern_toolong_skip(self):
         p = RememberingPattern(range(15))
         t = timeline_10d()
-        t._apply_pattern(p, _Subframe(0, len(t.frame) - 1, skip_left=3))
+        t._apply_pattern(p, _Span(0, len(t.frame) - 1, skip_left=3))
         assert t.labels.eq(range(3, 13)).all()
 
     def test_apply_pattern_toolong_skip_more(self):
         p = RememberingPattern(range(15))
         t = timeline_10d()
-        t._apply_pattern(p, _Subframe(0, len(t.frame) - 1, skip_left=10))
+        t._apply_pattern(p, _Span(0, len(t.frame) - 1, skip_left=10))
         assert t.labels.eq([10, 11, 12, 13, 14, 0, 1, 2, 3, 4]).all()
 
     def test_apply_pattern_empty(self):
         p = RememberingPattern([])
         t = timeline_10d()
         with pytest.raises(IndexError):
-           t._apply_pattern(p, _Subframe(0, len(t.frame)-1))
+           t._apply_pattern(p, _Span(0, len(t.frame) - 1))
 
     def test_apply_pattern_with_memory(self):
         p = RememberingPattern([0, 1])
         t = timeline_10d()
-        t._apply_pattern(p, _Subframe(0, 4))
-        t._apply_pattern([9],_Subframe(5, 6))
-        t._apply_pattern(p, _Subframe(7, 9))
+        t._apply_pattern(p, _Span(0, 4))
+        t._apply_pattern([9], _Span(5, 6))
+        t._apply_pattern(p, _Span(7, 9))
         assert t.labels.eq([0, 1, 0, 1, 0, 9, 9, 1, 0, 1]).all()
 
     def test_apply_pattern_with_memory_long(self):
         p = RememberingPattern([0, 1, 2, 3, 4, 5])
         t = timeline_10d()
-        t._apply_pattern(p, _Subframe(0, 4))
-        t._apply_pattern([9],_Subframe(5, 6))
-        t._apply_pattern(p, _Subframe(7, 9))
+        t._apply_pattern(p, _Span(0, 4))
+        t._apply_pattern([9], _Span(5, 6))
+        t._apply_pattern(p, _Span(7, 9))
         assert t.labels.eq([0, 1, 2, 3, 4, 9, 9, 5, 0, 1]).all()
 
     def test_apply_pattern_with_memory_skip(self):
         p = RememberingPattern([0, 1])
         t = timeline_10d()
-        t._apply_pattern(p, _Subframe(0, 4, skip_left=3) )
-        t._apply_pattern([9],_Subframe(5, 6))
-        t._apply_pattern(p, _Subframe(7, 9))
+        t._apply_pattern(p, _Span(0, 4, skip_left=3))
+        t._apply_pattern([9], _Span(5, 6))
+        t._apply_pattern(p, _Span(7, 9))
         assert t.labels.eq([1, 0, 1, 0, 1, 9, 9, 0, 1, 0]).all()
 
     def test_apply_pattern_with_memory_skip_long(self):
         p = RememberingPattern([0, 1, 2, 3, 4, 5])
         t = timeline_10d()
-        t._apply_pattern(p, _Subframe(0, 4, skip_left=3))
-        t._apply_pattern([9],_Subframe(5, 6))
-        t._apply_pattern([9],_Subframe(5, 6))
-        t._apply_pattern(p, _Subframe(7, 9))
+        t._apply_pattern(p, _Span(0, 4, skip_left=3))
+        t._apply_pattern([9], _Span(5, 6))
+        t._apply_pattern([9], _Span(5, 6))
+        t._apply_pattern(p, _Span(7, 9))
         assert t.labels.eq([3, 4, 5, 0, 1, 9, 9, 2, 3, 4]).all()
 
     def test_apply_pattern_with_memory_skip_2(self):
@@ -236,7 +236,7 @@ class TestApplyPatternObject(object):
         # subframes
         p = RememberingPattern([0, 1, 2, 3, 4, 5])
         t = timeline_10d()
-        t._apply_pattern(p, _Subframe(0, 4, skip_left=3))
-        t._apply_pattern([9],_Subframe(5, 6))
-        t._apply_pattern(p, _Subframe(7, 9, skip_left=2))
+        t._apply_pattern(p, _Span(0, 4, skip_left=3))
+        t._apply_pattern([9], _Span(5, 6))
+        t._apply_pattern(p, _Span(7, 9, skip_left=2))
         assert t.labels.eq([3, 4, 5, 0, 1, 9, 9, 4, 5, 0]).all()

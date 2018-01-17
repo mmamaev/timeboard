@@ -1,5 +1,5 @@
 #from timeboard.timeboard import Timeboard
-from timeboard.core import _Frame
+from timeboard.core import _Frame, _Span
 from timeboard.exceptions import (OutOfBoundsError,
                                   VoidIntervalError,
                                   UnsupportedPeriodError)
@@ -217,7 +217,7 @@ class TestFrameLocSubframesWhole(object):
                       pd.Timestamp('10 Feb 2017 12:12:12'),
                       pd.Timestamp('20 Feb 2017 11:05')]
         f = frame_60d()
-        result = list(f._locate_subframes(0, len(f)-1, split_points))
+        result = list(f._locate_subspans(_Span(0, len(f) - 1), split_points))
         assert len(result)==4
         for i in range(len(result)) :
             assert (result[i] == split_frame_60d()[i])
@@ -228,7 +228,7 @@ class TestFrameLocSubframesWhole(object):
                       pd.Timestamp('02 Jan 2017 12:12:12'),
                       pd.Timestamp('07 Jan 2017'),
                       pd.Timestamp('07 Jan 2017 11:05')]
-        result = list(f._locate_subframes(0, len(f)-1, split_points))
+        result = list(f._locate_subspans(_Span(0, len(f) - 1), split_points))
         assert len(result) == 3
         assert result[0] == (0, 0)
         assert result[1] == (1, 2)
@@ -240,7 +240,7 @@ class TestFrameLocSubframesWhole(object):
                       pd.Timestamp('20 Feb 2017 11:05')]
         dti = pd.DatetimeIndex(split_points)
         f = frame_60d()
-        result = list(f._locate_subframes(0, len(f)-1, dti))
+        result = list(f._locate_subspans(_Span(0, len(f) - 1), dti))
         assert len(result)==4
         for i in range(len(result)) :
             assert (result[i] == split_frame_60d()[i])
@@ -250,7 +250,7 @@ class TestFrameLocSubframesWhole(object):
                         pd.Timestamp('10 Feb 2017 12:12:12'),
                         pd.Timestamp('10 Jan 2017')]
         f = frame_60d()
-        result = list(f._locate_subframes(0, len(f)-1, split_points))
+        result = list(f._locate_subspans(_Span(0, len(f) - 1), split_points))
         assert len(result) == 4
         for i in range(len(result)):
             assert (result[i] == split_frame_60d()[i])
@@ -261,7 +261,7 @@ class TestFrameLocSubframesWhole(object):
                       pd.Timestamp('10 Feb 2017 20:20:20'),
                       pd.Timestamp('20 Feb 2017 11:05')]
         f = frame_60d()
-        result = list(f._locate_subframes(0, len(f)-1, split_points))
+        result = list(f._locate_subspans(_Span(0, len(f) - 1), split_points))
         assert len(result)==4
         for i in range(len(result)) :
             assert (result[i] == split_frame_60d()[i])
@@ -273,7 +273,7 @@ class TestFrameLocSubframesWhole(object):
                       pd.Timestamp('20 Feb 2017 11:05'),
                       pd.Timestamp('20 Feb 2018')]
         f = frame_60d()
-        result = list(f._locate_subframes(0, len(f)-1, split_points))
+        result = list(f._locate_subspans(_Span(0, len(f) - 1), split_points))
         assert len(result)==4
         for i in range(len(result)) :
             assert (result[i] == split_frame_60d()[i])
@@ -282,7 +282,7 @@ class TestFrameLocSubframesWhole(object):
         split_points=[pd.Timestamp('30 Dec 2016'),
                       pd.Timestamp('20 Feb 2018')]
         f = frame_60d()
-        result = list(f._locate_subframes(0, len(f)-1, split_points))
+        result = list(f._locate_subspans(_Span(0, len(f) - 1), split_points))
         assert len(result)==1
         assert (result[0] == (0,59))
 
@@ -292,7 +292,7 @@ class TestFrameLocSubframesWhole(object):
                       pd.Timestamp('10 Feb 2017 12:12:12'),
                       pd.Timestamp('20 Feb 2017 11:05')]
         f = frame_60d()
-        result = list(f._locate_subframes(0, len(f)-1, split_points))
+        result = list(f._locate_subspans(_Span(0, len(f) - 1), split_points))
         assert len(result)==4
         for i in range(len(result)) :
             assert (result[i] == split_frame_60d()[i])
@@ -300,14 +300,14 @@ class TestFrameLocSubframesWhole(object):
     def test_frame_locsubf_at_first_bu_only(self):
         split_points=[pd.Timestamp('01 Jan 2017')]
         f = frame_60d()
-        result = list(f._locate_subframes(0, len(f)-1, split_points))
+        result = list(f._locate_subspans(_Span(0, len(f) - 1), split_points))
         assert len(result)==1
         assert (result[0] == (0,59))
 
     def test_frame_locsubf_at_last_bu(self):
         split_points = [pd.Timestamp('01 Mar 2017')]
         f = frame_60d()
-        result = list(f._locate_subframes(0, len(f)-1, split_points))
+        result = list(f._locate_subspans(_Span(0, len(f) - 1), split_points))
         assert len(result) == 2
         assert result[0] == (0,58)
         assert result[1] == (59,59)
@@ -315,7 +315,7 @@ class TestFrameLocSubframesWhole(object):
     def test_frame_split_empty(self):
         split_points=[]
         f = frame_60d()
-        result = list(f._locate_subframes(0, len(f)-1, split_points))
+        result = list(f._locate_subspans(_Span(0, len(f) - 1), split_points))
         assert len(result)==1
         assert result[0] == (0,59)
 
@@ -327,7 +327,7 @@ class TestFrameLocSubframesSpan(object):
                       pd.Timestamp('10 Feb 2017 12:12:12'),
                       pd.Timestamp('20 Feb 2017 11:05')]
         f = frame_60d()
-        result = list(f._locate_subframes(5, 55, split_points))
+        result = list(f._locate_subspans(_Span(5, 55), split_points))
         assert len(result)==4
         for i in range(len(result)) :
             assert (result[i] == split_frame_60d_int()[i])
@@ -339,7 +339,7 @@ class TestFrameLocSubframesSpan(object):
                       pd.Timestamp('20 Feb 2017 11:05'),
                       pd.Timestamp('20 Feb 2018')]
         f = frame_60d()
-        result = list(f._locate_subframes(5, 55, split_points))
+        result = list(f._locate_subspans(_Span(5, 55), split_points))
         assert len(result)==4
         for i in range(len(result)) :
             assert (result[i] == split_frame_60d_int()[i])
@@ -348,7 +348,7 @@ class TestFrameLocSubframesSpan(object):
         split_points=[pd.Timestamp('30 Dec 2016'),
                       pd.Timestamp('20 Feb 2018')]
         f = frame_60d()
-        result = list(f._locate_subframes(5, 55, split_points))
+        result = list(f._locate_subspans(_Span(5, 55), split_points))
         assert len(result)==1
         assert (result[0] == (5,55))
 
@@ -358,7 +358,7 @@ class TestFrameLocSubframesSpan(object):
                       pd.Timestamp('10 Feb 2017 12:12:12'),
                       pd.Timestamp('20 Feb 2017 11:05')]
         f = frame_60d()
-        result = list(f._locate_subframes(5, 55, split_points))
+        result = list(f._locate_subspans(_Span(5, 55), split_points))
         assert len(result)==4
         for i in range(len(result)) :
             assert (result[i] == split_frame_60d_int()[i])
@@ -366,35 +366,35 @@ class TestFrameLocSubframesSpan(object):
     def test_frame_locsubf_at_first_bu_only(self):
         split_points=[pd.Timestamp('06 Jan 2017')]
         f = frame_60d()
-        result = list(f._locate_subframes(5, 55, split_points))
+        result = list(f._locate_subspans(_Span(5, 55), split_points))
         assert len(result)==1
         assert (result[0] == (5,55))
 
     def test_frame_locsubf_span_single(self):
         split_points=[pd.Timestamp('06 Jan 2017')]
         f = frame_60d()
-        result = list(f._locate_subframes(5, 5, split_points))
+        result = list(f._locate_subspans(_Span(5, 5), split_points))
         assert len(result)==1
         assert (result[0] == (5,5))
 
     def test_frame_locsubf_span_single_points_outside(self):
         split_points=[pd.Timestamp('07 Jan 2017')]
         f = frame_60d()
-        result = list(f._locate_subframes(5, 5, split_points))
+        result = list(f._locate_subspans(_Span(5, 5), split_points))
         assert len(result)==1
         assert (result[0] == (5,5))
 
     def test_frame_locsubf_span_single_no_points(self):
         split_points = []
         f = frame_60d()
-        result = list(f._locate_subframes(5, 5, split_points))
+        result = list(f._locate_subspans(_Span(5, 5), split_points))
         assert len(result) == 1
         assert (result[0] == (5, 5))
 
     def test_frame_locsubf_span_single_at_zero(self):
         split_points = []
         f = frame_60d()
-        result = list(f._locate_subframes(0, 0, split_points))
+        result = list(f._locate_subspans(_Span(0, 0), split_points))
         assert len(result) == 1
         assert (result[0] == (0, 0))
 
@@ -402,35 +402,35 @@ class TestFrameLocSubframesSpan(object):
         split_points = [pd.Timestamp('10 Feb 2017 12:12:12')]
         f = frame_60d()
         with pytest.raises(OutOfBoundsError):
-            f._locate_subframes(5-60, 55, split_points)
+            f._locate_subspans(_Span(5 - 60, 55), split_points)
 
     def test_frame_locsubf_span_negative2(self):
         split_points = [pd.Timestamp('10 Feb 2017 12:12:12')]
         f = frame_60d()
         with pytest.raises(OutOfBoundsError):
-            f._locate_subframes(5, 55-60, split_points)
+            f._locate_subspans(_Span(5, 55 - 60), split_points)
 
     def test_frame_locsubf_span_outside(self):
         split_points = [pd.Timestamp('10 Feb 2017 12:12:12')]
         f = frame_60d()
         with pytest.raises(OutOfBoundsError):
-            f._locate_subframes(5, 70, split_points)
+            f._locate_subspans(_Span(5, 70), split_points)
 
     def test_frame_locsubf_span_reverse_(self):
         split_points = [pd.Timestamp('10 Feb 2017 12:12:12')]
         f = frame_60d()
         with pytest.raises(VoidIntervalError):
-            f._locate_subframes(55, 5, split_points)
+            f._locate_subspans(_Span(55, 5), split_points)
 
     def test_frame_locsubf_span_ts_injection1(self):
         split_points = [pd.Timestamp('10 Feb 2017 12:12:12')]
         f = frame_60d()
         with pytest.raises(TypeError):
-             f._locate_subframes(5, '20 Feb 2017', split_points)
+             f._locate_subspans(_Span(5, '20 Feb 2017'), split_points)
 
     def test_frame_locsubf_span_ts_injection2(self):
         split_points = [pd.Timestamp('10 Feb 2017 12:12:12')]
         f = frame_60d()
         with pytest.raises(TypeError):
-             f._locate_subframes(5, pd.Timestamp('20 Feb 2017'),
-                                         split_points)
+             f._locate_subspans(_Span(5, pd.Timestamp('20 Feb 2017')),
+                                split_points)
