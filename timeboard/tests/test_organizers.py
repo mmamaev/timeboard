@@ -1,5 +1,7 @@
 from timeboard.core import _Timeline, _Frame, Organizer, RememberingPattern, _to_iterable
 from timeboard.exceptions import OutOfBoundsError
+from itertools import cycle
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -175,6 +177,107 @@ class TestOrganizeRecursive(object):
         #result: Dec 27-31               Jan 1-5       rest of Jan      Feb 1
         result = ['d','e','c','d','e'] + [1,1,2,3,1] + ['z']*(31-6+1) + [3]
         assert t.labels.eq(result).all()
+
+
+class TestOrganizeVariousTypesOfStructure(object):
+
+    def test_organize_with_empty_structure(self):
+        f = _Frame(base_unit_freq='D',
+                   start='02 Oct 2017', end='04 Oct 2017 23:59')
+        org = Organizer(marker='W', structure=[])
+        t = _Timeline(frame=f, organizer=org, data=0)
+        assert t.labels.eq([0, 0, 0]).all()
+
+    def test_organize_with_empty_pattern_in_structure(self):
+        f = _Frame(base_unit_freq='D',
+                   start='01 Oct 2017', end='10 Oct 2017')
+        org = Organizer(marker='W', structure=[[1,2],[]])
+        t = _Timeline(frame=f, organizer=org, data=0)
+        assert t.labels.eq([1] + [0]*7 + [1,2]).all()
+
+    def test_organize_structure_as_rememberingpattern(self):
+        f = _Frame(base_unit_freq='H',
+                   start='02 Oct 2017', end='04 Oct 2017 23:59')
+        org = Organizer(marker='D', structure=RememberingPattern([1,2]))
+        t = _Timeline(frame=f, organizer=org, data=0)
+        assert t.labels.eq([1,2,1]).all()
+
+    def test_organize_structure_as_empty_rememberingpattern(self):
+        f = _Frame(base_unit_freq='H',
+                   start='02 Oct 2017', end='04 Oct 2017 23:59')
+        org = Organizer(marker='D', structure=RememberingPattern([]))
+        t = _Timeline(frame=f, organizer=org, data=0)
+        assert t.labels.eq([0]*72).all()
+
+    def test_organize_structure_element_as_rememberingpattern(self):
+        f = _Frame(base_unit_freq='D',
+                   start='02 Oct 2017', end='04 Oct 2017 23:59')
+        org = Organizer(marker='W', structure=[RememberingPattern([1, 2])])
+        t = _Timeline(frame=f, organizer=org, data=0)
+        assert t.labels.eq([1, 2, 1]).all()
+
+    def test_organize_structure_element_as_empty_rememberingpattern(self):
+        f = _Frame(base_unit_freq='D',
+                   start='02 Oct 2017', end='04 Oct 2017 23:59')
+        org = Organizer(marker='W', structure=[RememberingPattern([])])
+        t = _Timeline(frame=f, organizer=org, data=0)
+        assert t.labels.eq([0, 0, 0]).all()
+
+    def test_organize_structure_as_generator(self):
+        f = _Frame(base_unit_freq='H',
+                   start='02 Oct 2017', end='04 Oct 2017 23:59')
+        org = Organizer(marker='D', structure=cycle([1,2]))
+        t = _Timeline(frame=f, organizer=org, data=0)
+        assert t.labels.eq([1,2,1]).all()
+
+    def test_organize_structure_as_empty_generator(self):
+        f = _Frame(base_unit_freq='H',
+                   start='02 Oct 2017', end='04 Oct 2017 23:59')
+        org = Organizer(marker='D', structure=cycle([]))
+        t = _Timeline(frame=f, organizer=org, data=0)
+        assert t.labels.eq([0]*72).all()
+
+    def test_organize_structure_element_as_generator(self):
+        f = _Frame(base_unit_freq='D',
+                   start='02 Oct 2017', end='04 Oct 2017 23:59')
+        org = Organizer(marker='W', structure=[cycle([1, 2])])
+        t = _Timeline(frame=f, organizer=org, data=0)
+        assert t.labels.eq([1, 2, 1]).all()
+
+    def test_organize_structure_element_as_empty_generator(self):
+        f = _Frame(base_unit_freq='D',
+                   start='02 Oct 2017', end='04 Oct 2017 23:59')
+        org = Organizer(marker='W', structure=[cycle([])])
+        t = _Timeline(frame=f, organizer=org, data=0)
+        assert t.labels.eq([0, 0, 0]).all()
+
+    def test_organize_structure_as_numpy_array(self):
+        f = _Frame(base_unit_freq='H',
+                   start='02 Oct 2017', end='04 Oct 2017 23:59')
+        org = Organizer(marker='D', structure=np.array([1,2]))
+        t = _Timeline(frame=f, organizer=org, data=0)
+        assert t.labels.eq([1,2,1]).all()
+
+    def test_organize_structure_as_empty_numpy_array(self):
+        f = _Frame(base_unit_freq='H',
+                   start='02 Oct 2017', end='04 Oct 2017 23:59')
+        org = Organizer(marker='D', structure=np.array([]))
+        t = _Timeline(frame=f, organizer=org, data=0)
+        assert t.labels.eq([0]*72).all()
+
+    def test_organize_structure_element_as_numpy_array(self):
+        f = _Frame(base_unit_freq='D',
+                   start='02 Oct 2017', end='04 Oct 2017 23:59')
+        org = Organizer(marker='W', structure=[np.array([1,2])])
+        t = _Timeline(frame=f, organizer=org, data=0)
+        assert t.labels.eq([1,2,1]).all()
+
+    def test_organize_structure_element_as_empty_numpy_array(self):
+        f = _Frame(base_unit_freq='D',
+                   start='02 Oct 2017', end='04 Oct 2017 23:59')
+        org = Organizer(marker='W', structure=[np.array([])])
+        t = _Timeline(frame=f, organizer=org, data=0)
+        assert t.labels.eq([0,0,0]).all()
 
 
 class TestApplyAmendments(object):

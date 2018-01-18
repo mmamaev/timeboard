@@ -77,9 +77,10 @@ class TestTimelineConstructor(object):
         assert t.labels.isnull().all()
 
 @pytest.fixture(scope='module')
-def timeline_10d():
-    return _Timeline(_Frame(base_unit_freq='D', start='01 Jan 2017', end='10 '
-                                                                        'Jan 2017'))
+def timeline_10d(data=None):
+    return _Timeline(_Frame(base_unit_freq='D',
+                            start='01 Jan 2017', end='10 Jan 2017'),
+                     data=data)
 
 class TestApplyPattern(object):
 
@@ -143,12 +144,12 @@ class TestApplyPattern(object):
 
     def test_apply_pattern_empty(self):
         p = []
-        t = timeline_10d()
-        with pytest.raises(IndexError):
-           t._apply_pattern(p, _Span(0, len(t.frame) - 1))
+        t = timeline_10d(data=100)
+        t._apply_pattern(p, _Span(0, len(t.frame) - 1))
+        assert t.labels.eq([100]*10).all()
 
 
-class TestApplyPatternObject(object):
+class TestApplyRememberingPattern(object):
 
     def test_apply_pattern_basic(self):
         p = RememberingPattern([1, 2, 3])
@@ -194,9 +195,9 @@ class TestApplyPatternObject(object):
 
     def test_apply_pattern_empty(self):
         p = RememberingPattern([])
-        t = timeline_10d()
-        with pytest.raises(IndexError):
-           t._apply_pattern(p, _Span(0, len(t.frame) - 1))
+        t = timeline_10d(data=100)
+        t._apply_pattern(p, _Span(0, len(t.frame) - 1))
+        assert t.labels.eq([100]*10).all()
 
     def test_apply_pattern_with_memory(self):
         p = RememberingPattern([0, 1])

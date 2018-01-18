@@ -16,6 +16,28 @@ class TestTBConstructor(object):
         assert clnd.end_time < datetime.datetime(2017, 1, 13, 0, 0, 0)
         assert clnd.base_unit_freq == 'D'
 
+    def test_tb_constructor_empty_layout(self):
+        clnd = tb.Timeboard(base_unit_freq='D',
+                            start='01 Jan 2017', end='12 Jan 2017',
+                            layout=[],
+                            )
+        assert clnd._timeline.labels.isnull().all()
+        assert clnd.start_time == datetime.datetime(2017, 1, 1, 0, 0, 0)
+        assert clnd.end_time > datetime.datetime(2017, 1, 12, 23, 59, 59)
+        assert clnd.end_time < datetime.datetime(2017, 1, 13, 0, 0, 0)
+        assert clnd.base_unit_freq == 'D'
+
+    def test_tb_constructor_empty_layout_with_default_label(self):
+        clnd = tb.Timeboard(base_unit_freq='D',
+                            start='01 Jan 2017', end='12 Jan 2017',
+                            layout=[],
+                            default_label=100)
+        assert clnd._timeline.labels.eq([100]*12).all()
+        assert clnd.start_time == datetime.datetime(2017, 1, 1, 0, 0, 0)
+        assert clnd.end_time > datetime.datetime(2017, 1, 12, 23, 59, 59)
+        assert clnd.end_time < datetime.datetime(2017, 1, 13, 0, 0, 0)
+        assert clnd.base_unit_freq == 'D'
+
     def test_tb_constructor_trivial_with_amendments(self):
         clnd = tb.Timeboard(base_unit_freq='D',
                             start='01 Jan 2017', end='12 Jan 2017',

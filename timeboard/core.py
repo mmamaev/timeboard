@@ -559,8 +559,7 @@ class _Timeline(object):
     data : optional
         Labels to initialize the timeline (a single value or an iterable 
         for the full length of the timeline).By default the timeline is 
-        initialized with NaN. This parameter is only useful when 
-        `organizer` is not given.
+        initialized with NaN. 
         
     Raises
     ------
@@ -886,20 +885,24 @@ class _Timeline(object):
         Note
         ----
         Nothing is returned; the timeline is modified in-place.
+        
+        If `pattern` is empty, timeline elements in the span retain default 
+        labels or NaN if no default label has been set.
         """
         # TODO: support both directions (set direction in Organizer?)
-        if not pattern:
-            raise IndexError("Received empty pattern for {}".format(span))
         if span.skip_left<0:
             raise OutOfBoundsError("Attemted to apply forward pattern to {}, "
                                    "where left dangle could not be "
                                    "calculated".format(span))
         pattern_iterator = _skiperator(pattern,
                                        skip=span.skip_left)
-        self._wsband.loc[span.first: span.last] = [
-            next(pattern_iterator)
-            for i in range(span.first, span.last + 1)
-        ]
+        try:
+            self._wsband.loc[span.first: span.last] = [
+                next(pattern_iterator)
+                for i in range(span.first, span.last + 1)
+            ]
+        except StopIteration:
+            pass
 
         # THIS VERSION IS 100 TIMES SLOWER!!!
         # for i in range(span.first, span.last+1):
@@ -1148,7 +1151,8 @@ class Organizer(object):
     
     If it is a pattern, the recursive partitioning does not happen. Instead, 
     each base unit of the span becomes a workshift. The labels for these 
-    workshifts are taken from the pattern. 
+    workshifts are taken from the pattern. If the pattern is empty, 
+    the workshifts of the span retain the default labels of the timeline.
     
     If the element of `structure` is some other single value, it is considered 
     a label. In this case the whole span becomes a single workshift which 
@@ -1157,6 +1161,9 @@ class Organizer(object):
     
     Once `structure` is exhausted , it is re-enacted in cycles. The same 
     approach applies for pattern when setting workshift labels.
+    
+    If `structure` is empty no organizing occurs. The timeline retains the 
+    default label for every workshift (workshifts coincide with base units).
     
     See also
     --------

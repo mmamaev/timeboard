@@ -16,7 +16,7 @@ _Location = namedtuple('_Location', ['position', 'where'])
 
 
 class Timeboard(object):
-    """Your calendar.
+    """Custom-built calendar.
     
     Timeboard contains a timeline of workshifts and one or more schedules 
     which endow workshifts with on-duty or off-duty status.
@@ -77,6 +77,11 @@ class Timeboard(object):
         the function which takes one argument - label of a workshift, and 
         returns True if this is an on duty workshift, False otherwise. 
         If not supplied, the function that returns `bool(label)` is used.
+    default_label : optional
+        Label to initialize the timeline with. Normally, this value will be 
+        overridden by `layout` unless `layout` is empty or an Organizer has 
+        empty `structure` or empty patterns in `structure`. If 
+        `default_label` is not specified, the timeline is initialized with NaN.
     
     Raises
     ------
@@ -96,8 +101,9 @@ class Timeboard(object):
         When the first workshift / base unit of the timeboard starts.
     end_time : Timestamp
         When the last workshift / base unit of the timeboard ends.
-    workshift_ts : str
-    default_activity : str
+    schedules : dict of {str : _Schedule}
+        The keys are names of schedules.
+    default_schedule : _Schedule
     default_selector : function
         
     See also
@@ -109,7 +115,8 @@ class Timeboard(object):
                  amendments=None,
                  default_selector=None,
                  default_name=None,
-                 workshift_ref='start'):
+                 workshift_ref='start',
+                 default_label=None):
         if isinstance(layout, Organizer):
             org = layout
         elif _is_iterable(layout):
@@ -130,7 +137,8 @@ class Timeboard(object):
         self._custom_selector = default_selector
         self._frame = _Frame(base_unit_freq, start, end)
         self._timeline = _Timeline(frame=self._frame, organizer=org,
-                                   workshift_ref=workshift_ref)
+                                   workshift_ref=workshift_ref,
+                                   data=default_label)
         self._timeline.amend(amendments)
         self._base_unit_freq = base_unit_freq
 
