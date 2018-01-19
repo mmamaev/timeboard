@@ -208,17 +208,18 @@ class CalendarBase(object):
     Parameters
     ----------
     custom_start : Timestamp-like, optional
-        Point in time referring to the first base unit of the calendar; must 
-        be within the calendar span set by `parameters`. By default the 
-        calendar starts with the base unit referred to by 'start' element of 
-        `parameters`.
+        Change the first date of the calendar. This date must be within 
+        the default calendar range returned by `parameters()` class method. 
+        By default the calendar starts on the date defined by 'start' 
+        element of `parameters()`.
     custom_end : Timestamp-like, optional
-        Point in time referring to the last base unit of the calendar; must 
-        be within the calendar span set by `parameters`. By default the 
-        calendar ends with the base unit referred to by 'end' element of 
-        `parameters`.
+        Change the last date of the calendar. This date must be within 
+        the default calendar range returned by `parameters()` class method. 
+        By default the calendar ends on the date defined by 'end' 
+        element of `parameters()`.
     do_not_amend : bool, optional (default False)
-        If set to True, the calendar is created without any amendments.
+        If set to True, the calendar is created without any amendments, 
+        meaning that effects of holiday observations are not accounted for.
     only_custom_amendments : bool, optional (default False)
         If set to True, only amendments from `custom_amendments` are applied 
         to the calendar.
@@ -246,7 +247,7 @@ class CalendarBase(object):
     ------
     OutOfBoundsError
         If `custom_start` or `custom_end` fall outside the calendar span 
-        set by `parameters`
+        set by `parameters()` class method.
         
     Returns
     -------

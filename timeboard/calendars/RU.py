@@ -67,24 +67,25 @@ def changes(eve_hours):
 class Weekly8x5(CalendarBase):
     """Russian business calendar for 5 days x 8 hours working week.
     
-    Workshifts are calendar days. Workshift labels are number of working hours
+    Workshifts are calendar days. Workshift labels are numbers of working hours
     per day: 0 for days off, 8 for regular business days, 7 for some pre- or 
-    post-holidays business days (see also `short_eves` parameter).
+    post-holiday business days (see also `short_eves` parameter).
     
     Parameters
     ----------
     custom_start : Timestamp-like, optional
-        Point in time referring to the first base unit of the calendar; must 
-        be within the calendar span set by `parameters`. By default the 
-        calendar starts with the base unit referred to by 'start' element of 
-        `Weekly8x5.parameters()`.
+        Change the first date of the calendar. This date must be within 
+        the default calendar range returned by `Weekly8x5.parameters()`. 
+        By default the calendar starts on the date defined by 'start' 
+        element of `Weekly8x5.parameters()`.
     custom_end : Timestamp-like, optional
-        Point in time referring to the last base unit of the calendar; must 
-        be within the calendar span set by `parameters`. By default the 
-        calendar ends with the base unit referred to by 'end' element of 
-        `Weekly8x5.parameters()`.
+        Change the last date of the calendar. This date must be within 
+        the default calendar range returned by `Weekly8x5.parameters()`. 
+        By default the calendar ends on the date defined by 'end' 
+        element of `Weekly8x5.parameters()`.
     do_not_amend : bool, optional (default False)
-        If set to True, the calendar is created without any amendments.
+        If set to True, the calendar is created without any amendments, 
+        meaning that effects of holiday observations are not accounted for.
     only_custom_amendments : bool, optional (default False)
         If set to True, only amendments from `custom_amendments` are applied 
         to the calendar.
@@ -93,38 +94,52 @@ class Weekly8x5(CalendarBase):
         Otherwise `custom_amendments` are used to update pre-configured 
         amendments (add missing or override existing amendments). 
     work_on_dec31 : bool, optional (default True) 
-        If false, the December 31 is always considered a holiday. Otherwise (
-        by default) use the official status of each December 31.
+        If False, the December 31 is always considered a holiday. Otherwise 
+        use the official status of each December 31, which is the default 
+        behavior.
     short_eves : bool, optional (default True)
-        If false, consider all business days having 8 working hours. 
-        Otherwise (by default) use the official reduction to 7 working hours 
-        on some pre- or post-holiday business days.
+        If False, consider all business days having 8 working hours. 
+        Otherwise assume the official reduction of working day to 7 
+        hours on some pre- or post-holiday business days, which is the 
+        default behavior.
         
     Raises
     ------
     OutOfBoundsError
-        If `custom_start` or `custom_end` fall outside the calendar span 
-        set by `parameters`
+        If `custom_start` or `custom_end` fall outside the calendar range 
+        returned by `Weekly8x5.parameters()`
     
     Returns
     -------
     Timeboard
     
+    Class Methods
+    -------------
+    parameters() : dict
+        Returns a dictionary of `Timeboard` parameters used for building the 
+        calendar. 
+    
     Examples
     --------
-    import timeboard.calendars.RU as RU
+    >>> import timeboard.calendars.RU as RU
     
-    #create a timeboard with official business calendar
-    clnd = RU.Weekly8x5()
+    #create an official business calendar for the available range of dates
+    >>> clnd = RU.Weekly8x5()
     
-    #inspect calendar parameters
-    parameters_dict = RU.Weekly8x5.parameters()
+    # create a business calendar for years 2010-2017, ignoring short eves 
+    # and making December 31 always a day off
+    >>> clnd = RU.Weekly8x5(custom_start='01 Jan 2010', 
+                            custom_end='31 Dec 2017', 
+                            work_on_dec31 = False,
+                            short_eves = False)
     
-    #inspect calendar amendments
-    amendments_dict = RU.Weekly8x5.amendments(**kwargs)
+    #inspect the default calendar range
+    >>> params = RU.Weekly8x5.parameters()
+    >>> print(params['start'])
+    2005-01-01 00:00:00
+    >>> print(params['end'])
+    2018-12-31 00:00:00
     
-    #create a calendar with customized span and/or amendments
-    clnd = RU.Weekly8x5(**kwargs)
     """
 
     @classmethod
