@@ -25,8 +25,9 @@ class Timeboard(object):
     Execute `get_workshift` or `get_interval` to instantiate 
     a workshift/an interval and then call their appropriate methods to 
     perform calculations. 
-    Note that an instance of the timeboard is callable and such call is 
-    a wrapper around `get_workshift` or `get_interval` depending on the 
+    
+    Note that an instance of Timeboard is callable and such call is 
+    a wrapper around `get_workshift` or `get_interval` method depending on the 
     arguments. 
     
     Parameters
@@ -342,9 +343,15 @@ class Timeboard(object):
         Parameters
         ----------
         point_in_time : Timestamp-like
-            A string convertible to a timestamp, or a pandas Timestamp, or 
+            An object convertible to Timestamp. If it has `to_timestamp()` 
+            method, then the method's return value is used. Otherwise it is a 
+            string convertible to a timestamp, or a pandas Timestamp, or 
             a datetime object.
-            
+        schedule : _Schedule, optional
+            Schedule to be used in calculations with the workshift unless a 
+            schedule is explicitly redefined for a specific calculation. 
+            By default the timeboard's default schedule is used.
+        
         Returns
         -------
         Workshift
@@ -354,12 +361,28 @@ class Timeboard(object):
         OutOfBoundsError (LookupError)
             If `point_in_time` is not within the timeboard.
             
+        Notes
+        -----
+        An instance of Timeboard is callable. If it is called with a single 
+        non-keyword argument, the call is passed to `get_workshift`. (And 
+        should the call  fail, `get_interval` is tried instead.) Call 
+        `get_workshift` explicitly if you want to pass additional arguments.
+
         See also
         --------
-        timeboard.workshift.Workshift(timeboard, location)
-            An alternative, low-level approach to instantiating a 
-            workshift. You will need to know the absolute position 
-            (`location`) of the workshift within the timeline.
+        timeboard.workshift.Workshift(timeboard, location: int, schedule=None)
+            An alternative approach to instantiating a workshift by the 
+            position (`location`) of the workshift within the timeline.
+
+        Examples
+        --------
+        >>> clnd = Timeboard('D', '30 Sep 2017', '15 Oct 2017', layout=[0,1])
+        >>> clnd.get_workshift('01 Oct 2017')
+        Workshift(1) of 'D' at 2017-10-01
+        
+        # shortcut
+        >>> clnd('01 Oct 2017')
+        Workshift(1) of 'D' at 2017-10-01
         """
         if schedule is None:
             schedule = self.default_schedule
@@ -377,52 +400,60 @@ class Timeboard(object):
         mutually exclusive. Accepted  parameters are listed below along with 
         the techniques.
         
-            - Create an interval from two points in time which refer to the first 
-            and the last workshifts of the interval.
+            1. Create the interval from two points in time which refer to 
+            the first and the last workshifts of the interval.
         
             Parameters
             ----------
             interval_ref : sequence of (Timestamp-like, Timestamp-like)
-                Each element is a string convertible to a timestamp, 
-                or a pandas Timestamp, or a datetime object.
+                Each element is an object convertible to a timestamp, such as
+                a string, or a pandas Timestamp, or a datetime object.
             length : parameter must be omitted
             period : parameter must be omitted
-        
-            - Create an interval of a specific length starting from a 
-            workshift refer to by a point in time .
+            
+            2. Create an interval of a specific length starting from a 
+            workshift referred to by a point in time .
         
             Parameters
             ----------
             interval_ref : Timestamp-like
-                A string convertible to a timestamp, or a pandas Timestamp, 
-                or a datetime object.
+                An object convertible to a timestamp, such as
+                a string, or a pandas Timestamp, or a datetime object.
             length : int (!=0)
                 Number of workshifts in the interval. If `length` is positive, 
                 the interval extends into the future from the workshift 
                 referred to by `interval_ref`.  If `length` is negative, 
                 the interval extends to the past. Both length=1 and length=-1 
-                create the interval containing only one `interval_ref` workshift.
-                Zero `length` is not allowed.
+                create the interval containing only the `interval_ref` 
+                workshift. Zero `length` is not allowed.
             period : parameter must be omitted
         
-            - Create an interval aligned with a calendar period. Specify a 
-            point in time within the period and a calendar frequency of the period 
-            (i.e. 'M' for month). 
+            3. Create the interval from a calendar period identified by 
+            a point in time within the period and a calendar frequency 
+            of the period (i.e. 'M' for month). 
         
-            The interval is created only if the boundaries of the calendar period 
-            are aligned with workshift boundaries, that is, no workshift has its 
-            parts located both within and outside the calendar period.
+            The interval will contain all workshifts belonging to the 
+            specified calendar period. Workshift reference time is used to 
+            identify the period where the workshift belongs. Hence the 
+            situation when a workshift extends over a boundary between  
+            calendar periods is handled by finding out which of the periods 
+            contain the workshift reference time. 
+            
             If the calendar period extends beyond the timeline, `clip_period` 
             parameter is consulted. If it is True, then the calendar period is 
-            clipped at the bound(s) of the timeline, meaning that only the part of 
-            the period falling inside the timeline is considered. If 
+            clipped at the bound(s) of the timeline, meaning that only the part 
+            of the period falling inside the timeline is considered. If 
             `clip_period` is False, OutOfBoundsError is raised.
+            
+            If the period has been clipped or the period boundary is not 
+            aligned with workshifts, the start or end time of the produced 
+            interval will be different from that of the period.
         
             Parameters
             ----------
             interval_ref : Timestamp-like
-                A string convertible to a timestamp, or a pandas Timestamp, 
-                or a datetime object.
+                An object convertible to a timestamp, such as
+                a string, or a pandas Timestamp, or a datetime object.
             period : str
                 A pandas-compatible frequency defining a calendar period (i.e. 
                 'M' for month).
@@ -430,8 +461,10 @@ class Timeboard(object):
             clip_period : bool, optional (default True)
                 If True, clip a calendar period at the bound(s) of the timeline.
             
-            - Create an interval from a pandas Period object. The same restriction 
-            is applied as with the previous technique.
+            4. Create the interval from a calendar period identified by a 
+            pandas Period object. 
+            
+            The same considerations are applied as for technique 3.
     
             Parameters
             ----------
@@ -441,7 +474,7 @@ class Timeboard(object):
             clip_period : bool, optional (default True)
                 If True, clip a calendar period at the bound(s) of the timeline.
             
-            - Create the interval that spans the entire timeline.
+            5. Create the interval that spans the entire timeline.
             
             Parameters
             ----------
@@ -450,13 +483,17 @@ class Timeboard(object):
             period : parameter must be omitted
         
         
-        Other Parameters
-        ----------------
+        Parameters valid for any option
+        -------------------------------
         closed : {'11', '01', '10', '00'}, optional (default '11')
             Interpret the interval definition as closed ('11'), half-open 
             ('01' or '10'), or open ('00'). The symbol of zero indicates 
             whether the returned interval is stripped of the first or the last 
             workshift, or both.  
+            
+            If the interval was created by clipping a calendar period, `closed`
+            is not honored for the clipped end(s). The element of `closed` 
+            representing the clipped end is reset to '1'.
                   
         Returns
         -------
@@ -479,22 +516,67 @@ class Timeboard(object):
             
         Notes
         -----
-        If you attempt to create an interval from two points in time or by 
+        - If you attempt to create an interval from two points in time or by 
         length, and the interval would extend beyond the timeline, 
         OutOfBoundsError is always raised. `clip_period` is effective only if
         you are creating the interval from a calendar period.
         
-        If the interval was created by clipping a calendar period, `closed` 
-        is not honored for the clipped end(s) (i.e. the `closed` indicator for
-        the clipped end is reset to '1').
-            
+        - An instance of Timeboard is callable. If it is called with 
+        arguments not suitable for `get_workshift` method, it will pass the 
+        call to `get_interval`. To instantiate an interval this way, all 
+        techniques may be used except technique 4. (An instance of Timeboard
+        called with a pandas Period will return a workshift containing the 
+        start time of the period because pandas Period has `to_timestamp` 
+        method.)
+        
         See also
         --------
-        timeboard.interval.Interval(timeboard, (location1, location2))
-            This is the alternative, low-level approach to instantiating 
-            an interval. You will need to know the absolute positions 
-            of the first (`location1`) and the last (`location2`) workshifts 
-            of the interval within the timeline.
+        timeboard.interval.Interval(timeboard, (location1: int, location2: 
+        int), schedule=None)
+            The alternative approach to instantiating an interval. You will 
+            need to know the positions of the first (`location1`) and the last 
+            (`location2`) workshifts of the interval within the timeline.
+        
+        Examples
+        --------
+        
+        >>> clnd = Timeboard('D', '30 Sep 2017', '15 Oct 2017', layout=[0,1])
+        >>> clnd.get_interval(('02 Oct 2017', '08 Oct 2017'))
+        Interval(2, 8): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]
+        
+        # shortcut 
+        >>> clnd(('02 Oct 2017', '08 Oct 2017'))
+        Interval(2, 8): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]
+        
+        >>> clnd.get_interval('02 Oct 2017', length=7)
+        Interval(2, 8): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]
+        
+        # shortcut
+        >>> clnd('02 Oct 2017', length=7)
+        Interval(2, 8): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]
+
+        >>> clnd.get_interval('05 Oct 2017', period='W')
+        Interval(2, 8): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]
+        
+        # shortcut
+        >>> clnd('05 Oct 2017', period='W')
+        Interval(2, 8): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]      
+        
+        >>> import pandas as pd
+        >>> p = pd.Period('05 Oct 2017', freq='W')
+        >>> clnd.get_interval(p)
+        Interval(2, 8): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]
+        
+        # NO shortcut!
+        >>> clnd(p)
+        Workshift(2) of 'D' at 2017-10-02
+        
+        >>> clnd.get_interval()
+        Interval(0, 15): 'D' at 2017-09-30 -> 'D' at 2017-10-15 [16]
+        
+        # shortcut
+        >>> clnd()
+        Interval(0, 15): 'D' at 2017-09-30 -> 'D' at 2017-10-15 [16]
         """
 
         if closed not in ['00', '01', '10', '11']:
