@@ -180,6 +180,8 @@ class Interval(object):
         Workshift(3) of 'D' at 2017-10-03
         >>> ivl.first(duty='off')
         Workshift(2) of 'D' at 2017-10-02
+        >>> ivl.first(duty='any')
+        Workshift(2) of 'D' at 2017-10-02
         
         See also
         --------
@@ -200,6 +202,8 @@ class Interval(object):
         >>> ivl.last()
         Workshift(7) of 'D' at 2017-10-07
         >>> ivl.last(duty='off')
+        Workshift(8) of 'D' at 2017-10-08
+        >>> ivl.last(duty='any')
         Workshift(8) of 'D' at 2017-10-08
 
         See also
@@ -234,7 +238,17 @@ class Interval(object):
         ------
         OutOfBoundsError (LookupError)
             If the requested workshift does not exist within the interval.
-
+            
+        Examples
+        --------
+        >>> clnd = tb.Timeboard('D', '30 Sep 2017', '15 Oct 2017', layout=[0,1])
+        >>> ivl = clnd(('02 Oct 2017', '08 Oct 2017'))
+        >>> ivl.nth(2)
+        Workshift(5) of 'D' at 2017-10-05
+        >>> ivl.last(2, duty='off')
+        Workshift(4) of 'D' at 2017-10-04
+        >>> ivl.last(2, duty='any')
+        Workshift(3) of 'D' at 2017-10-03
         """
         if schedule is None:
             schedule = self.schedule
@@ -261,7 +275,7 @@ class Interval(object):
         return Workshift(self._tb, duty_idx[loc_in_duty_idx], schedule)
 
     def count(self, duty='on', schedule=None):
-        """Return the count of workshifts with the specified duty.
+        """Return the count of interval's workshifts with the specified duty.
         
         Parameters
         ----------
@@ -275,6 +289,17 @@ class Interval(object):
         Returns
         -------
         int >=0
+        
+        Examples
+        --------
+        >>> clnd = tb.Timeboard('D', '30 Sep 2017', '15 Oct 2017', layout=[0,1])
+        >>> ivl = clnd(('02 Oct 2017', '08 Oct 2017'))
+        >>> ivl.count()
+        3
+        >>> ivl.count(duty='off')
+        4
+        >>> ivl.count(duty='any')
+        7
         """
         if schedule is None:
             schedule = self.schedule
@@ -329,6 +354,55 @@ class Interval(object):
         
         Regardless of `period`, the method returns 0.0 if the interval 
         does not have workshifts with the specified duty.
+        
+        Examples
+        --------
+        >>> clnd = tb.Timeboard('H', '01 Oct 2017', '08 Oct 2017 23:59', 
+                                layout=[0,1])
+        >>> ivl = clnd(('01 Oct 2017 11:00', '02 Oct 2017 23:59'))
+        
+        Interval `ivl` spans two days: it contains 13 of 24 workshifts of 
+        October 1, and all 24 workshifts of October 2. 
+        
+        >>> ivl.count_periods('D', duty='any')
+        1.5416666666666665
+        >>> 13/24 + 24/24
+        1.5416666666666665
+        
+        The timeboard's `layout` defines that all workshifts taking place on 
+        even hours are off duty, and those on odd hours are on duty. 
+        The first workshift of the interval (01 October 11:00 - 11:59) is 
+        on duty. Hence, the interval contains 7 of 12 on duty workshifts 
+        of October 1, and all 12 on duty workshifts of October 2.
+        
+        >>> ivl.count_periods('D')
+        1.5833333333333335
+        >>> 7/12 + 12/12
+        1.5833333333333335
+         
+        The interval contains 6 of 12 off duty workshifts of October 1, 
+        and all 12 off duty workshifts of October 2. 
+        >>> ivl.count_periods('D', duty='off')
+        1.5
+        >>> 6/12 + 12/12
+        1.5
+        
+        Note that we cannot count how many weeks are in this interval. The 
+        workshifts of the interval belong to the weeks of Sep 25 - Oct 1 and 
+        Oct 2 - Oct 8. The first of these extends beyond the timeboard. 
+        We do not guess what layout *could* be applied to the workshifts of
+        Sep 25 - Sep 30 if the week were included in the timeboard entirely.
+        We are not authorized to extrapolate the existing layout outside the 
+        timeboard. Moreover, for some complex layouts any attempt of 
+        extrapolation would be ambiguous.
+        
+        >>> ivl.count_periods('W')
+        ---------------------------------------------------------------------
+        OutOfBoundsError                     Traceback (most recent call last)
+        ...
+        OutOfBoundsError: The 1st bound of interval or period referenced by 
+        `2017-09-25/2017-10-01` is outside Timeboard of 'H': 2017-10-01 00:00 -> 
+        2017-10-03 23:00
         """
         SUPPORTED_PERIODS = ('S', 'T', 'min', 'H', 'D', 'W', 'M', 'Q', 'A', 'Y')
         #TODO: support shifted periods (i.e. W-TUE, A-MAR)

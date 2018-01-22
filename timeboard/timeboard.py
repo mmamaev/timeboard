@@ -111,6 +111,44 @@ class Timeboard(object):
     --------
     Organizer
         Define rule for marking up the reference frame into workshifts.
+        
+    Examples
+    --------
+    >>> clnd = tb.Timeboard('D', '30 Sep 2017', '09 Oct 2017', layout=[0,1])
+    >>> print(clnd)
+        Timeboard of 'D': 2017-09-30 -> 2017-10-09
+         workshift      start  duration        end  label  on_duty
+    loc                                                           
+    0   2017-09-30 2017-09-30         1 2017-09-30    0.0    False
+    1   2017-10-01 2017-10-01         1 2017-10-01    1.0     True
+    2   2017-10-02 2017-10-02         1 2017-10-02    0.0    False
+    3   2017-10-03 2017-10-03         1 2017-10-03    1.0     True
+    4   2017-10-04 2017-10-04         1 2017-10-04    0.0    False
+    5   2017-10-05 2017-10-05         1 2017-10-05    1.0     True
+    6   2017-10-06 2017-10-06         1 2017-10-06    0.0    False
+    7   2017-10-07 2017-10-07         1 2017-10-07    1.0     True
+    8   2017-10-08 2017-10-08         1 2017-10-08    0.0    False
+    9   2017-10-09 2017-10-09         1 2017-10-09    1.0     True
+    
+    >>> org = tb.Organizer(marker='W', structure=[[1, 1, 1, 1, 1, 0, 0]])
+    >>> clnd = tb.Timeboard('D', '30 Sep 2017', '09 Oct 2017', layout=org)
+    >>> print(clnd)
+        Timeboard of 'D': 2017-09-30 -> 2017-10-09
+         workshift      start  duration        end  label  on_duty
+    loc                                                           
+    0   2017-09-30 2017-09-30         1 2017-09-30    0.0    False
+    1   2017-10-01 2017-10-01         1 2017-10-01    0.0    False
+    2   2017-10-02 2017-10-02         1 2017-10-02    1.0     True
+    3   2017-10-03 2017-10-03         1 2017-10-03    1.0     True
+    4   2017-10-04 2017-10-04         1 2017-10-04    1.0     True
+    5   2017-10-05 2017-10-05         1 2017-10-05    1.0     True
+    6   2017-10-06 2017-10-06         1 2017-10-06    1.0     True
+    7   2017-10-07 2017-10-07         1 2017-10-07    0.0    False
+    8   2017-10-08 2017-10-08         1 2017-10-08    0.0    False
+    9   2017-10-09 2017-10-09         1 2017-10-09    1.0     True
+
+    See more examples and explanations in "Making a Timeboard" section of 
+    the documentation.
     """
     def __init__(self, base_unit_freq, start, end, layout,
                  amendments=None,
@@ -654,11 +692,13 @@ class Timeboard(object):
                                        "completely outside {}".
                                        format(interval_ref, self.compact_str))
         if locs[0].position is None:
-            raise OutOfBoundsError("The 1st bound of interval referenced by `{}` "
+            raise OutOfBoundsError("The 1st bound of interval or "
+                                   "period referenced by `{}` "
                                    "is outside {}".format(interval_ref,
                                                           self.compact_str))
         if locs[1].position is None:
-            raise OutOfBoundsError("The 2nd bound of interval referenced by `{}` "
+            raise OutOfBoundsError("The 2nd bound of interval or "
+                                   "period referenced by `{}` "
                                    "is outside {}".format(interval_ref,
                                                           self.compact_str))
         if locs[0].position > locs[1].position:

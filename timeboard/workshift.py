@@ -212,8 +212,8 @@ class Workshift(object):
         Notes
         -----
         The method is executed in two stages. The first stage finds the 
-        workshift at step 0. The second stage fulfils the required number of 
-        steps (if any) starting from the zero step workshift.
+        workshift corresponding to step 0. The second stage fulfils the 
+        required number of steps (if any) starting from the zero step workshift.
         
         If self has the same duty as specified by `duty` parameter, then 
         the zero step workshift is self, otherwise it is the first workshift 
@@ -236,10 +236,72 @@ class Workshift(object):
         
         See also
         --------
-        + (__add__) :  `ws + n` is the same as ws.rollforward(n, duty='on')
-        rollback : return a workshift from the past
-            `rollback` differs from `rollforward` in the definition of 
-            the zero step workshift and the default direction of stepping.
+        + :  
+            ``ws + n`` is the same as ``ws.rollforward(n, duty='on')``
+        rollback : 
+            Return a workshift which is in the specified number of steps in
+            the past. Methods `rollback` and `rollforward` differ in the 
+            definition of the zero step workshift and the default direction 
+            of stepping.
+            
+        Examples
+        --------
+        >>> clnd = tb.Timeboard('D', '30 Sep 2017', '15 Oct 2017', layout=[0,1])
+        
+        In this timeboard odd dates are on duty and even dates are off duty.
+        
+        >>> ws1 = clnd('05 Oct 2017')
+        >>> ws1.is_on_duty()
+        True
+        >>> ws1.rollforward()
+        Workshift(5) of 'D' at 2017-10-05
+        >>> ws1.rollforward(1)
+        Workshift(7) of 'D' at 2017-10-07
+        >>> ws1 + 1
+        Workshift(7) of 'D' at 2017-10-07
+        >>> ws1.rollforward(-1)
+        Workshift(3) of 'D' at 2017-10-03
+        >>> ws1.rollforward(duty='off')
+        Workshift(6) of 'D' at 2017-10-06
+        >>> ws1.rollforward(1, duty='off')
+        Workshift(8) of 'D' at 2017-10-08
+        >>> ws1.rollforward(-1, duty='off')
+        Workshift(4) of 'D' at 2017-10-04
+        
+        >>> ws0 = clnd('06 Oct 2017')
+        >>> ws0.is_off_duty()
+        True
+        >>> ws0.rollforward()
+        Workshift(7) of 'D' at 2017-10-07
+        >>> ws0.rollforward(1)
+        Workshift(9) of 'D' at 2017-10-09
+        >>> ws0 + 1
+        Workshift(9) of 'D' at 2017-10-09
+        >>> ws0.rollforward(-1)
+        Workshift(5) of 'D' at 2017-10-05
+        >>> ws0.rollforward(duty='off')
+        Workshift(6) of 'D' at 2017-10-06
+        >>> ws0.rollforward(1, duty='off')
+        Workshift(8) of 'D' at 2017-10-08
+        >>> ws0.rollforward(-1, duty='off')
+        Workshift(4) of 'D' at 2017-10-04
+        
+        Note that ``ws0.rollforward(-1)`` and ``ws0 - 1`` produce different 
+        results:
+        
+        >>> ws0 - 1
+        Workshift(3) of 'D' at 2017-10-03
+        
+        This happens because ``ws0.rollforward(-1)`` assumes the default 
+        `duty='on'` and seeks the zero step "on duty" workshift by moving 
+        forward from "off duty" self (October 6). Thus the zero step workshift 
+        will be October 7. From that point the method takes one "on duty" step 
+        to the past and arrives at October 5 which is the result.
+        
+        On the contrary, ``ws0 - 1`` calls ``ws0.rollback(1, duty='on')`` 
+        which seeks the zero step "on duty" workshift by moving backwards from
+        self. Thus the zero step workshift will be October 5, and one "on duty" 
+        step to the past from that will be the result, October 3. 
         """
         if schedule is None:
             schedule = self.schedule
@@ -310,10 +372,73 @@ class Workshift(object):
         
         See also
         --------
-        - (__sub__) :  `ws - n` is the same as ws.rollback(n, duty='on')
-        rollforward : return a workshift from the future
-            `rollforward` differs from `rollback` only in the definition of 
-            the zero step workshift and the default direction of stepping.
+        - :  
+            ``ws - n`` is the same as ``ws.rollback(n, duty='on')``
+        rollforward : 
+            Return a workshift which is in the specified number of steps in  
+            the future. Methods `rollback` and `rollforward` differ in the 
+            definition of the zero step workshift and the default direction 
+            of stepping.
+            
+        Examples
+        --------
+        >>> clnd = tb.Timeboard('D', '30 Sep 2017', '15 Oct 2017', layout=[0,1])
+        
+        In this timeboard odd dates are on duty and even dates are off duty.
+        
+        >>> ws1 = clnd('05 Oct 2017')
+        >>> ws1.is_on_duty()
+        True
+        >>> ws1.rollback()
+        Workshift(5) of 'D' at 2017-10-05
+        >>> ws1.rollback(1)
+        Workshift(3) of 'D' at 2017-10-03
+        >>> ws1 - 1
+        Workshift(3) of 'D' at 2017-10-03
+        >>> ws1.rollback(-1)
+        Workshift(7) of 'D' at 2017-10-07
+        >>> ws1.rollback(duty='off')
+        Workshift(4) of 'D' at 2017-10-04
+        >>> ws1.rollback(1, duty='off')
+        Workshift(2) of 'D' at 2017-10-02
+        >>> ws1.rollback(-1, duty='off')
+        Workshift(6) of 'D' at 2017-10-06
+        
+        >>> ws0 = clnd('06 Oct 2017')
+        >>> ws0.is_off_duty()
+        True
+        >>> ws0.rollback()
+        Workshift(5) of 'D' at 2017-10-05
+        >>> ws0.rollback(1)
+        Workshift(3) of 'D' at 2017-10-03
+        >>> ws0 - 1
+        Workshift(3) of 'D' at 2017-10-03
+        >>> ws0.rollback(-1)
+        Workshift(7) of 'D' at 2017-10-07
+        >>> ws0.rollback(duty='off')
+        Workshift(6) of 'D' at 2017-10-06
+        >>> ws0.rollback(1, duty='off')
+        Workshift(4) of 'D' at 2017-10-04
+        >>> ws0.rollback(-1, duty='off')
+        Workshift(8) of 'D' at 2017-10-08
+        
+        Note that ``ws0.rollback(-1)`` and ``ws0 + 1`` produce different 
+        results:
+        
+        >>> ws0 + 1
+        Workshift(9) of 'D' at 2017-10-09
+        
+        This happens because ``ws0.rollback(-1)`` assumes the default 
+        `duty='on'` and seeks the zero step "on duty" workshift by moving 
+        backwards from "off duty" self (October 6). Thus the zero step 
+        workshift will be October 5. From that point the method takes one 
+        "on duty" step to the future and arrives at October 7 which is the 
+        result.
+        
+        On the contrary, ``ws0 + 1`` calls ``ws0.rollforward(1, duty='on')`` 
+        which seeks the zero step "on duty" workshift by moving forward from
+        self. Thus the zero step workshift will be October 7, and one "on duty" 
+        step to the future from that will be the result, October 9. 
         """
         # TODO: Optimize rollback and rolloforward to compy with DRY?
         if schedule is None:

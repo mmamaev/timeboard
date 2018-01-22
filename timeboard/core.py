@@ -1022,6 +1022,7 @@ class _Timeline(object):
                                      'duration', 'end', 'label']
                             ).set_index('loc')
 
+
 class _Schedule(object):
     """Duty schedule of workshifts.
 
@@ -1108,6 +1109,7 @@ class Organizer(object):
         kind of values as `base_unit_freq` of timeboard). Under the hood
         `marker=freq` is silently converted  to `marker=Marker(each=freq)`.
     marks : Iterable of Timestamp-like
+        Parameters `marker` and `marks` are mutually exclusive.
     structure : Iterable 
         An element of `structure` is either another `Organizer`, or 
         a single workshift label, or a pattern. Pattern is an iterable of 
@@ -1171,7 +1173,42 @@ class Organizer(object):
         Define rules to calculate locations of marks upon the frame.
     RememberingPattern
         Keep track of assigned labels across invocations.
+        
+    Examples
+    --------
+    >>> from timeboard import Organizer, Marker
+    
+    Workshifts will coincide with base units and will be labeled with 1 and 0
+    alternating through the entire timeline:
+    
+    >>> Organizer(marks=[], structure=[[1, 0]])
+    
+    Workshifts will coincide with base units and will be labeled with the 
+    recurring pattern of `1,1,1,1,1,0,0` restarting from the first workshift 
+    of each week:
+    
+    >>> Organizer(marker='W', structure=[[1,1,1,1,1,0,0]])
+    
+    Workshifts will coincide with base units and will be labeled with  
+    a recurring pattern of either `0,0,1,1,0,0,0` or `0,1,1,1,1,1,1` restarting 
+    from the first workshift of each week. The selection of pattern depends
+    on the season. Seasons begin on May 1 and September 16 each year:
+    
+    >>> winter = Organizer(marker='W', structure=[[0,0,1,1,0,0,0]])
+    >>> summer = Organizer(marker='W', structure=[[0,1,1,1,1,1,1]])
+    >>> seasons =  Marker(each='A', at=[{'months':4}, {'months':8, 'days':15}])
+    >>> seasonal = Organizer(marker=seasons, structure=[winter, summer])
+    
+    Workshifts of varying length will start at 02:00, 08:00 and 18:00 every day.
+    They will be labeled with the recurring pattern of `'A', 'B', 'C', 
+    'D'` starting from the first workshift of the timeline:
+    
+    >>> day_parts = Marker(each='D', 
+                           at=[{'hours':2}, {'hours':8}, {'hours':18}])
+    >>> shifts = Organizer(marker=day_parts, structure=['A', 'B', 'C', 'D'])
 
+    See more examples and explanations in "Making a Timeboard" section of 
+    the documentation.
     """
     def __init__(self, marker=None, marks=None, structure=None):
         if (marker is None) == (marks is None):
@@ -1348,43 +1385,53 @@ class Marker(object):
     
     Examples
     --------
-    `Marker(each='W')`
-        Mark a span by weeks (set a mark on each Monday at 00:00).
-        
-    `Marker(each='W', at=[{'days': 2}, {'days': 5}])  `
-        Set a mark on each Wednesday and each Saturday at 00:00. Note that 
-        there is no mark on Monday because now `at` list is not empty but 
-        Monday is not explicitly specified in the list.
-        
-    `Marker(each='W', at=[{'days': 0}, {'days': 2}, {'days': 5}])`
-        Set a mark on each Monday, Wednesday, and Saturday at 00:00.  
-        
-    `Marker(each='W', at=[{'days': 7}])`
-        No marks will be set. Adding 7 days to the start of the week 
-        places the candidate point into the next week, i.e. outside the current 
-        'each' period, hence this point is not a valid mark.
-        
-    `Marker(each='D')`
-        Mark a span by days (set a mark at each midnight).
-          
-    `Marker(each='D', at=[{'hours': 9}, {'hours':18}])`
-        Set marks at 09:00 and 18:00 on each day (but not at the 
-        midnight).
-        
-    `Marker(each='M', at=[{'days': 30}])`
-        Set a mark on the beginning of the 31st day of each month. If there 
-        is no 31st day, there will be no mark in this month. For example, 
-        if the span is a calendar year, marks will be set on Jan 31, 
-        Mar 31, May 31, Jul 31, Aug 31, Oct 31, and Dec 31.
+    >>> from timeboard import Marker
     
-    ::
-    Marker(each='A', 
-           at=[{'month': 5, 'week': -1, 'weekday': 1},
-               {'month': 9, 'week': 1, 'weekday': 1}],
-           how='nth_weekday_of_month')
+    Mark a span by weeks (set a mark on each Monday at 00:00):
+
+    >>> Marker(each='W')
+    
+    Set a mark on each Wednesday and each Saturday at 00:00. Note that 
+    there is no mark on Monday because now `at` list is not empty but 
+    Monday is not explicitly specified in the list.    
         
-        Set marks on the last Monday in May and the first Monday in 
-        September of each year.
+    >>> Marker(each='W', at=[{'days': 2}, {'days': 5}]) 
+
+    Set a mark on each Monday, Wednesday, and Saturday at 00:00:  
+        
+    >>> Marker(each='W', at=[{'days': 0}, {'days': 2}, {'days': 5}])
+  
+    No marks will be set in the following example. Adding 7 days to the start 
+    of the week places the candidate point into the next week, i.e. outside 
+    the current `each` period, hence this point is not a valid mark.
+   
+    >>> Marker(each='W', at=[{'days': 7}])
+        
+    Mark a span by days (set a mark at each midnight):
+    
+    >>> Marker(each='D')
+          
+    Set marks at 09:00 and 18:00 on each day (but not at the midnight):
+      
+    >>> Marker(each='D', at=[{'hours': 9}, {'hours':18}])
+      
+    Set a mark on the beginning of the 31st day of each month. If there 
+    is no 31st day, there will be no mark in this month. For example, 
+    if the span is a calendar year, marks will be set on Jan 31, 
+    Mar 31, May 31, Jul 31, Aug 31, Oct 31, and Dec 31:
+           
+    >>> Marker(each='M', at=[{'days': 30}])
+
+    Set marks on the last Monday in May and the first Monday in September 
+    of each year:
+    
+    >>> Marker(each='A', 
+               at=[{'month': 5, 'week': -1, 'weekday': 1},
+                   {'month': 9, 'week': 1, 'weekday': 1}],
+               how='nth_weekday_of_month')
+               
+    See more examples and explanations in "Making a Timeboard" section of 
+    the documentation.
     """
 
     def __init__(self, each, at=None, how='from_start_of_each'):
@@ -1429,6 +1476,21 @@ class RememberingPattern(object):
     ----------
     labels : iterable
         An iterable of workshift labels
+        
+    Examples
+    --------
+    >>> from timeboard import Marker, Organizer, RememberingPattern
+    
+    Weeks are organized in a cycle of shifts `'A', 'B', 'C', 'D'` with 
+    weekends being days off. The cycle of shifts resumes on Mondays keeping 
+    the track of uninterrupted shifts' order:
+    
+    >>> shifts_order = RememberingPattern(['A', 'B', 'C', 'D'])
+    >>> week = Marker(each='W', at=[{'days':0}, {'days':4}])
+    >>> shifts = Organizer(marker=week, structure=[shifts_order, [-1]])
+    
+    See more examples and explanations in "Making a Timeboard" section of 
+    the documentation.
     """
     def __init__(self, labels):
         self._labels = labels
