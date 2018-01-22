@@ -30,29 +30,29 @@ class TestCalendarsRU(object):
         # a regular week
         for day in range(21, 25):
             ws = clnd("{} Nov 2017".format(day))
-            assert ws.is_on_duty
+            assert ws.is_on_duty()
             assert ws.label == 8
         for day in range(25, 27):
             ws = clnd("{} Nov 2017".format(day))
-            assert ws.is_off_duty
+            assert ws.is_off_duty()
             assert ws.label == 0
 
         # standard holidays
-        assert clnd('01 Jan 2008').is_off_duty
-        assert clnd('23 Feb 2017').is_off_duty
+        assert clnd('01 Jan 2008').is_off_duty()
+        assert clnd('23 Feb 2017').is_off_duty()
         # week day made a day off
-        assert clnd('24 Feb 2017').is_off_duty
+        assert clnd('24 Feb 2017').is_off_duty()
         # weekend made a working day
-        assert clnd('05 May 2012').is_on_duty
+        assert clnd('05 May 2012').is_on_duty()
         # by default 31 Dec is a working day if not a weekend
-        assert clnd('31 Dec 2015').is_on_duty
+        assert clnd('31 Dec 2015').is_on_duty()
         # by default a holiday eve has shorter hours
         assert clnd('22 Feb 2017').label == 7
 
     def test_calendar_RU_week8x5_31dec_off(self):
         clnd = RU.Weekly8x5(work_on_dec31=False)
         for y in range(2008,2019):
-            assert clnd("31 Dec {}".format(y)).is_off_duty
+            assert clnd("31 Dec {}".format(y)).is_off_duty()
 
     def test_calendar_RU_week8x5_no_short_eves(self):
         clnd = RU.Weekly8x5(short_eves=False)
@@ -61,11 +61,11 @@ class TestCalendarsRU(object):
     def test_calendar_RU_week8x5_custom_amds(self):
         clnd = RU.Weekly8x5(custom_amendments={'22 Feb 2017 00:00': 0,
                                              '23.02.2017': 8})
-        assert clnd('21 Feb 2017').is_on_duty
-        assert clnd('22 Feb 2017').is_off_duty
-        assert clnd('23 Feb 2017').is_on_duty
-        assert clnd('24 Feb 2017').is_off_duty
-        assert clnd('01 May 2017').is_off_duty
+        assert clnd('21 Feb 2017').is_on_duty()
+        assert clnd('22 Feb 2017').is_off_duty()
+        assert clnd('23 Feb 2017').is_on_duty()
+        assert clnd('24 Feb 2017').is_off_duty()
+        assert clnd('01 May 2017').is_off_duty()
 
     def test_calendar_RU_week8x5_custom_amds_ambiguous(self):
         # We already have timestamps of 22.02.17 00:00:00 and 23.02.17 00:00:00
@@ -76,22 +76,22 @@ class TestCalendarsRU(object):
         # in amendments dict
         clnd = RU.Weekly8x5(custom_amendments={'22 Feb 2017 13:00': 0,
                                              '23 Feb 2017 15:00': 8})
-        assert clnd('21 Feb 2017').is_on_duty
-        assert clnd('22 Feb 2017').is_off_duty
-        assert clnd('23 Feb 2017').is_on_duty
-        assert clnd('24 Feb 2017').is_off_duty
-        assert clnd('01 May 2017').is_off_duty
+        assert clnd('21 Feb 2017').is_on_duty()
+        assert clnd('22 Feb 2017').is_off_duty()
+        assert clnd('23 Feb 2017').is_on_duty()
+        assert clnd('24 Feb 2017').is_off_duty()
+        assert clnd('01 May 2017').is_off_duty()
 
 
     def test_calendar_RU_week8x5_only_custom_amds(self):
         clnd = RU.Weekly8x5(only_custom_amendments=True,
                             custom_amendments={'22 Feb 2017': 0,
                                              '23 Feb 2017': 8})
-        assert clnd('21 Feb 2017').is_on_duty
-        assert clnd('22 Feb 2017').is_off_duty
-        assert clnd('23 Feb 2017').is_on_duty
-        assert clnd('24 Feb 2017').is_on_duty
-        assert clnd('01 May 2017').is_on_duty
+        assert clnd('21 Feb 2017').is_on_duty()
+        assert clnd('22 Feb 2017').is_off_duty()
+        assert clnd('23 Feb 2017').is_on_duty()
+        assert clnd('24 Feb 2017').is_on_duty()
+        assert clnd('01 May 2017').is_on_duty()
 
 
     def test_calendar_RU_week8x5_no_amds(self):
@@ -100,11 +100,11 @@ class TestCalendarsRU(object):
                             custom_amendments={'22 Feb 2017': 0,
                                              '23 Feb 2017': 8}
                             )
-        assert clnd('21 Feb 2017').is_on_duty
-        assert clnd('22 Feb 2017').is_on_duty
-        assert clnd('23 Feb 2017').is_on_duty
-        assert clnd('24 Feb 2017').is_on_duty
-        assert clnd('01 May 2017').is_on_duty
+        assert clnd('21 Feb 2017').is_on_duty()
+        assert clnd('22 Feb 2017').is_on_duty()
+        assert clnd('23 Feb 2017').is_on_duty()
+        assert clnd('24 Feb 2017').is_on_duty()
+        assert clnd('01 May 2017').is_on_duty()
 
     def test_calendar_RU_week8x5_select_years(self):
 
@@ -133,9 +133,9 @@ class TestCalendarsUS(object):
             '24 Nov 2011', '25 Nov 2011', '26 Dec 2011'
         ]
         clnd0 = US.Weekly8x5(do_not_amend=True)
-        assert all([clnd0(d).is_on_duty for d in holidays_2011])
+        assert all([clnd0(d).is_on_duty() for d in holidays_2011])
         clnd1 = US.Weekly8x5()
-        assert all([clnd1(d).is_off_duty for d in holidays_2011])
+        assert all([clnd1(d).is_off_duty() for d in holidays_2011])
         assert clnd0.get_interval('2011', period='A').count() == (
                clnd1.get_interval('2011', period='A').count() +
                len(holidays_2011) - 1)
@@ -148,10 +148,10 @@ class TestCalendarsUS(object):
         ]
         clnd = US.Weekly8x5(exclusions=['independence', 'christmas',
                                       'black_friday'])
-        assert clnd('04 Jul 2011').is_on_duty
-        assert clnd('25 Nov 2011').is_on_duty
-        assert clnd('25 Dec 2011').is_off_duty
-        assert clnd('26 Dec 2011').is_on_duty
+        assert clnd('04 Jul 2011').is_on_duty()
+        assert clnd('25 Nov 2011').is_on_duty()
+        assert clnd('25 Dec 2011').is_off_duty()
+        assert clnd('26 Dec 2011').is_on_duty()
 
     def test_calendar_US_week8x5_short_weekends(self):
         holidays_2011 = [
@@ -160,10 +160,10 @@ class TestCalendarsUS(object):
             '24 Nov 2011', '25 Nov 2011', '26 Dec 2011'
         ]
         clnd = US.Weekly8x5(long_weekends=False)
-        assert clnd('30 Dec 2010').is_on_duty
-        assert clnd('04 Jul 2011').is_off_duty
-        assert clnd('25 Dec 2011').is_off_duty
-        assert clnd('26 Dec 2011').is_on_duty
+        assert clnd('30 Dec 2010').is_on_duty()
+        assert clnd('04 Jul 2011').is_off_duty()
+        assert clnd('25 Dec 2011').is_off_duty()
+        assert clnd('26 Dec 2011').is_on_duty()
 
     def test_calendar_US_week8x5_shortened(self):
         holidays_2011_shortened = [
@@ -172,9 +172,9 @@ class TestCalendarsUS(object):
             '24 Nov 2011', '25 Nov 2011'
         ]
         clnd0 = US.Weekly8x5('01 Jan 2011', '30 Nov 2011', do_not_amend=True)
-        assert all([clnd0(d).is_on_duty for d in holidays_2011_shortened])
+        assert all([clnd0(d).is_on_duty() for d in holidays_2011_shortened])
         clnd1 = US.Weekly8x5('01 Jan 2011', '30 Nov 2011')
-        assert all([clnd1(d).is_off_duty for d in holidays_2011_shortened])
+        assert all([clnd1(d).is_off_duty() for d in holidays_2011_shortened])
         assert clnd0.get_interval().count() == (
                clnd1.get_interval().count() + len(holidays_2011_shortened))
 
@@ -188,10 +188,10 @@ class TestCalendarsUS(object):
         clnd = US.Weekly8x5(custom_amendments={'18 Jan 2011': 0,
                                              '26 Dec 2011': 8})
 
-        assert clnd('18 Jan 2011').is_off_duty
-        assert clnd('04 Jul 2011').is_off_duty
-        assert clnd('25 Dec 2011').is_off_duty
-        assert clnd('26 Dec 2011').is_on_duty
+        assert clnd('18 Jan 2011').is_off_duty()
+        assert clnd('04 Jul 2011').is_off_duty()
+        assert clnd('25 Dec 2011').is_off_duty()
+        assert clnd('26 Dec 2011').is_on_duty()
 
 
 class TestCalendarsUK(object):
@@ -203,9 +203,9 @@ class TestCalendarsUK(object):
             '26 Dec 2016', '27 Dec 2016'
         ]
         clnd0 = UK.Weekly8x5(country='northern_ireland', do_not_amend=True)
-        assert all([clnd0(d).is_on_duty for d in holidays_nirl_2016])
+        assert all([clnd0(d).is_on_duty() for d in holidays_nirl_2016])
         clnd1 = UK.Weekly8x5(country='northern_ireland')
-        assert all([clnd1(d).is_off_duty for d in holidays_nirl_2016])
+        assert all([clnd1(d).is_off_duty() for d in holidays_nirl_2016])
         assert clnd0.get_interval('2016', period='A').count() == (
                clnd1.get_interval('2016', period='A').count() +
                len(holidays_nirl_2016))
@@ -217,9 +217,9 @@ class TestCalendarsUK(object):
             '30 Nov 2012', '25 Dec 2012', '26 Dec 2012'
         ]
         clnd0 = UK.Weekly8x5(country='scotland', do_not_amend=True)
-        assert all([clnd0(d).is_on_duty for d in holidays_scot_2012])
+        assert all([clnd0(d).is_on_duty() for d in holidays_scot_2012])
         clnd1 = UK.Weekly8x5(country='scotland')
-        assert all([clnd1(d).is_off_duty for d in holidays_scot_2012])
+        assert all([clnd1(d).is_off_duty() for d in holidays_scot_2012])
         assert clnd0.get_interval('2012', period='A').count() == (
                clnd1.get_interval('2012', period='A').count() +
                len(holidays_scot_2012))
@@ -233,23 +233,23 @@ class TestCalendarsUK(object):
         clnd = UK.Weekly8x5(country='scotland',
                             exclusions=['new_year', 'good_friday', 'royal',
                                       'summer'])
-        assert clnd('01 Jan 2012').is_off_duty
-        assert clnd('03 Jan 2012').is_on_duty
-        assert clnd('06 Apr 2012').is_on_duty
-        assert clnd('07 May 2012').is_off_duty
-        assert clnd('28 May 2012').is_on_duty
-        assert clnd('04 Jun 2012').is_on_duty
-        assert clnd('05 Jun 2012').is_on_duty
-        assert clnd('06 Aug 2012').is_on_duty
-        assert clnd('30 Nov 2012').is_off_duty
+        assert clnd('01 Jan 2012').is_off_duty()
+        assert clnd('03 Jan 2012').is_on_duty()
+        assert clnd('06 Apr 2012').is_on_duty()
+        assert clnd('07 May 2012').is_off_duty()
+        assert clnd('28 May 2012').is_on_duty()
+        assert clnd('04 Jun 2012').is_on_duty()
+        assert clnd('05 Jun 2012').is_on_duty()
+        assert clnd('06 Aug 2012').is_on_duty()
+        assert clnd('30 Nov 2012').is_off_duty()
 
     def test_calendar_UK_week8x5_short_weekends(self):
         clnd = UK.Weekly8x5(country='northern_ireland', long_weekends=False)
-        assert clnd('28 Dec 2015').is_on_duty
-        assert clnd('13 Jul 2015').is_on_duty
-        assert clnd('27 Dec 2016').is_on_duty
+        assert clnd('28 Dec 2015').is_on_duty()
+        assert clnd('13 Jul 2015').is_on_duty()
+        assert clnd('27 Dec 2016').is_on_duty()
         clnd = UK.Weekly8x5(country='scotland', long_weekends=False)
-        assert clnd('03 Jan 2012').is_on_duty
+        assert clnd('03 Jan 2012').is_on_duty()
 
     def test_calendar_UK_week8x5_shortened(self):
 
@@ -259,10 +259,10 @@ class TestCalendarsUK(object):
         ]
         clnd0 = UK.Weekly8x5('01 Jan 2016', '30 Nov 2016',
                              country='northern_ireland', do_not_amend=True)
-        assert all([clnd0(d).is_on_duty for d in holidays_nirl_2016_shortened])
+        assert all([clnd0(d).is_on_duty() for d in holidays_nirl_2016_shortened])
         clnd1 = UK.Weekly8x5('01 Jan 2016', '30 Nov 2016',
                              country='northern_ireland')
-        assert all([clnd1(d).is_off_duty for d in holidays_nirl_2016_shortened])
+        assert all([clnd1(d).is_off_duty() for d in holidays_nirl_2016_shortened])
         assert clnd0.get_interval().count() == (
                clnd1.get_interval().count() +
                len(holidays_nirl_2016_shortened))
@@ -277,7 +277,7 @@ class TestCalendarsUK(object):
                             custom_amendments={'18 Jan 2012': 0,
                                              '26 Dec 2012': 8})
 
-        assert clnd('18 Jan 2012').is_off_duty
-        assert clnd('04 Jun 2012').is_off_duty
-        assert clnd('25 Dec 2012').is_off_duty
-        assert clnd('26 Dec 2012').is_on_duty
+        assert clnd('18 Jan 2012').is_off_duty()
+        assert clnd('04 Jun 2012').is_off_duty()
+        assert clnd('25 Dec 2012').is_off_duty()
+        assert clnd('26 Dec 2012').is_on_duty()

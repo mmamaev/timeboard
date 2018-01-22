@@ -130,16 +130,16 @@ class TestTBConstructorWithOrgs:
         assert clnd.end_time > datetime.datetime(2017, 4, 2, 23, 59, 59)
         assert clnd.end_time < datetime.datetime(2017, 4, 3, 0, 0, 0)
         assert clnd.base_unit_freq == 'D'
-        assert clnd('28 Dec 2016').is_on_duty
-        assert clnd('30 Dec 2016').is_on_duty
-        assert clnd('31 Dec 2016').is_off_duty
-        assert clnd('01 Jan 2017').is_off_duty
-        assert clnd('10 Jan 2017').is_off_duty
-        assert clnd('11 Jan 2017').is_on_duty
-        assert clnd('27 Mar 2017').is_on_duty
-        assert clnd('31 Mar 2017').is_on_duty
-        assert clnd('01 Apr 2017').is_off_duty
-        assert clnd('02 Apr 2017').is_off_duty
+        assert clnd('28 Dec 2016').is_on_duty()
+        assert clnd('30 Dec 2016').is_on_duty()
+        assert clnd('31 Dec 2016').is_off_duty()
+        assert clnd('01 Jan 2017').is_off_duty()
+        assert clnd('10 Jan 2017').is_off_duty()
+        assert clnd('11 Jan 2017').is_on_duty()
+        assert clnd('27 Mar 2017').is_on_duty()
+        assert clnd('31 Mar 2017').is_on_duty()
+        assert clnd('01 Apr 2017').is_off_duty()
+        assert clnd('02 Apr 2017').is_off_duty()
 
 
 

@@ -46,8 +46,9 @@ class TestWorkshiftConstructor(object):
         assert ws.end_time > datetime.datetime(2017, 1, 4, 23, 59, 59)
         assert ws.end_time < datetime.datetime(2017, 1, 5, 0, 0, 0)
         assert ws.label == 1
-        assert ws.is_on_duty
-        assert not ws.is_off_duty
+        assert ws.schedule == clnd.default_schedule
+        assert ws.is_on_duty()
+        assert not ws.is_off_duty()
         assert ws.duration == 1
 
         wsx = clnd('04 Jan 2017')
@@ -61,8 +62,9 @@ class TestWorkshiftConstructor(object):
         assert ws.end_time > datetime.datetime(2017, 1, 4, 23, 59, 59)
         assert ws.end_time < datetime.datetime(2017, 1, 5, 0, 0, 0)
         assert ws.label == 1
-        assert ws.is_on_duty
-        assert not ws.is_off_duty
+        assert ws.schedule == clnd.default_schedule
+        assert ws.is_on_duty()
+        assert not ws.is_off_duty()
         assert ws.duration == 1
 
         wsx = clnd(pd.Timestamp('04 Jan 2017 15:00'))
@@ -76,8 +78,9 @@ class TestWorkshiftConstructor(object):
         assert ws.end_time > datetime.datetime(2017, 1, 4, 23, 59, 59)
         assert ws.end_time < datetime.datetime(2017, 1, 5, 0, 0, 0)
         assert ws.label == 1
-        assert ws.is_on_duty
-        assert not ws.is_off_duty
+        assert ws.schedule == clnd.default_schedule
+        assert ws.is_on_duty()
+        assert not ws.is_off_duty()
         assert ws.duration == 1
 
         wsx = clnd(datetime.datetime(2017,1,4,15,0,0))
@@ -92,8 +95,9 @@ class TestWorkshiftConstructor(object):
         assert ws.end_time > datetime.datetime(2017, 1, 2, 23, 59, 59)
         assert ws.end_time < datetime.datetime(2017, 1, 3, 0, 0, 0)
         assert ws.label == 0
-        assert not ws.is_on_duty
-        assert ws.is_off_duty
+        assert ws.schedule == clnd.default_schedule
+        assert not ws.is_on_duty()
+        assert ws.is_off_duty()
         assert ws.duration == 1
 
         wsx = clnd(pd.Period('05 Jan 2017', freq='W'))
@@ -103,6 +107,19 @@ class TestWorkshiftConstructor(object):
         clnd = tb_12_days()
         with pytest.raises(OutOfBoundsError):
             clnd('14 Jan 2017')
+
+    def test_direct_workshift_constructor(self):
+        clnd = tb_12_days()
+        ws = Workshift(clnd, 4)
+        assert ws._loc == 4
+        assert ws.start_time == datetime.datetime(2017, 1, 4, 0, 0, 0)
+        assert ws.end_time > datetime.datetime(2017, 1, 4, 23, 59, 59)
+        assert ws.end_time < datetime.datetime(2017, 1, 5, 0, 0, 0)
+        assert ws.label == 1
+        assert ws.schedule == clnd.default_schedule
+        assert ws.is_on_duty()
+        assert not ws.is_off_duty()
+        assert ws.duration == 1
 
     def test_direct_workshift_constructor_with_bad_loc(self):
         clnd = tb_12_days()
@@ -135,17 +152,17 @@ class TestRollForward(object):
         clnd = tb_12_days()
         ws = clnd('01 Jan 2017')
         new_ws_list = []
-        for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
+        for duty in ('on', 'off', 'same', 'alt', 'any'):
             new_ws_list.append(ws.rollforward(duty=duty)._loc)
-        assert new_ws_list == [1, 2, 1, 2, 1, 1]
+        assert new_ws_list == [1, 2, 1, 2, 1]
 
     def test_rollforward_off_0(self):
         clnd = tb_12_days()
         ws = clnd('02 Jan 2017')
         new_ws_list = []
-        for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
+        for duty in ('on', 'off', 'same', 'alt', 'any'):
             new_ws_list.append(ws.rollforward(duty=duty)._loc)
-        assert new_ws_list == [4, 2, 2, 4, 2, 4]
+        assert new_ws_list == [4, 2, 2, 4, 2]
 
     def test_rollforward_off_0_after_last_on_element(self):
         clnd = tb_12_days()
@@ -159,33 +176,33 @@ class TestRollForward(object):
         clnd = tb_12_days()
         ws = clnd('04 Jan 2017')
         new_ws_list = []
-        for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
+        for duty in ('on', 'off', 'same', 'alt', 'any'):
             new_ws_list.append(ws.rollforward(steps=2, duty=duty)._loc)
-        assert new_ws_list == [10, 8, 10, 8, 6, 10]
+        assert new_ws_list == [10, 8, 10, 8, 6]
 
     def test_rollforward_off_n(self):
         clnd = tb_12_days()
         ws = clnd('03 Jan 2017')
         new_ws_list = []
-        for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
+        for duty in ('on', 'off', 'same', 'alt', 'any'):
             new_ws_list.append(ws.rollforward(steps=2, duty=duty)._loc)
-        assert new_ws_list == [10, 6, 6, 10, 5, 10]
+        assert new_ws_list == [10, 6, 6, 10, 5]
 
     def test_rollforward_on_n_negative(self):
         clnd = tb_12_days()
         ws = clnd('10 Jan 2017')
         new_ws_list = []
-        for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
+        for duty in ('on', 'off', 'same', 'alt', 'any'):
             new_ws_list.append(ws.rollforward(steps=-2, duty=duty)._loc)
-        assert new_ws_list == [4, 8, 4, 8, 8, 4]
+        assert new_ws_list == [4, 8, 4, 8, 8]
 
     def test_rollforward_off_n_negative(self):
         clnd = tb_12_days()
         ws = clnd('08 Jan 2017')
         new_ws_list = []
-        for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
+        for duty in ('on', 'off', 'same', 'alt', 'any'):
             new_ws_list.append(ws.rollforward(steps=-2, duty=duty)._loc)
-        assert new_ws_list == [4, 5, 5, 4, 6, 4]
+        assert new_ws_list == [4, 5, 5, 4, 6]
 
     def test_rollforward_off_n_negative_after_last_on_element(self):
         clnd = tb_12_days()
@@ -217,6 +234,12 @@ class TestRollForward(object):
         with pytest.raises(OutOfBoundsError):
             clnd('31 Dec 2016').rollforward()
 
+    def test_rollforward_bad_duty(self):
+        clnd = tb_12_days()
+        with pytest.raises(ValueError):
+            clnd('01 Jan 2017').rollforward(duty='bad_value')
+
+
 class TestRollBack(object):
 
     def test_rollback_trivial_0_to_self(self):
@@ -236,17 +259,17 @@ class TestRollBack(object):
         clnd = tb_12_days()
         ws = clnd('01 Jan 2017')
         new_ws_list = []
-        for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
+        for duty in ('on', 'off', 'same', 'alt', 'any'):
             new_ws_list.append(ws.rollback(duty=duty)._loc)
-        assert new_ws_list == [1, 0, 1, 0, 1, 1]
+        assert new_ws_list == [1, 0, 1, 0, 1]
 
     def test_rollback_off_0(self):
         clnd = tb_12_days()
         ws = clnd('12 Jan 2017')
         new_ws_list = []
-        for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
+        for duty in ('on', 'off', 'same', 'alt', 'any'):
             new_ws_list.append(ws.rollback(duty=duty)._loc)
-        assert new_ws_list == [10, 12, 12, 10, 12, 10]
+        assert new_ws_list == [10, 12, 12, 10, 12]
 
     def test_rollback_off_0_at_first_element(self):
         clnd = tb_12_days()
@@ -260,33 +283,33 @@ class TestRollBack(object):
         clnd = tb_12_days()
         ws = clnd('10 Jan 2017')
         new_ws_list = []
-        for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
+        for duty in ('on', 'off', 'same', 'alt', 'any'):
             new_ws_list.append(ws.rollback(steps=2, duty=duty)._loc)
-        assert new_ws_list == [4, 6, 4, 6, 8, 4]
+        assert new_ws_list == [4, 6, 4, 6, 8]
 
     def test_rollback_off_n(self):
         clnd = tb_12_days()
         ws = clnd('11 Jan 2017')
         new_ws_list = []
-        for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
+        for duty in ('on', 'off', 'same', 'alt', 'any'):
             new_ws_list.append(ws.rollback(steps=2, duty=duty)._loc)
-        assert new_ws_list == [4, 8, 8, 4, 9, 4]
+        assert new_ws_list == [4, 8, 8, 4, 9]
 
     def test_rollback_on_n_negative(self):
         clnd = tb_12_days()
         ws = clnd('04 Jan 2017')
         new_ws_list = []
-        for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
+        for duty in ('on', 'off', 'same', 'alt', 'any'):
             new_ws_list.append(ws.rollback(steps=-2, duty=duty)._loc)
-        assert new_ws_list == [10, 6, 10, 6, 6, 10]
+        assert new_ws_list == [10, 6, 10, 6, 6]
 
     def test_rollback_off_n_negative(self):
         clnd = tb_12_days()
         ws = clnd('05 Jan 2017')
         new_ws_list = []
-        for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
+        for duty in ('on', 'off', 'same', 'alt', 'any'):
             new_ws_list.append(ws.rollback(steps=-2, duty=duty)._loc)
-        assert new_ws_list == [10, 8, 8, 10, 7, 10]
+        assert new_ws_list == [10, 8, 8, 10, 7]
 
     def test_rollback_off_n_negative_at_first_element(self):
         clnd = tb_12_days()
@@ -317,6 +340,12 @@ class TestRollBack(object):
                             layout=[0])
         with pytest.raises(OutOfBoundsError):
             clnd('10 Jan 2017').rollback()
+
+    def test_rollback_bad_duty(self):
+        clnd = tb_12_days()
+        with pytest.raises(ValueError):
+            clnd('01 Jan 2017').rollback(duty='bad_value')
+
 
 class TestWorkshiftAddSubNumber(object):
 

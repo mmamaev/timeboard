@@ -133,9 +133,9 @@ class TestRollForwardCompound(object):
         clnd = tb_12_days()
         ws = clnd('31 Dec 2016')
         new_ws_list = []
-        for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
+        for duty in ('on', 'off', 'same', 'alt', 'any'):
             new_ws_list.append(ws.rollforward(duty=duty)._loc)
-        assert new_ws_list == [0, 1, 0, 1, 0, 0]
+        assert new_ws_list == [0, 1, 0, 1, 0]
         assert ws.rollforward(duty='off').start_time == get_timestamp('02 Jan '
                                                                    '2017')
         ws1 = clnd('01 Jan 2017')
@@ -149,17 +149,17 @@ class TestRollForwardCompound(object):
                             layout=org)
         ws = clnd('31 Dec 2016')
         new_ws_list = []
-        for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
+        for duty in ('on', 'off', 'same', 'alt', 'any'):
             new_ws_list.append(ws.rollforward(duty=duty)._loc)
-        assert new_ws_list == [3, 0, 0, 3, 0, 3]
+        assert new_ws_list == [3, 0, 0, 3, 0]
 
     def test_rollforward_on_n(self):
         clnd = tb_12_days()
         ws = clnd('31 Dec 2016')
         new_ws_list = []
-        for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
+        for duty in ('on', 'off', 'same', 'alt', 'any'):
             new_ws_list.append(ws.rollforward(steps=2, duty=duty)._loc)
-        assert new_ws_list == [4, 5, 4, 5, 2, 4]
+        assert new_ws_list == [4, 5, 4, 5, 2]
 
     def test_rollforward_off_n(self):
         org = Organizer(marker='W', structure=[False, [0, 0, 1, 1]])
@@ -168,9 +168,9 @@ class TestRollForwardCompound(object):
                             layout=org)
         ws = clnd('31 Dec 2016')
         new_ws_list = []
-        for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
+        for duty in ('on', 'off', 'same', 'alt', 'any'):
             new_ws_list.append(ws.rollforward(steps=2, duty=duty)._loc)
-        assert new_ws_list == [7, 2, 2, 7, 2, 7]
+        assert new_ws_list == [7, 2, 2, 7, 2]
 
     def test_rollforward_on_n_negative_from_last_element(self):
         clnd = tb_12_days()
@@ -204,9 +204,9 @@ class TestRollBackCompound(object):
         clnd = tb_12_days()
         ws = clnd('10 Jan 2017')
         new_ws_list = []
-        for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
+        for duty in ('on', 'off', 'same', 'alt', 'any'):
             new_ws_list.append(ws.rollback(duty=duty)._loc)
-        assert new_ws_list == [8, 6, 8, 6, 8, 8]
+        assert new_ws_list == [8, 6, 8, 6, 8]
 
     def test_rollback_off_0(self):
         org = Organizer(marker='W', structure=[False, [0, 0, 1, 1]])
@@ -215,41 +215,41 @@ class TestRollBackCompound(object):
                             layout=org)
         ws = clnd('12 Jan 2017')
         new_ws_list = []
-        for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
+        for duty in ('on', 'off', 'same', 'alt', 'any'):
             new_ws_list.append(ws.rollback(duty=duty)._loc)
-        assert new_ws_list == [7, 8, 8, 7, 8, 7]
+        assert new_ws_list == [7, 8, 8, 7, 8]
 
     def test_rollback_on_n(self):
         clnd = tb_12_days()
         ws = clnd('11 Jan 2017')
         new_ws_list = []
-        for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
+        for duty in ('on', 'off', 'same', 'alt', 'any'):
             new_ws_list.append(ws.rollback(steps=2, duty=duty)._loc)
-        assert new_ws_list == [4, 2, 4, 2, 6, 4]
+        assert new_ws_list == [4, 2, 4, 2, 6]
 
     def test_rollback_off_n(self):
         clnd = tb_12_days()
         ws = clnd('07 Jan 2017')
         new_ws_list = []
-        for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
+        for duty in ('on', 'off', 'same', 'alt', 'any'):
             new_ws_list.append(ws.rollback(steps=2, duty=duty)._loc)
-        assert new_ws_list == [0, 2, 2, 0, 4, 0]
+        assert new_ws_list == [0, 2, 2, 0, 4]
 
     def test_rollback_on_n_negative(self):
         clnd = tb_12_days()
         ws = clnd('05 Jan 2017')
         new_ws_list = []
-        for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
+        for duty in ('on', 'off', 'same', 'alt', 'any'):
             new_ws_list.append(ws.rollback(steps=-2, duty=duty)._loc)
-        assert new_ws_list == [8, 6, 8, 6, 6, 8]
+        assert new_ws_list == [8, 6, 8, 6, 6]
 
     def test_rollback_off_n_negative(self):
         clnd = tb_12_days()
         ws = clnd('03 Jan 2017')
         new_ws_list = []
-        for duty in ('on', 'off', 'same', 'alt', 'any', 'bad_value'):
+        for duty in ('on', 'off', 'same', 'alt', 'any'):
             new_ws_list.append(ws.rollback(steps=-2, duty=duty)._loc)
-        assert new_ws_list == [4, 6, 6, 4, 4, 4]
+        assert new_ws_list == [4, 6, 6, 4, 4]
 
 
 

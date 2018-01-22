@@ -41,10 +41,10 @@ class Workshift(object):
         An application-specific label associated with the workshift. 
         Schedule's `selector` interprets the label to identify the duty status
         of the workshift under this schedule.
-    is_on_duty : bool
-        True if the workship is on-duty under given `schedule`.
-    is_off_duty : bool
-        True if the workship is off-duty under given `schedule`.
+    schedule : _Schedule
+        Schedule used by workshift's methods unless explicitly redefined in 
+        the method call. Use `name` attribute of `schedule` to review its 
+        identity.
     
     Examples
     --------
@@ -94,6 +94,14 @@ class Workshift(object):
         # TODO: Refactor. _Timeline methods should not be called from this class
         return self._tb._timeline.get_ws_duration(self._loc)
 
+    @property
+    def label(self):
+        return self._label
+
+    @property
+    def schedule(self):
+        return self._schedule
+
     def to_timestamp(self):
         """The characteristic time used to represent the workshift. 
         
@@ -125,19 +133,55 @@ class Workshift(object):
         return "Workshift({}) of ".format(self._loc) + self.compact_str + \
                "\n\n{}".format(self._tb.to_dataframe(self._loc, self._loc))
 
-    @property
-    def label(self):
-        return self._label
+    def is_on_duty(self, schedule=None):
+        """True if the workshift is on duty under a specific schedule.
+        
+        Parameters
+        ----------
+        schedule : _Schedule, optional
+            If `schedule` is not given, the workshift's schedule is used.
+            
+        Returns
+        -------
+        bool
+        """
+        if schedule is None:
+            schedule = self._schedule
+        return schedule.is_on_duty(self._loc)
 
-    @property
-    def is_on_duty(self):
-        return self._schedule.is_on_duty(self._loc)
+    def is_off_duty(self, schedule=None):
+        """True if the workshift is off duty under a specific schedule.
 
-    @property
-    def is_off_duty(self):
-        return self._schedule.is_off_duty(self._loc)
+        Parameters
+        ----------
+        schedule : _Schedule, optional
+            If `schedule` is not given, the workshift's schedule is used.
 
-    def rollforward(self, steps=0, duty='on'):
+        Returns
+        -------
+        bool
+        """
+
+        if schedule is None:
+            schedule = self._schedule
+        return schedule.is_off_duty(self._loc)
+
+    def _get_duty_index(self, duty, schedule):
+        i_am_on_duty = self.is_on_duty(schedule)
+        i_am_off_duty = self.is_off_duty(schedule)
+        if (duty == 'on') or (duty == 'same' and i_am_on_duty) or (
+                        duty == 'alt' and i_am_off_duty):
+            idx = schedule.on_duty_index
+        elif (duty == 'off') or (duty == 'same' and i_am_off_duty) or (
+                        duty == 'alt' and i_am_on_duty):
+            idx = schedule.off_duty_index
+        elif duty == 'any':
+            idx = schedule.index
+        else:
+            raise ValueError("Unrecognized duty {!r}".format(duty))
+        return idx
+
+    def rollforward(self, steps=0, duty='on', schedule=None):
         """
         Return a workshift which is `steps` workshifts away in the future. 
         
@@ -195,13 +239,9 @@ class Workshift(object):
             `rollback` differs from `rollforward` in the definition of 
             the zero step workshift and the default direction of stepping.
         """
-        schedule = self._schedule
-        idx = schedule.on_duty_index
-        if (duty == 'off') or (duty == 'same' and self.is_off_duty) or (
-                        duty == 'alt' and self.is_on_duty):
-            idx = schedule.off_duty_index
-        elif duty == 'any':
-            idx = schedule.index
+        if schedule is None:
+            schedule = self._schedule
+        idx = self._get_duty_index(duty, schedule)
 
         len_idx = len(idx)
         i = searchsorted(idx, self._loc)
@@ -213,7 +253,7 @@ class Workshift(object):
 
         return Workshift(self._tb, idx[i + steps], schedule)
 
-    def rollback(self, steps=0, duty='on'):
+    def rollback(self, steps=0, duty='on', schedule=None):
         """
         Return a workshift which is `steps` workshifts away in the past. 
         
@@ -272,13 +312,9 @@ class Workshift(object):
             the zero step workshift and the default direction of stepping.
         """
         # TODO: Optimize rollback and rolloforward to compy with DRY?
-        schedule = self._schedule
-        idx = schedule.on_duty_index
-        if (duty == 'off') or (duty == 'same' and self.is_off_duty) or (
-                        duty == 'alt' and self.is_on_duty):
-            idx = schedule.off_duty_index
-        elif duty == 'any':
-            idx = schedule.index
+        if schedule is None:
+            schedule = self._schedule
+        idx = self._get_duty_index(duty, schedule)
 
         # TODO: Optimize this search
         len_idx = len(idx)
