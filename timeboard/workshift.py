@@ -76,6 +76,24 @@ class Workshift(object):
         self._loc = location
         self._schedule = schedule
 
+    def __repr__(self):
+        return "Workshift({}) of ".format(self._loc) + self.compact_str
+
+    @property
+    def compact_str(self):
+        duration_str = ''
+        if self.duration != 1:
+            duration_str = str(self.duration) + 'x'
+        return "{}'{}' at {}".\
+                format(duration_str,
+                       self._tb.base_unit_freq,
+                       get_period(self.to_timestamp(),
+                                  freq=self._tb.base_unit_freq))
+
+    def __str__(self):
+        return "Workshift({}) of ".format(self._loc) + self.compact_str + \
+               "\n\n{}".format(self._tb.to_dataframe(self._loc, self._loc))
+
     @property
     def start_time(self):
         """Timestamp of the start of the workshift"""
@@ -115,24 +133,6 @@ class Workshift(object):
         # TODO: Refactor. _Timeline methods should not be called from this class
         return self._tb._timeline.get_ws_ref_time(self._loc)
 
-    def __repr__(self):
-        return "Workshift({}) of ".format(self._loc) + self.compact_str
-
-    @property
-    def compact_str(self):
-        duration_str = ''
-        if self.duration != 1:
-            duration_str = str(self.duration) + 'x'
-        return "{}'{}' at {}".\
-                format(duration_str,
-                       self._tb.base_unit_freq,
-                       get_period(self.to_timestamp(),
-                                  freq=self._tb.base_unit_freq))
-
-    def __str__(self):
-        return "Workshift({}) of ".format(self._loc) + self.compact_str + \
-               "\n\n{}".format(self._tb.to_dataframe(self._loc, self._loc))
-
     def is_on_duty(self, schedule=None):
         """True if the workshift is on duty under a specific schedule.
         
@@ -146,7 +146,7 @@ class Workshift(object):
         bool
         """
         if schedule is None:
-            schedule = self._schedule
+            schedule = self.schedule
         return schedule.is_on_duty(self._loc)
 
     def is_off_duty(self, schedule=None):
@@ -163,7 +163,7 @@ class Workshift(object):
         """
 
         if schedule is None:
-            schedule = self._schedule
+            schedule = self.schedule
         return schedule.is_off_duty(self._loc)
 
     def _get_duty_index(self, duty, schedule):
@@ -197,6 +197,8 @@ class Workshift(object):
             'alt' : step only on workshifts with the duty status other than 
             that of self
             'any' : step on all workshifts
+        schedule : _Schedule, optional
+            If `schedule` is not given, the workshift's schedule is used.
     
         Returns
         -------
@@ -240,7 +242,7 @@ class Workshift(object):
             the zero step workshift and the default direction of stepping.
         """
         if schedule is None:
-            schedule = self._schedule
+            schedule = self.schedule
         idx = self._get_duty_index(duty, schedule)
 
         len_idx = len(idx)
@@ -269,6 +271,8 @@ class Workshift(object):
             'alt' : step only on workshifts with the duty status other than 
             that of self
             'any' : step on all workshifts
+        schedule : _Schedule, optional
+            If `schedule` is not given, the workshift's schedule is used.
     
         Returns
         -------
@@ -313,7 +317,7 @@ class Workshift(object):
         """
         # TODO: Optimize rollback and rolloforward to compy with DRY?
         if schedule is None:
-            schedule = self._schedule
+            schedule = self.schedule
         idx = self._get_duty_index(duty, schedule)
 
         # TODO: Optimize this search

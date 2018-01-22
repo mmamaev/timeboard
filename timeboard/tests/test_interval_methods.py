@@ -27,41 +27,56 @@ class TestIntervalFindMyBounds:
         clnd = tb_12_days()
         for locs in ((2,11), (4, 11), (2,10), (4,10)):
             ivl = Interval(clnd, locs, clnd.default_schedule)
-            assert ivl._duty_loc['on'] == (1, 3)
+            _, duty_loc = ivl._get_duty_idx('on', ivl.schedule)
+            assert duty_loc == (1, 3)
 
     def test_interval_find_my_bounds_off(self):
         clnd = tb_12_days()
         for locs in ((1,10), (2, 10), (1,9), (2,9)):
             ivl = Interval(clnd, locs, clnd.default_schedule)
-            assert ivl._duty_loc['off'] == (1, 6)
+            _, duty_loc = ivl._get_duty_idx('off', ivl.schedule)
+            assert duty_loc == (1, 6)
 
     def test_interval_find_my_bounds_no_such_duty_in_interval(self):
         clnd = tb_12_days()
+        
         ivl = Interval(clnd, (11, 12), clnd.default_schedule)
-        assert ivl._duty_loc['on'] == (None, None)
-        assert ivl._duty_loc['off'] == (7, 8)
+        _, duty_loc = ivl._get_duty_idx('on', ivl.schedule)
+        assert duty_loc == (None, None)
+        _, duty_loc = ivl._get_duty_idx('off', ivl.schedule)
+        assert duty_loc == (7, 8)
+        
         ivl = Interval(clnd, (0, 0), clnd.default_schedule)
-        assert ivl._duty_loc['on'] == (None, None)
-        assert ivl._duty_loc['off'] == (0, 0)
+        _, duty_loc = ivl._get_duty_idx('on', ivl.schedule)
+        assert duty_loc == (None, None)
+        _, duty_loc = ivl._get_duty_idx('off', ivl.schedule)
+        assert duty_loc == (0, 0)
+        
         ivl = Interval(clnd, (10, 10), clnd.default_schedule)
-        assert ivl._duty_loc['on'] == (3, 3)
-        assert ivl._duty_loc['off'] == (None, None)
+        _, duty_loc = ivl._get_duty_idx('on', ivl.schedule)
+        assert duty_loc == (3, 3)
+        _, duty_loc = ivl._get_duty_idx('off', ivl.schedule)
+        assert duty_loc == (None, None)
 
     def test_interval_find_my_bounds_no_on_duty_in_tb(self):
         clnd = tb.Timeboard(base_unit_freq='D',
                             start='31 Dec 2016', end='12 Jan 2017',
                             layout=[0])
         ivl = Interval(clnd, (1,2), clnd.default_schedule)
-        assert ivl._duty_loc['on'] == (None, None)
-        assert ivl._duty_loc['off'] == (1, 2)
+        _, duty_loc = ivl._get_duty_idx('on', ivl.schedule)
+        assert duty_loc == (None, None)
+        _, duty_loc = ivl._get_duty_idx('off', ivl.schedule)
+        assert duty_loc == (1, 2)
 
     def test_interval_find_my_bounds_no_off_duty_in_tb(self):
         clnd = tb.Timeboard(base_unit_freq='D',
                             start='31 Dec 2016', end='12 Jan 2017',
                             layout=[1])
         ivl = Interval(clnd, (1,2), clnd.default_schedule)
-        assert ivl._duty_loc['on'] == (1, 2)
-        assert ivl._duty_loc['off'] == (None, None)
+        _, duty_loc = ivl._get_duty_idx('on', ivl.schedule)
+        assert duty_loc == (1, 2)
+        _, duty_loc = ivl._get_duty_idx('off', ivl.schedule)
+        assert duty_loc == (None, None)
 
 
 class TestIntervalFirstLastNth:

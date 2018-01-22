@@ -38,8 +38,18 @@ class Interval(object):
         When the first workshift of the interval starts.
     end_time : Timestamp
         When the last workshift of the interval ends.
-    length : int
+    length : int >0
         Number of workshifts in the interval.
+    schedule : _Schedule
+        Schedule used by interval's methods unless explicitly redefined in 
+        the method call. Use `name` attribute of `schedule` to review its 
+        identity.
+        
+    Examples
+    --------
+    >>> clnd = tb.Timeboard('D', '30 Sep 2017', '15 Oct 2017', layout=[0,1])
+    >>> tb.interval.Interval(clnd, (2,9))
+    Interval(2, 9): 'D' at 2017-10-02 -> 'D' at 2017-10-09 [8]
         
     Notes
     -----
@@ -84,31 +94,7 @@ class Interval(object):
             self._schedule = timeboard.default_schedule
         else:
             self._schedule = schedule
-        self._duty_idx = {
-            'on': self._schedule.on_duty_index,
-            'off': self._schedule.off_duty_index,
-            'any': self._schedule.index
-        }
-        self._duty_loc = {
-            'on': self._find_my_bounds_in_idx(self._duty_idx['on']),
-            'off': self._find_my_bounds_in_idx(self._duty_idx['off']),
-            'any': self._loc
-        }
 
-    def _find_my_bounds_in_idx(self, idx):
-        #TODO: optimize this search
-        left_bound = 0
-        len_idx = len(idx)
-        while left_bound < len_idx and idx[left_bound] < self._loc[0]:
-            left_bound += 1
-        if left_bound == len_idx:
-            return None, None
-        right_bound = len(idx) - 1
-        while right_bound >= left_bound and idx[right_bound] > self._loc[1]:
-            right_bound -= 1
-        if right_bound < left_bound:
-            return None, None
-        return left_bound, right_bound
 
     def __repr__(self):
         return self.compact_str
@@ -141,46 +127,104 @@ class Interval(object):
         """Number of workshifts in the interval."""
         return self._length
 
+    @property
+    def schedule(self):
+        return self._schedule
+
     #def labels(self):
     #    return self._tb._timeline.iloc[self._loc[0] : self._loc[1]+1]
 
-    def first(self, duty='on'):
-        """Return the first workshift with the specified duty.
-        
-        Same as `nth(1, duty)`
-        
-        See also:
-        ---------
-        nth : Return n-th workshift    
-        """
-        return self.nth(1, duty)
+    def _find_my_bounds_in_idx(self, idx):
+        #TODO: optimize this search
+        left_bound = 0
+        len_idx = len(idx)
+        while left_bound < len_idx and idx[left_bound] < self._loc[0]:
+            left_bound += 1
+        if left_bound == len_idx:
+            return None, None
+        right_bound = len(idx) - 1
+        while right_bound >= left_bound and idx[right_bound] > self._loc[1]:
+            right_bound -= 1
+        if right_bound < left_bound:
+            return None, None
+        return left_bound, right_bound
 
-    def last(self, duty='on'):
-        """Return the last workshift with the specified duty.
-        
-        Same as `nth(-1, duty)`
-        
-        See also:
-        ---------
-        nth : Return n-th workshift         
-        """
-        return self.nth(-1, duty)
+    def _get_duty_idx(self, duty, schedule):
+        duty_idx = {
+            'on': schedule.on_duty_index,
+            'off': schedule.off_duty_index,
+            'any': schedule.index
+        }
+        duty_loc = {
+            'on': self._find_my_bounds_in_idx(duty_idx['on']),
+            'off': self._find_my_bounds_in_idx(duty_idx['off']),
+            'any': self._loc
+        }
+        try:
+            duty_idx_bounds = duty_loc[duty]
+            duty_idx = duty_idx[duty]
+        except KeyError:
+            raise ValueError('Invalid `duty` parameter {!r}'.format(duty))
+        return duty_idx, duty_idx_bounds
 
-    def nth(self, n, duty='on'):
-        """Return n-th workshift with the specified `duty`.
+    def first(self, duty='on', schedule=None):
+        """Return the first workshift with the specified duty in the interval.
+        
+        Same as ``nth(1, duty, schedule)``
+        
+        Examples
+        --------
+        >>> clnd = tb.Timeboard('D', '30 Sep 2017', '15 Oct 2017', layout=[0,1])
+        >>> ivl = clnd(('02 Oct 2017', '08 Oct 2017'))
+        >>> ivl.first()
+        Workshift(3) of 'D' at 2017-10-03
+        >>> ivl.first(duty='off')
+        Workshift(2) of 'D' at 2017-10-02
+        
+        See also
+        --------
+        nth
+            Return n-th workshift with the specified duty in the interval.
+        """
+        return self.nth(1, duty, schedule)
+
+    def last(self, duty='on', schedule=None):
+        """Return the last workshift with the specified duty in the interval.
+
+        Same as ``nth(-1, duty, schedule)``
+
+        Examples
+        --------
+        >>> clnd = tb.Timeboard('D', '30 Sep 2017', '15 Oct 2017', layout=[0,1])
+        >>> ivl = clnd(('02 Oct 2017', '08 Oct 2017'))
+        >>> ivl.last()
+        Workshift(7) of 'D' at 2017-10-07
+        >>> ivl.last(duty='off')
+        Workshift(8) of 'D' at 2017-10-08
+
+        See also
+        --------
+        nth
+            Return n-th workshift with the specified duty in the interval.
+        """
+        return self.nth(-1, duty, schedule)
+
+    def nth(self, n, duty='on', schedule=None):
+        """Return n-th workshift with the specified duty in the interval.
         
         Parameters
         ----------
         n : int (!=0)
             Sequence number of the workshift within the interval. 
             Numbering starts at one. Negative values count from the end
-            toward the beginning of the interval (n=-1 returns the last
-            workshift). n=0 is not allowed.
-            
+            toward the beginning of the interval (`n=-1` returns the last
+            workshift). `n=0` is not allowed.
         duty : {'on', 'off', 'any'} , optional (default 'on')
             Specify the duty of workshifts to be counted. If duty='on',
             off-duty workshifts are ignored, and vice versa. If duty='any',
             all workshifts are counted whatever the duty.
+        schedule : _Schedule, optional
+            If `schedule` is not given, the interval's schedule is used.
             
         Returns
         -------
@@ -192,11 +236,9 @@ class Interval(object):
             If the requested workshift does not exist within the interval.
 
         """
-        try:
-            duty_idx_bounds = self._duty_loc[duty]
-            duty_idx = self._duty_idx[duty]
-        except KeyError:
-            raise ValueError('Invalid `duty` parameter {!r}'.format(duty))
+        if schedule is None:
+            schedule = self.schedule
+        duty_idx, duty_idx_bounds = self._get_duty_idx(duty, schedule)
         if duty_idx_bounds[0] is None or duty_idx_bounds[1] is None:
             return self._tb._handle_out_of_bounds(
                 'Duty {!r} not found in interval {}'.format(duty,
@@ -216,9 +258,9 @@ class Interval(object):
                 'No {} {!r} workshifts in the interval {}'.
                 format(n, duty, self.compact_str))
 
-        return Workshift(self._tb, duty_idx[loc_in_duty_idx], self._schedule)
+        return Workshift(self._tb, duty_idx[loc_in_duty_idx], schedule)
 
-    def count(self, duty='on'):
+    def count(self, duty='on', schedule=None):
         """Return the count of workshifts with the specified duty.
         
         Parameters
@@ -227,21 +269,23 @@ class Interval(object):
             Specify the duty of workshifts to be counted. If duty='on',
             off-duty workshifts are ignored, and vice versa. If duty='any',
             all workshifts are counted whatever the duty.
+        schedule : _Schedule, optional
+            If `schedule` is not given, the interval's schedule is used.
             
         Returns
         -------
         int >=0
         """
-        try:
-            duty_idx_bounds = self._duty_loc[duty]
-        except KeyError:
-            raise ValueError('Invalid duty parameter {!r}'.format(duty))
+        if schedule is None:
+            schedule = self.schedule
+        _, duty_idx_bounds = self._get_duty_idx(duty, schedule)
+
         if duty_idx_bounds[0] is None or duty_idx_bounds[1] is None:
             return 0
         else:
             return duty_idx_bounds[1] - duty_idx_bounds[0] + 1
 
-    def count_periods(self, period, duty='on'):
+    def count_periods(self, period, duty='on', schedule=None):
         """Return how many calendar periods fit into the interval.
         
         Parameters
@@ -253,6 +297,8 @@ class Interval(object):
         duty : {'on', 'off', 'any'} , optional (default 'on')
             Specify the duty of workshifts to be accounted for. See 'Notes'
             below for explanation.
+        schedule : _Schedule, optional
+            If `schedule` is not given, the interval's schedule is used.
             
         Returns
         -------
@@ -293,9 +339,11 @@ class Interval(object):
             raise UnsupportedPeriodError('Period {!r} is not a superperiod '
                                          'of timeboard\'s base unit {!r}'.
                                          format(period, self._tb.base_unit_freq))
+        if schedule is None:
+            schedule = self.schedule
         try:
-            ivl_duty_start_ts = self.first(duty).to_timestamp()
-            ivl_duty_end_ts = self.last(duty).to_timestamp()
+            ivl_duty_start_ts = self.first(duty, schedule).to_timestamp()
+            ivl_duty_end_ts = self.last(duty, schedule).to_timestamp()
         except OutOfBoundsError:
             return 0.0
 
@@ -303,26 +351,30 @@ class Interval(object):
                               base_unit_freq=period)
         first_period_ivl = self._tb.get_interval(
             period_index[0],
-            clip_period=False, schedule=self._schedule)
-        len_of_1st_period = first_period_ivl.count(duty=duty)
+            clip_period=False, schedule=schedule)
+        len_of_1st_period = first_period_ivl.count(duty=duty, schedule=schedule)
         last_period_ivl = self._tb.get_interval(
             period_index[-1],
-            clip_period=False, schedule=self._schedule)
-        len_of_last_period = last_period_ivl.count(duty=duty)
+            clip_period=False, schedule=schedule)
+        len_of_last_period = last_period_ivl.count(duty=duty, schedule=schedule)
 
         if ivl_duty_end_ts <= period_index[0].end_time:
-            ivl_units_in_only_period = self.count(duty=duty)
+            ivl_units_in_only_period = self.count(duty=duty, schedule=schedule)
             return ivl_units_in_only_period / len_of_1st_period
 
         result = 0.0
         ivl_units_in_1st_period = self._tb.get_interval(
             (ivl_duty_start_ts, first_period_ivl.end_time),
-            clip_period=False, schedule=self._schedule).count(duty=duty)
+            clip_period=False,
+            schedule=schedule
+        ).count(duty=duty, schedule=schedule)
         result += ivl_units_in_1st_period / len_of_1st_period
 
         ivl_units_in_last_period = self._tb.get_interval(
             (last_period_ivl.start_time, ivl_duty_end_ts),
-            clip_period=False, schedule=self._schedule).count(duty=duty)
+            clip_period=False,
+            schedule=schedule
+        ).count(duty=duty, schedule=schedule)
         result += ivl_units_in_last_period / len_of_last_period
 
         full_periods_in_ivl = len(period_index) - 2
@@ -330,9 +382,10 @@ class Interval(object):
 
             def duty_is_present(p):
                 return self._tb.get_interval(
-                    p,
-                    clip_period=False,
-                    schedule=self._schedule).count(duty=duty) > 0
+                           p,
+                           clip_period=False,
+                           schedule=schedule
+                       ).count(duty=duty, schedule=schedule) > 0
 
             result += sum(map(duty_is_present, period_index[1:-1]))
 
