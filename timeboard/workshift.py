@@ -19,14 +19,14 @@ class Workshift(object):
     Parameters
     ----------
     timeboard : Timeboard
-    location : int (>=0)
+    location : int >=0
         Position of the workshift on the timeline of the timeboard (zero-based).
     schedule : _Schedule, optional
         If not given, the timeboard's default schedule is used. 
         
     Raises
     ------
-    OutOfBoundsError (LookupError)
+    OutOfBoundsError
         If `location` points outside the timeboard or is negative.
         
     Attributes
@@ -35,7 +35,7 @@ class Workshift(object):
         When the workshift starts.
     end_time : Timestamp
         When the workshift ends.
-    duration : int (>0)
+    duration : int >0
         Number of base unit making up the workshift.
     label
         An application-specific label associated with the workshift. 
@@ -46,11 +46,17 @@ class Workshift(object):
     is_off_duty : bool
         True if the workship is off-duty under given `schedule`.
     
+    Examples
+    --------
+    >>> clnd = tb.Timeboard('D', '30 Sep 2017', '15 Oct 2017', layout=[0,1])
+    >>> tb.workshift.Workshift(clnd, 1)
+    Workshift(1) of 'D' at 2017-10-01
+    
     Notes
     -----
     Calling  Timeboard's instance or its `get_workshift` method provides a
     convenient way to instantiate a workshift from a point in time instead of 
-    calling Workshift() constructor directly. 
+    calling Workshift() constructor directly.
     """
 
     def __init__(self, timeboard, location, schedule=None):
@@ -72,23 +78,24 @@ class Workshift(object):
 
     @property
     def start_time(self):
+        """Timestamp of the start of the workshift"""
         # TODO: Refactor. _Timeline methods should not be called from this class
         return self._tb._timeline.get_ws_start_time(self._loc)
 
     @property
     def end_time(self):
+        """Timestamp of the end of the workshift"""
         # TODO: Refactor. _Timeline methods should not be called from this class
         return self._tb._timeline.get_ws_end_time(self._loc)
 
     @property
     def duration(self):
-        """Number of base units in the workshift
-        """
+        """Number of base units in the workshift"""
         # TODO: Refactor. _Timeline methods should not be called from this class
         return self._tb._timeline.get_ws_duration(self._loc)
 
     def to_timestamp(self):
-        """The characteristic time used to represent the workshift.. 
+        """The characteristic time used to represent the workshift. 
         
         The rule to calculate the timestamp is defined by `workshift_ref` 
         parameter of the timeboard.

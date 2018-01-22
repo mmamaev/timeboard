@@ -1169,7 +1169,7 @@ class Organizer(object):
     --------
     Marker
         Define rules to calculate locations of marks upon the frame.
-    RememeberingPattern
+    RememberingPattern
         Keep track of assigned labels across invocations.
 
     """

@@ -253,7 +253,37 @@ class Timeboard(object):
         return self._default_schedule
 
     def __call__(self, *args, **kwargs):
-        """A wrapper of `get_workshift()` or `get_interval()`."""
+        """A wrapper of `get_workshift()` or `get_interval()`.
+        
+        When an instance of `Timeboard` is called with a single 
+        non-keyword argument, the call is passed to `get_workshift()`. 
+        If `get_workshift()` failed to handle the argument or was ruled out 
+        from the beginning, `get_interval()` is tried.
+        
+        Examples
+        --------
+        >>> clnd = Timeboard('D', '30 Sep 2017', '15 Oct 2017', layout=[0,1])
+        >>> clnd('01 Oct 2017')
+        Workshift(1) of 'D' at 2017-10-01
+        
+        >>> clnd(('02 Oct 2017', '08 Oct 2017'))
+        Interval(2, 8): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]
+        >>> clnd('02 Oct 2017', length=7)
+        Interval(2, 8): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]
+        >>> clnd('05 Oct 2017', period='W')
+        Interval(2, 8): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]      
+        >>> clnd()
+        Interval(0, 15): 'D' at 2017-09-30 -> 'D' at 2017-10-15 [16]
+
+        Call `get_interval()` directly to obtain an interval from a 
+        pandas.Period object as it is interpreted as a valid argument for 
+        `get_workshift()` as well:
+                 
+        >>> import pandas as pd
+        >>> p = pd.Period('05 Oct 2017', freq='W')
+        >>> clnd(p)
+        Workshift(2) of 'D' at 2017-10-02
+        """
         if len(args) == 1 and len(kwargs) == 0:
             try:
                 return self.get_workshift(args[0])
@@ -343,10 +373,9 @@ class Timeboard(object):
         Parameters
         ----------
         point_in_time : Timestamp-like
-            An object convertible to Timestamp. If it has `to_timestamp()` 
-            method, then the method's return value is used. Otherwise it is a 
-            string convertible to a timestamp, or a pandas Timestamp, or 
-            a datetime object.
+            An object convertible to Timestamp such as a string, or a pandas 
+            Timestamp, or a datetime object. Also it may be any object with 
+            `to_timestamp()` method returning a Timestamp. 
         schedule : _Schedule, optional
             Schedule to be used in calculations with the workshift unless a 
             schedule is explicitly redefined for a specific calculation. 
@@ -358,7 +387,7 @@ class Timeboard(object):
         
         Raises
         ------
-        OutOfBoundsError (LookupError)
+        OutOfBoundsError
             If `point_in_time` is not within the timeboard.
             
         Notes
@@ -370,7 +399,7 @@ class Timeboard(object):
 
         See also
         --------
-        timeboard.workshift.Workshift(timeboard, location: int, schedule=None)
+        timeboard.workshift.Workshift
             An alternative approach to instantiating a workshift by the 
             position (`location`) of the workshift within the timeline.
 
@@ -380,7 +409,8 @@ class Timeboard(object):
         >>> clnd.get_workshift('01 Oct 2017')
         Workshift(1) of 'D' at 2017-10-01
         
-        # shortcut
+        A shortcut:
+        
         >>> clnd('01 Oct 2017')
         Workshift(1) of 'D' at 2017-10-01
         """
@@ -501,10 +531,10 @@ class Timeboard(object):
         
         Raises
         ------
-        OutOfBoundsError (LookupError)
+        OutOfBoundsError
             If the interval would extend outside the timeline.
             
-        VoidIntervalError (ValueError)
+        VoidIntervalError
             If creation of an empty interval is attempted. This includes the 
             case when the points in time specifying the interval bounds are 
             passed in reverse order.
