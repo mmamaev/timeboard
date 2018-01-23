@@ -150,21 +150,20 @@ class Interval(object):
         return left_bound, right_bound
 
     def _get_duty_idx(self, duty, schedule):
-        duty_idx = {
+        _duty_idx = {
             'on': schedule.on_duty_index,
             'off': schedule.off_duty_index,
             'any': schedule.index
         }
-        duty_loc = {
-            'on': self._find_my_bounds_in_idx(duty_idx['on']),
-            'off': self._find_my_bounds_in_idx(duty_idx['off']),
-            'any': self._loc
-        }
+
         try:
-            duty_idx_bounds = duty_loc[duty]
-            duty_idx = duty_idx[duty]
+            duty_idx = _duty_idx[duty]
         except KeyError:
             raise ValueError('Invalid `duty` parameter {!r}'.format(duty))
+        if duty != 'any':
+            duty_idx_bounds = self._find_my_bounds_in_idx(duty_idx)
+        else:
+            duty_idx_bounds = self._loc
         return duty_idx, duty_idx_bounds
 
     def first(self, duty='on', schedule=None):

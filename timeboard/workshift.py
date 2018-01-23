@@ -191,12 +191,12 @@ class Workshift(object):
         ----------
         steps : int, optional (default 0)
         duty : {'on', 'off', 'same', 'alt', 'any'} , optional (default 'on')
-            'on' : step on on-duty workshifts only
-            'off' : step on off-duty workshifts only
-            'same' : step only on workshifts with the same duty status as self
-            'alt' : step only on workshifts with the duty status other than 
+            - 'on' : step on on-duty workshifts only
+            - 'off' : step on off-duty workshifts only
+            - 'same' : step only on workshifts with the same duty status as self
+            - 'alt' : step only on workshifts with the duty status other than 
             that of self
-            'any' : step on all workshifts
+            - 'any' : step on all workshifts
         schedule : _Schedule, optional
             If `schedule` is not given, the workshift's schedule is used.
     
@@ -206,7 +206,7 @@ class Workshift(object):
         
         Raises
         ------
-        OutOfBoundsError (LookupError)
+        OutOfBoundsError
             If the method attempted to roll outside the timeboard.
 
         Notes
@@ -327,12 +327,12 @@ class Workshift(object):
         ----------
         steps : int, optional (default 0)
         duty : {'on', 'off', 'same', 'alt', 'any'} , optional (default 'on')
-            'on' : step on on-duty workshifts only
-            'off' : step on off-duty workshifts only
-            'same' : step only on workshifts with the same duty status as self
-            'alt' : step only on workshifts with the duty status other than 
+            - 'on' : step on on-duty workshifts only
+            - 'off' : step on off-duty workshifts only
+            - 'same' : step only on workshifts with the same duty status as self
+            - 'alt' : step only on workshifts with the duty status other than 
             that of self
-            'any' : step on all workshifts
+            - 'any' : step on all workshifts
         schedule : _Schedule, optional
             If `schedule` is not given, the workshift's schedule is used.
     
@@ -342,7 +342,7 @@ class Workshift(object):
         
         Raises
         ------
-        OutOfBoundsError (LookupError)
+        OutOfBoundsError
             If the method attempted to roll outside the timeboard.
 
         Notes
