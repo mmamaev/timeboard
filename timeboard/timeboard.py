@@ -421,7 +421,7 @@ class Timeboard(object):
         
         Returns
         -------
-        Workshift
+        :py:obj:`.Workshift`
         
         Raises
         ------

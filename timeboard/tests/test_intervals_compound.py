@@ -45,7 +45,7 @@ class TestIntervalCompoundConstructor:
         assert ivl.end_time > datetime.datetime(2017, 10, 3, 1, 59, 59)
         assert ivl.end_time < datetime.datetime(2017, 10, 3, 2, 0, 0)
         assert ivl._loc == (2,6)
-        assert ivl.length == 5
+        assert len(ivl) == 5
 
         ivlx = clnd(('01 Oct 2017 10:00', '02 Oct 2017 23:00'))
         assert ivlx._loc == ivl._loc
@@ -58,7 +58,7 @@ class TestIntervalCompoundConstructor:
         assert ivl.end_time > datetime.datetime(2017, 10, 2, 17, 59, 59)
         assert ivl.end_time < datetime.datetime(2017, 10, 2, 18, 0, 0)
         assert ivl._loc == (3, 5)
-        assert ivl.length == 3
+        assert len(ivl) == 3
 
     def test_interval_constructor_compound_with_two_ts_same_ws(self):
         clnd = tb_10_8_6_hours()
@@ -67,7 +67,7 @@ class TestIntervalCompoundConstructor:
         assert ivl.end_time > datetime.datetime(2017, 10, 3, 1, 59, 59)
         assert ivl.end_time < datetime.datetime(2017, 10, 3, 2, 0, 0)
         assert ivl._loc == (6,6)
-        assert ivl.length == 1
+        assert len(ivl) == 1
 
         ivlx = clnd(('02 Oct 2017 19:15', '03 Oct 2017 01:10'))
         assert ivlx._loc == ivl._loc
@@ -79,7 +79,7 @@ class TestIntervalCompoundConstructor:
         assert ivl.end_time > datetime.datetime(2017, 10, 4, 17, 59, 59)
         assert ivl.end_time < datetime.datetime(2017, 10, 4, 18, 0, 0)
         assert ivl._loc == (5,11)
-        assert ivl.length == 7
+        assert len(ivl) == 7
 
         ivlx = clnd('02 Oct 2017 15:00', length=7)
         assert ivlx._loc == ivl._loc
@@ -91,7 +91,7 @@ class TestIntervalCompoundConstructor:
         assert ivl.end_time > datetime.datetime(2017, 10, 2, 1, 59, 59)
         assert ivl.end_time < datetime.datetime(2017, 10, 2, 2, 0, 0)
         assert ivl._loc == (0, 3)
-        assert ivl.length == 4
+        assert len(ivl) == 4
 
         ivlx = clnd('01 Oct 2017 03:00', period='D')
         assert ivlx._loc == ivl._loc
@@ -111,7 +111,7 @@ class TestIntervalCompoundConstructor:
         assert ivl.end_time > datetime.datetime(2017, 10, 3, 1, 59, 59)
         assert ivl.end_time < datetime.datetime(2017, 10, 3, 2, 0, 0)
         assert ivl._loc == (4, 6)
-        assert ivl.length == 3
+        assert len(ivl) == 3
 
         ivlx = clnd('02 Oct 2017 01:00', period='D')
         assert ivlx._loc == ivl._loc
@@ -127,7 +127,7 @@ class TestIntervalCompoundConstructor:
         assert ivl.end_time > datetime.datetime(2017, 10, 1, 17, 59, 59)
         assert ivl.end_time < datetime.datetime(2017, 10, 1, 18, 0, 0)
         assert ivl._loc == (0, 2)
-        assert ivl.length == 3
+        assert len(ivl) == 3
 
         ivlx = clnd('01 Oct 2017 19:00', period='D')
         assert ivlx._loc == ivl._loc
@@ -142,7 +142,7 @@ class TestIntervalCompoundConstructor:
         assert ivl.end_time > datetime.datetime(2017, 10, 2, 17, 59, 59)
         assert ivl.end_time < datetime.datetime(2017, 10, 2, 18, 0, 0)
         assert ivl._loc == (3, 5)
-        assert ivl.length == 3
+        assert len(ivl) == 3
 
         ivlx = clnd('02 Oct 2017 01:00', period='D')
         assert ivlx._loc == ivl._loc
@@ -160,7 +160,7 @@ class TestIntervalCompoundConstructor:
         assert ivl.end_time > datetime.datetime(2017, 10, 6, 0, 59, 59)
         assert ivl.end_time < datetime.datetime(2017, 10, 6, 1, 0, 0)
         assert ivl._loc == (15, 15)
-        assert ivl.length == 1
+        assert len(ivl) == 1
 
         ivl = clnd.get_interval('06 Oct 2017 20:15', period='D')
         assert ivl._loc == (15, 15)
@@ -176,7 +176,7 @@ class TestIntervalCompoundConstructor:
         assert ivl.end_time > datetime.datetime(2017, 10, 2, 1, 59, 59)
         assert ivl.end_time < datetime.datetime(2017, 10, 2, 2, 0, 0)
         assert ivl._loc == (0, 3)
-        assert ivl.length == 4
+        assert len(ivl) == 4
 
         ivl = clnd.get_interval('30 Sep 2017 12:00', period='W')
         assert ivl._loc == (0, 3)
@@ -192,7 +192,7 @@ class TestIntervalCompoundConstructor:
         assert ivl.end_time > datetime.datetime(2017, 10, 1, 17, 59, 59)
         assert ivl.end_time < datetime.datetime(2017, 10, 1, 18, 0, 0)
         assert ivl._loc == (0, 2)
-        assert ivl.length == 3
+        assert len(ivl) == 3
 
         ivl = clnd.get_interval('30 Sep 2017 12:00', period='W')
         assert ivl._loc == (0, 2)

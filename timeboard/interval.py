@@ -6,30 +6,34 @@ from .workshift import Workshift
 from .core import _Frame, _check_groupby_freq
 
 class Interval(object):
-    """A series of workshifts within the timeboard.
+    """A sequence of workshifts within the timeboard.
     
-    Interval is defined by two positions on the timeline which point to 
-    the first and the last workshifts of the interval. An interval can
-    contain one or more workshifts; empty interval is not allowed.
+    :py:obj:`Interval` is defined by two positions on the timeline which are
+    the zero-based sequence numbers of the first and the last workshifts 
+    of the interval. An interval can contain one or more workshifts; 
+    empty interval is not allowed.
     
     Duty status of the workshifts within the interval is interpreted by the 
     given schedule.
     
+    In addition to the methods defined for intervals, you can use an interval 
+    as a generator that yields the workshifts.
+    
     Parameters
     ----------
-    timeboard : Timeboard
-    bounds : a two-element sequence of int>=0 or Workshift
+    timeboard : :py:class:`.Timeboard`
+    bounds : tuple(int, int) or tuple(Workshift, Workshift)
         The two elements of `bounds` provide the positions of the first and 
         the last workshifts of the interval within the timelime. The element's 
-        type is either non-negative integer or an instance of Workshift.
-    schedule: _Schedule, optional
+        type is either non-negative integer or :py:class:`.Workshift`.
+    schedule : _Schedule, optional
         If not given, the timeboard's default schedule is used. 
     
     Raises
     ------
-    VoidIntervalError (ValueError)
+    VoidIntervalError
         If `bounds` are in the reverse order.
-    OutOfBoundsError (LookupError)
+    OutOfBoundsError
         If any of `bounds` points outside the timeboard.
         
     Attributes
@@ -39,7 +43,10 @@ class Interval(object):
     end_time : Timestamp
         When the last workshift of the interval ends.
     length : int >0
-        Number of workshifts in the interval.
+        Number of workshifts in the interval. You can also call `len()` 
+        function for an interval which returns the same value. 
+    labels : list 
+        List of workshift labels in the interval.
     schedule : _Schedule
         Schedule used by interval's methods unless explicitly redefined in 
         the method call. Use `name` attribute of `schedule` to review its 
@@ -48,14 +55,60 @@ class Interval(object):
     Examples
     --------
     >>> clnd = tb.Timeboard('D', '30 Sep 2017', '15 Oct 2017', layout=[0,1])
-    >>> tb.interval.Interval(clnd, (2,9))
+    >>> ivl = tb.interval.Interval(clnd, (2,9))
+    >>> ivl
     Interval(2, 9): 'D' at 2017-10-02 -> 'D' at 2017-10-09 [8]
-        
+    
+    >>> len(ivl)
+    8
+    >>> for ws in ivl: 
+            print (ws.start_time, "\t", ws.label)
+    2017-10-02 00:00:00 	 0.0
+    2017-10-03 00:00:00 	 1.0
+    2017-10-04 00:00:00 	 0.0
+    2017-10-05 00:00:00 	 1.0
+    2017-10-06 00:00:00 	 0.0
+    2017-10-07 00:00:00 	 1.0
+    2017-10-08 00:00:00 	 0.0
+    2017-10-09 00:00:00 	 1.0    
+
+    The following operations consume memory to hold the data for 
+    the entire interval.
+       
+    >>> ivl.labels
+    [0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0]
+    
+    >>> list(ivl)
+    [Workshift(2) of 'D' at 2017-10-02,
+     Workshift(3) of 'D' at 2017-10-03,
+     Workshift(4) of 'D' at 2017-10-04,
+     Workshift(5) of 'D' at 2017-10-05,
+     Workshift(6) of 'D' at 2017-10-06,
+     Workshift(7) of 'D' at 2017-10-07,
+     Workshift(8) of 'D' at 2017-10-08,
+     Workshift(9) of 'D' at 2017-10-09] 
+    
+    >>> print(ivl)
+    Interval(2, 9): 'D' at 2017-10-02 -> 'D' at 2017-10-09 [8]
+    .
+         workshift      start  duration        end  label  on_duty
+    loc                                                           
+    2   2017-10-02 2017-10-02         1 2017-10-02    0.0    False
+    3   2017-10-03 2017-10-03         1 2017-10-03    1.0     True
+    4   2017-10-04 2017-10-04         1 2017-10-04    0.0    False
+    5   2017-10-05 2017-10-05         1 2017-10-05    1.0     True
+    6   2017-10-06 2017-10-06         1 2017-10-06    0.0    False
+    7   2017-10-07 2017-10-07         1 2017-10-07    1.0     True
+    8   2017-10-08 2017-10-08         1 2017-10-08    0.0    False
+    9   2017-10-09 2017-10-09         1 2017-10-09    1.0     True        
+    
     Notes
     -----
-    `get_interval` method of Timeboard class provides convenient ways to 
+    :py:meth:`.Timeboard.get_interval` provides convenient ways to 
     instantiate an interval instead of calling Interval() constructor 
-    directly. 
+    directly. Moreover, in many cases you can shortcut a 
+    :py:meth:`get_interval` call by calling the instance of 
+    :py:class:`.Timeboard` itself.
     """
 
     def __init__(self, timeboard, bounds, schedule=None):
@@ -128,9 +181,29 @@ class Interval(object):
         return self._length
 
     @property
+    def labels(self):
+        return list(self._tb._timeline[self._loc[0] : self._loc[1]+1])
+
+    @property
     def schedule(self):
         return self._schedule
 
+    def _ws_generator(self):
+        for i in range(self._loc[0], self._loc[1]+1):
+            yield Workshift(self._tb, i)
+
+    def __next__(self):
+        return next(self._ws_generator_activated)
+
+    def next(self):
+        return self.__next__()
+
+    def __iter__(self):
+        self._ws_generator_activated = self._ws_generator()
+        return self
+
+    def __len__(self):
+        return self._length
 
     def _find_my_bounds_in_idx(self, idx):
         #TODO: optimize this search
@@ -163,6 +236,66 @@ class Interval(object):
         else:
             duty_idx_bounds = self._loc
         return duty_idx, duty_idx_bounds
+
+    def nth(self, n, duty='on', schedule=None):
+        """Return n-th workshift with the specified duty in the interval.
+
+        Parameters
+        ----------
+        n : int !=0
+            Sequence number of the workshift within the interval. 
+            Numbering starts at one. Negative values count from the end
+            toward the beginning of the interval (`n=-1` returns the last
+            workshift). `n=0` is not allowed.
+        duty : {``'on'``, ``'off``', ``'any``'} , optional (default ``'on'``)
+            Specify the duty of workshifts to be counted. If duty='on',
+            off-duty workshifts are ignored, and vice versa. If duty='any',
+            all workshifts are counted whatever the duty.
+        schedule : _Schedule, optional
+            If `schedule` is not given, the interval's schedule is used.
+
+        Returns
+        -------
+        Workshift
+
+        Raises
+        ------
+        OutOfBoundsError
+            If the requested workshift does not exist within the interval.
+
+        Examples
+        --------
+        >>> clnd = tb.Timeboard('D', '30 Sep 2017', '15 Oct 2017', layout=[0,1])
+        >>> ivl = clnd(('02 Oct 2017', '08 Oct 2017'))
+        >>> ivl.nth(2)
+        Workshift(5) of 'D' at 2017-10-05
+        >>> ivl.last(2, duty='off')
+        Workshift(4) of 'D' at 2017-10-04
+        >>> ivl.last(2, duty='any')
+        Workshift(3) of 'D' at 2017-10-03
+        """
+        if schedule is None:
+            schedule = self.schedule
+        duty_idx, duty_idx_bounds = self._get_duty_idx(duty, schedule)
+        if duty_idx_bounds[0] is None or duty_idx_bounds[1] is None:
+            return self._tb._handle_out_of_bounds(
+                'Duty {!r} not found in interval {}'.format(duty,
+                                                            self.compact_str))
+
+        if n > 0:
+            loc_in_duty_idx = duty_idx_bounds[0] + n - 1
+        elif n < 0:
+            loc_in_duty_idx = duty_idx_bounds[1] + n + 1
+        else:
+            raise ValueError("Parameter `n` must not be zero")
+
+        if (loc_in_duty_idx < duty_idx_bounds[0] or
+                    loc_in_duty_idx > duty_idx_bounds[1]):
+            return self._tb._handle_out_of_bounds(
+                'No {} {!r} workshifts in the interval {}'.
+                    format(n, duty, self.compact_str))
+
+        return Workshift(self._tb, duty_idx[loc_in_duty_idx], schedule)
 
     def first(self, duty='on', schedule=None):
         """Return the first workshift with the specified duty in the interval.
@@ -210,73 +343,13 @@ class Interval(object):
         """
         return self.nth(-1, duty, schedule)
 
-    def nth(self, n, duty='on', schedule=None):
-        """Return n-th workshift with the specified duty in the interval.
-        
-        Parameters
-        ----------
-        n : int (!=0)
-            Sequence number of the workshift within the interval. 
-            Numbering starts at one. Negative values count from the end
-            toward the beginning of the interval (`n=-1` returns the last
-            workshift). `n=0` is not allowed.
-        duty : {'on', 'off', 'any'} , optional (default 'on')
-            Specify the duty of workshifts to be counted. If duty='on',
-            off-duty workshifts are ignored, and vice versa. If duty='any',
-            all workshifts are counted whatever the duty.
-        schedule : _Schedule, optional
-            If `schedule` is not given, the interval's schedule is used.
-            
-        Returns
-        -------
-        Workshift
-        
-        Raises
-        ------
-        OutOfBoundsError (LookupError)
-            If the requested workshift does not exist within the interval.
-            
-        Examples
-        --------
-        >>> clnd = tb.Timeboard('D', '30 Sep 2017', '15 Oct 2017', layout=[0,1])
-        >>> ivl = clnd(('02 Oct 2017', '08 Oct 2017'))
-        >>> ivl.nth(2)
-        Workshift(5) of 'D' at 2017-10-05
-        >>> ivl.last(2, duty='off')
-        Workshift(4) of 'D' at 2017-10-04
-        >>> ivl.last(2, duty='any')
-        Workshift(3) of 'D' at 2017-10-03
-        """
-        if schedule is None:
-            schedule = self.schedule
-        duty_idx, duty_idx_bounds = self._get_duty_idx(duty, schedule)
-        if duty_idx_bounds[0] is None or duty_idx_bounds[1] is None:
-            return self._tb._handle_out_of_bounds(
-                'Duty {!r} not found in interval {}'.format(duty,
-                                                            self.compact_str))
-
-        if n > 0:
-            loc_in_duty_idx = duty_idx_bounds[0] + n - 1
-        elif n < 0:
-            loc_in_duty_idx = duty_idx_bounds[1] + n + 1
-        else:
-            raise ValueError("Parameter `n` must not be zero")
-
-        if (loc_in_duty_idx < duty_idx_bounds[0] or
-            loc_in_duty_idx > duty_idx_bounds[1]):
-
-            return self._tb._handle_out_of_bounds(
-                'No {} {!r} workshifts in the interval {}'.
-                format(n, duty, self.compact_str))
-
-        return Workshift(self._tb, duty_idx[loc_in_duty_idx], schedule)
 
     def count(self, duty='on', schedule=None):
         """Return the count of interval's workshifts with the specified duty.
         
         Parameters
         ----------
-        duty : {'on', 'off', 'any'} , optional (default 'on')
+        duty : {``'on'``, ``'off'``, ``'any'``} , optional (default ``'on'``)
             Specify the duty of workshifts to be counted. If duty='on',
             off-duty workshifts are ignored, and vice versa. If duty='any',
             all workshifts are counted whatever the duty.
@@ -310,34 +383,6 @@ class Interval(object):
     def count_periods(self, period, duty='on', schedule=None):
         """Return how many calendar periods fit into the interval.
         
-        Parameters
-        ----------
-        period : str
-            Pandas-compatible label defining a kind of calendar period 
-            (i.e. 'M' for month). Pandas-native business periods (i.e. 'BM')  
-            as well as  periods with multipliers (i.e. '3M') are not applicable.
-        duty : {'on', 'off', 'any'} , optional (default 'on')
-            Specify the duty of workshifts to be accounted for. See 'Notes'
-            below for explanation.
-        schedule : _Schedule, optional
-            If `schedule` is not given, the interval's schedule is used.
-            
-        Returns
-        -------
-        float
-            
-        Raises
-        ------
-        OutOfBoundsError (LookupError)
-            If the calendar period containing the first or the last 
-            workshift of the interval (subject to duty) extends outside 
-            the timeboard.
-        UnsupportedPeriodError (ValueError)
-            If `period` is not valid for this method or is not a multiple
-            of timeboard's base unit.
-        
-        Notes
-        -----
         The interval is sliced into calendar periods of the specified frequency
         and then each slice of the interval is compared to its corresponding 
         period duty-wise. That is to say, the count of workshifts in the 
@@ -351,6 +396,31 @@ class Interval(object):
         
         Regardless of `period`, the method returns 0.0 if the interval 
         does not have workshifts with the specified duty.
+
+        Parameters
+        ----------
+        period : str
+            pandas-compatible frequency of calendar periods to be counted 
+            (i.e. 'M' for month). Pandas-native business periods (i.e. 'BM')  
+            as well as  periods with multipliers (i.e. '3M') are not applicable.
+        duty : {``'on'``, ``'off'``, ``'any'``} , optional (default ``'on'``)
+            Specify the duty of workshifts to be accounted for. 
+        schedule : _Schedule, optional
+            If `schedule` is not given, the interval's schedule is used.
+            
+        Returns
+        -------
+        float
+            
+        Raises
+        ------
+        OutOfBoundsError
+            If the calendar period containing the first or the last 
+            workshift of the interval (subject to duty) extends outside 
+            the timeboard.
+        UnsupportedPeriodError
+            If `period` is not valid for this method or is not a multiple
+            of timeboard's base unit.
         
         Examples
         --------
