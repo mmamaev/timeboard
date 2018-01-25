@@ -242,14 +242,15 @@ class Interval(object):
 
         Parameters
         ----------
-        n : int !=0
-            Sequence number of the workshift within the interval. 
-            Numbering starts at one. Negative values count from the end
-            toward the beginning of the interval (`n=-1` returns the last
-            workshift). `n=0` is not allowed.
+        n : int
+            Zero-based sequence number of the workshift with the specified
+            duty within the interval. 
+            Negative values count from the end toward the beginning of 
+            the interval (`n=-1` returns the last workshift with the specified
+            duty). 
         duty : {``'on'``, ``'off``', ``'any``'} , optional (default ``'on'``)
-            Specify the duty of workshifts to be counted. If duty='on',
-            off-duty workshifts are ignored, and vice versa. If duty='any',
+            Duty of workshifts to be counted. If duty='on',
+            off duty workshifts are ignored, and vice versa. If duty='any',
             all workshifts are counted whatever the duty.
         schedule : _Schedule, optional
             If `schedule` is not given, the interval's schedule is used.
@@ -267,11 +268,11 @@ class Interval(object):
         --------
         >>> clnd = tb.Timeboard('D', '30 Sep 2017', '15 Oct 2017', layout=[0,1])
         >>> ivl = clnd(('02 Oct 2017', '08 Oct 2017'))
-        >>> ivl.nth(2)
+        >>> ivl.nth(1)
         Workshift(5) of 'D' at 2017-10-05
-        >>> ivl.last(2, duty='off')
+        >>> ivl.nth(1, duty='off')
         Workshift(4) of 'D' at 2017-10-04
-        >>> ivl.last(2, duty='any')
+        >>> ivl.nth(1, duty='any')
         Workshift(3) of 'D' at 2017-10-03
         """
         if schedule is None:
@@ -282,12 +283,10 @@ class Interval(object):
                 'Duty {!r} not found in interval {}'.format(duty,
                                                             self.compact_str))
 
-        if n > 0:
-            loc_in_duty_idx = duty_idx_bounds[0] + n - 1
-        elif n < 0:
-            loc_in_duty_idx = duty_idx_bounds[1] + n + 1
+        if n >= 0:
+            loc_in_duty_idx = duty_idx_bounds[0] + n
         else:
-            raise ValueError("Parameter `n` must not be zero")
+            loc_in_duty_idx = duty_idx_bounds[1] + n + 1
 
         if (loc_in_duty_idx < duty_idx_bounds[0] or
                     loc_in_duty_idx > duty_idx_bounds[1]):
@@ -300,7 +299,7 @@ class Interval(object):
     def first(self, duty='on', schedule=None):
         """Return the first workshift with the specified duty in the interval.
         
-        Same as ``nth(1, duty, schedule)``
+        Same as ``nth(0, duty, schedule)``
         
         Examples
         --------
@@ -318,7 +317,7 @@ class Interval(object):
         nth
             Return n-th workshift with the specified duty in the interval.
         """
-        return self.nth(1, duty, schedule)
+        return self.nth(0, duty, schedule)
 
     def last(self, duty='on', schedule=None):
         """Return the last workshift with the specified duty in the interval.

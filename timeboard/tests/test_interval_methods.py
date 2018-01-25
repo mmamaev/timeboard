@@ -87,7 +87,7 @@ class TestIntervalFirstLastNth:
             ivl = Interval(clnd, locs, clnd.default_schedule)
             wsf = ivl.first()
             wsl = ivl.last()
-            ws2 = ivl.nth(2)
+            ws2 = ivl.nth(1)
             wsneg = ivl.nth(-2)
             assert isinstance(wsf, Workshift)
             assert isinstance(wsl, Workshift)
@@ -104,7 +104,7 @@ class TestIntervalFirstLastNth:
             ivl = Interval(clnd, locs, clnd.default_schedule)
             wsf = ivl.first(duty='off')
             wsl = ivl.last(duty='off')
-            ws2 = ivl.nth(2, duty='off')
+            ws2 = ivl.nth(1, duty='off')
             wsneg = ivl.nth(-2, duty='off')
             assert isinstance(wsf, Workshift)
             assert isinstance(wsl, Workshift)
@@ -120,7 +120,7 @@ class TestIntervalFirstLastNth:
         ivl = Interval(clnd, (2, 10), clnd.default_schedule)
         wsf = ivl.first(duty='any')
         wsl = ivl.last(duty='any')
-        ws2 = ivl.nth(2, duty='any')
+        ws2 = ivl.nth(1, duty='any')
         wsneg = ivl.nth(-2, duty='any')
         assert isinstance(wsf, Workshift)
         assert isinstance(wsl, Workshift)
@@ -138,7 +138,7 @@ class TestIntervalFirstLastNth:
             ivl = Interval(clnd, (loc, loc), clnd.default_schedule)
             wsf = ivl.first(duty=duty)
             wsl = ivl.last(duty=duty)
-            ws2 = ivl.nth(1, duty=duty)
+            ws2 = ivl.nth(0, duty=duty)
             assert isinstance(wsf, Workshift)
             assert isinstance(wsl, Workshift)
             assert isinstance(ws2, Workshift)
@@ -146,11 +146,11 @@ class TestIntervalFirstLastNth:
             assert wsl._loc == loc
             assert ws2._loc == loc
 
-    def test_interval_nth_zero(self):
-        clnd = tb_12_days()
-        ivl = Interval(clnd, (1, 10), clnd.default_schedule)
-        with pytest.raises(ValueError):
-            ivl.nth(0)
+    # def test_interval_nth_zero(self):
+    #     clnd = tb_12_days()
+    #     ivl = Interval(clnd, (1, 10), clnd.default_schedule)
+    #     with pytest.raises(ValueError):
+    #         ivl.nth(0)
 
     def test_interval_nth_no_on_duty(self):
         clnd = tb_12_days()
@@ -160,7 +160,7 @@ class TestIntervalFirstLastNth:
         with pytest.raises(OutOfBoundsError):
             ivl.last()
         with pytest.raises(OutOfBoundsError):
-            ivl.nth(1)
+            ivl.nth(0)
 
     def test_interval_nth_no_off_duty(self):
         clnd = tb_12_days()
@@ -170,17 +170,17 @@ class TestIntervalFirstLastNth:
         with pytest.raises(OutOfBoundsError):
             ivl.last(duty='off')
         with pytest.raises(OutOfBoundsError):
-            ivl.nth(1, duty='off')
+            ivl.nth(0, duty='off')
 
     def test_interval_nth_OOB(self):
         clnd = tb_12_days()
         ivl = Interval(clnd, (2, 8), clnd.default_schedule)
         with pytest.raises(OutOfBoundsError):
-            ivl.nth(3)
+            ivl.nth(2)
         with pytest.raises(OutOfBoundsError):
-            ivl.nth(6, duty='off')
+            ivl.nth(5, duty='off')
         with pytest.raises(OutOfBoundsError):
-            ivl.nth(8, duty='any')
+            ivl.nth(7, duty='any')
 
     def test_interval_default_nth(self):
         clnd = tb_12_days()
@@ -189,18 +189,18 @@ class TestIntervalFirstLastNth:
                                           ('off', 0, 3, 12),
                                           ('any', 0, 2, 12)):
             assert ivl.first(duty=duty)._loc == first
-            assert ivl.nth(3, duty=duty)._loc == third
+            assert ivl.nth(2, duty=duty)._loc == third
             assert ivl.last(duty=duty)._loc == last
 
     def test_interval_default_nth_OOB(self):
         clnd = tb_12_days()
         ivl = clnd.get_interval()
         with pytest.raises(OutOfBoundsError):
-            ivl.nth(5)
+            ivl.nth(4)
         with pytest.raises(OutOfBoundsError):
-            ivl.nth(10, duty='off')
+            ivl.nth(9, duty='off')
         with pytest.raises(OutOfBoundsError):
-            ivl.nth(14, duty='any')
+            ivl.nth(13, duty='any')
 
 
 class TestIntervalCount:
