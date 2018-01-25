@@ -1097,24 +1097,80 @@ class _Schedule(object):
 
 
 class Organizer(object):
-    """Container class which defines the layout of the timeline.
+    """Specification of timeline's layout.
     
-    `Organizer` tells how to organize a frame into a timeline, that is, how 
-    to create workshifts and label them.
+    :py:class:`Organizer` contains rules which define the transformation 
+    of a timeboard's reference frame into a timeline of workshifts. 
+    There are two phases in this process. Firstly, the frame is partitioned
+    into chunks called spans. Secondly, workshifts of each span receive labels
+    according to some labeling pattern.
+    
+    Spans begin on base units referred to by points in 
+    time called marks. The locations of the marks are defined in 
+    :py:class:`Organizer` by either `marker` or `marks` parameter. 
+    
+    Given `marker` parameter,  marks are computed according to 
+    the rules set by a :py:class:`.Marker` passed as the value of 
+    `marker`. 
+    
+    If, instead, `marks` parameter is provided, it is interpreted as a list 
+    of explicitly specified points in time which will serve as marks. 
+    
+    One and only one of `marker` or `marks` parameters must be supplied.
+
+    The second parameter of :py:class:`Organizer`, `structure`,  tells how 
+    to organize the spans. `structure` is an iterable and its elements
+    are mapped onto the spans: the first element of `structure` is applied to
+    the first span, the second element - to the second span, and so on. 
+    
+    Each element of `structure` must be one of the following:
+    
+    - another :py:class:`Organizer`,
+    - a pattern (an iterable of workshift labels), 
+    - a single label.
+    
+    If an element of `structure` is an :py:class:`Organizer`, it is used 
+    to recursively partition this span into sub-spans. 
+    
+    Pattern is an iterable of workshift labels, such as an explicit list 
+    of labels, or an iterator, such as an instance of 
+    :py:class:`.RememberingPattern`. If an element of `structure` is a pattern, 
+    each base unit of the span becomes a workshift. 
+    The labels for these workshifts are taken from the pattern. If the pattern 
+    is empty, the workshifts of the span retain the default labeling 
+    of the timeline.
+    
+    If an element of `structure` is some other single value, it is considered 
+    a label. In this case the whole span becomes a single workshift which 
+    receives this label. Such a compound workshift comprises several base units 
+    (unless the span itself consists of a single base unit).
+    
+    Once `structure` is exhausted but there are untreated spans remaining, 
+    `structure` is re-enacted in cycles. The same approach applies for patterns 
+    producing workshift labels.
+    
+    If `structure` is empty, no organizing occurs. The timeline retains the 
+    default label for every workshift and workshifts coincide with base units.
+
     
     Parameters
     ----------
-    marker : Marker or str
-        A `Marker` or a pandas-compatible calendar frequency (accepts same 
-        kind of values as `base_unit_freq` of timeboard). Under the hood
-        `marker=freq` is silently converted  to `marker=Marker(each=freq)`.
+    marker : :py:class:`.Marker` or str
+        If a string is given, it must be  a pandas-compatible calendar 
+        frequency (accepts same kind of values as `base_unit_freq` of 
+        timeboard). Under the hood ``marker=freq`` is silently converted  
+        to ``marker=Marker(each=freq)``.
     marks : Iterable of Timestamp-like
         Parameters `marker` and `marks` are mutually exclusive.
-    structure : Iterable 
-        An element of `structure` is either another `Organizer`, or 
-        a single workshift label, or a pattern. Pattern is an iterable of 
-        workshift labels, such as an explicit list of labels or an instance of 
-        `RememberingPattern`.
+    structure : Iterable
+        An element of `structure` may be one of the following:
+        
+            - an :py:class:`Organizer`,
+            - a pattern (iterable or iteraror of labels), 
+            - a single label.
+        
+        A :py:class:`.RememberingPattern` may be used both as an element 
+        of `structure` or as an entire `structure`.
               
     Raises
     ------
@@ -1125,87 +1181,44 @@ class Organizer(object):
     ----------
     Same as parameters.
         
-    Notes
-    -----
-    Firstly, organizer tells how to partition timeboard's frame into chunks 
-    (spans). Secondly, organizer defines how to organize each span into 
-    workshifts and what labels they will receive.
-    
-    Spans created by organizer begin on base units referred to by points in 
-    time called marks. The locations of the marks are defined by either 
-    `marker` or `marks` parameter. 
-    
-    Given `marker` parameter, the mark locations are computed according to 
-    the rules set by the `Marker` object passed as the value of `marker`. 
-    
-    If, instead, `marks` is given, it is a list of explicitly specified 
-    points in time which will serve as marks. 
-    
-    One and only one of `marker` or `marks` parameters must be supplied.
-
-    What to do with each of the identified spans is specified by `structure` 
-    parameter which is an iterable. For each span a next element is taken 
-    from `structure`. This element is either another `Organizer`, or a pattern 
-    (an iterable of workshift labels), or a single label.
-    
-    If an element of `structure` is an `Organizer`, it is used to further 
-    partition this span into sub-spans. 
-    
-    If it is a pattern, the recursive partitioning does not happen. Instead, 
-    each base unit of the span becomes a workshift. The labels for these 
-    workshifts are taken from the pattern. If the pattern is empty, 
-    the workshifts of the span retain the default labels of the timeline.
-    
-    If the element of `structure` is some other single value, it is considered 
-    a label. In this case the whole span becomes a single workshift which 
-    receives this label. Such a compound workshift comprises several base units 
-    (unless the span itself consists of a single base unit).
-    
-    Once `structure` is exhausted , it is re-enacted in cycles. The same 
-    approach applies for pattern when setting workshift labels.
-    
-    If `structure` is empty no organizing occurs. The timeline retains the 
-    default label for every workshift (workshifts coincide with base units).
-    
     See also
     --------
-    Marker
+    .Marker
         Define rules to calculate locations of marks upon the frame.
-    RememberingPattern
+    .RememberingPattern
         Keep track of assigned labels across invocations.
         
     Examples
     --------
-    >>> from timeboard import Organizer, Marker
-    
     Workshifts will coincide with base units and will be labeled with 1 and 0
     alternating through the entire timeline:
     
-    >>> Organizer(marks=[], structure=[[1, 0]])
+    >>> tb.Organizer(marks=[], structure=[[1, 0]])
     
     Workshifts will coincide with base units and will be labeled with the 
     recurring pattern of `1,1,1,1,1,0,0` restarting from the first workshift 
     of each week:
     
-    >>> Organizer(marker='W', structure=[[1,1,1,1,1,0,0]])
+    >>> tb.Organizer(marker='W', structure=[[1,1,1,1,1,0,0]])
     
     Workshifts will coincide with base units and will be labeled with  
     a recurring pattern of either `0,0,1,1,0,0,0` or `0,1,1,1,1,1,1` restarting 
     from the first workshift of each week. The selection of pattern depends
     on the season. Seasons begin on May 1 and September 16 each year:
     
-    >>> winter = Organizer(marker='W', structure=[[0,0,1,1,0,0,0]])
-    >>> summer = Organizer(marker='W', structure=[[0,1,1,1,1,1,1]])
-    >>> seasons =  Marker(each='A', at=[{'months':4}, {'months':8, 'days':15}])
-    >>> seasonal = Organizer(marker=seasons, structure=[winter, summer])
+    >>> winter = tb.Organizer(marker='W', structure=[[0,0,1,1,0,0,0]])
+    >>> summer = tb.Organizer(marker='W', structure=[[0,1,1,1,1,1,1]])
+    >>> seasons =  tb.Marker(each='A', 
+                             at=[{'months':4}, {'months':8, 'days':15}])
+    >>> seasonal = tb.Organizer(marker=seasons, structure=[winter, summer])
     
     Workshifts of varying length will start at 02:00, 08:00 and 18:00 every day.
     They will be labeled with the recurring pattern of `'A', 'B', 'C', 
     'D'` starting from the first workshift of the timeline:
     
-    >>> day_parts = Marker(each='D', 
+    >>> day_parts = tb.Marker(each='D', 
                            at=[{'hours':2}, {'hours':8}, {'hours':18}])
-    >>> shifts = Organizer(marker=day_parts, structure=['A', 'B', 'C', 'D'])
+    >>> shifts = tb.Organizer(marker=day_parts, structure=['A', 'B', 'C', 'D'])
 
     See more examples and explanations in "Making a Timeboard" section of 
     the documentation.
@@ -1318,55 +1331,50 @@ class Organizer(object):
 
 
 class Marker(object):
-    """Container class defining the markup of a timeboard's frame.
+    """Specification of markup of a timeboard's frame.
     
-    Markup is an ordered sequence of marks placed at points of time 
-    calculated as specified by parameters of a `Marker`.
+    Markup is an ordered sequence of marks placed at calculated points in time 
+    within some span being a part of a frame or an entire frame. Locations 
+    of marks are calculated as follows. 
     
-    Parameters
-    ----------
-    each : str
-        Pandas-compatible calendar frequency; accepts same values as 
-        `base_unit_freq` of timeline (timeboard).
-    at : list of dict, optional
-        Each dictionary is a collection of keyword arguments used for calling 
-        `how` function. 
-    how : str or function, optional
-        'from_start_of_each' (default) : keyword arguments in `at` define an 
-        offset (number of hours, days, etc.) from the start of `each` period.
-        'from_easter_western' : keyword arguments in `at` define an offset 
-        from the Western Easter in `each` period.
-        'from_easter_orthodox' :  keyword arguments in `at` define an offset 
-        from the Orthodox Easter in `each` period.
-        'nth_weekday_of_month' : keyword arguments in `at` define N-th weekday 
-        of M-th month from the start of `each` period.
-        
-        The above strings are effectively substituted by their name-sake 
-        functions from module `when`.
-        
-        Alternatively, a user-defined function may be supplied as the value of 
-        `how`. The function must conform to the signature 
-        def fun(pandas.PeriodIndex, 'normalize_by': str, **kwargs) -> 
-        pandas.DatetimeIndex.
-        
-    Attributes
-    ----------
-    Same as parameters.
-    
-    Notes
-    -----
-    The markup defined by a `Marker` is to be applied to a span, which is a 
-    part of a timeboard's frame, or to the whole frame. Locations of marks are 
-    calculated as follows. 
-    
-    In each calendar period of frequency `each` located partly or wholly within 
-    the span find points in time defined by `at` parameter. Each dictionary in 
-    `at` list is a collection of keyword arguments which defines one point in 
+    In each calendar period of frequency `each` located partly or entirely within 
+    the span find points in time defined by `at` parameter which is a list of 
+    dictionaries. Each dictionary in 
+    `at` list is a collection of keyword arguments; it defines a point in 
     time. Hence, the number of points sought in each `each` period is equal 
     to the length of `at` list. 
     
-    The interpretation of keyword arguments stored in `at` is defined by 
-    parameter `how`. 
+    The interpretation of `at` keywords is defined by parameter `how`. 
+    
+    ====================== ====================================================
+    Value of `how`         Interpretation of keyword arguments in `at`
+    ====================== ====================================================
+    'from_start_of_each'   Keyword arguments define an offset from the beginning 
+                           of `each` period. Acceptable keyword arguments
+                           are ``'seconds'``, ``'minutes'``, ``'hours'``, 
+                           ``'days'``, ``'weeks'``, ``'months'``, ``'years'``. 
+                           Offsets nominated in different time units are added up.
+                           
+                           Example: ``at=[{'days':0}, {'days':1, 'hours':2}]``
+                           
+    'from_easter_western'  Keyword arguments define an offset from the day of Western 
+                           Easter. Acceptable arguments are the same as above.
+                           
+    'from_easter_orthodox' Keyword arguments define an offset from the day of Orthodox 
+                           Easter. Acceptable arguments are the same as above.
+    
+    'nth_weekday_of_month' Keywords arguments refer to N-th weekday of M-th month 
+                           from the start of `each` period. Acceptable keywords
+                           are 
+                           
+                           - ``'month'`` : 1..12 (1 is for the first month such as January for annual periods), 
+                           - ``'weekday'``: 1..7 (1 is for Monday),
+                           - ``'week'``: -5..-1,1..5 (-1 is for the last, 1 is for the first occurence of the weekday in the month)
+                           - ``'shift'`` : int, optional, default 0 (an offset in days from the weekday found)
+    
+                           Example: ``at=[{'month':5, 'weekday':7, 'week':-1}]``
+                           (the last Sunday of the 5th month)
+    ====================== ====================================================
     
     The location of every point in time which has been calculated by the above 
     procedure is inspected. If it is within the `each` period in which it was 
@@ -1376,59 +1384,99 @@ class Marker(object):
     If `at` parameter is not provided or `at` list is empty, the marks are 
     set on the start times of calendar periods specified by `each`.
     
-    `Organizer` uses markup defined by `Marker` to partition the frame into 
-    spans. The first span always starts on the first base unit 
+    :py:class:`.Organizer` uses markup defined by :py:class:`Marker` 
+    to partition the frame into spans. 
+    The first span always starts on the first base unit 
     of the frame. The second span starts on the base unit which contains 
     the first mark. The last span starts on the base unit containing 
     the last mark and ends on the last base unit of the span. If no marks 
     have been set, only one span is created which contains the whole span.
     
+    Parameters
+    ----------
+    each : str
+        pandas-compatible calendar frequency; accepts same values as 
+        `base_unit_freq` of timeboard.
+    at : list of dict, optional
+        Each dictionary is a collection of keyword arguments interpreted 
+        by parameter `how`. 
+    how : str or function, optional
+        Acceptable string values:
+        
+        - ``'from_start_of_each'`` (default) : keyword arguments in `at` define an 
+          offset (number of hours, days, etc.) from the start of `each` period.
+        - ``'from_easter_western'`` : keyword arguments in `at` define an offset 
+          from the Western Easter in `each` period.
+        - ``'from_easter_orthodox'`` :  keyword arguments in `at` define an offset 
+          from the Orthodox Easter in `each` period.
+        - ``'nth_weekday_of_month'`` : keyword arguments in `at` define N-th weekday 
+          of M-th month from the start of `each` period.
+    
+    Notes
+    -----
+    A string passed as the value of `how` is effectively substituted by its
+    name-sake function from module :py:mod:`timeboard.when`.
+    
+    Alternatively, a user-defined function may be supplied as the value of 
+    `how`. The function must conform to the signature::
+    
+        function(periods: pandas.PeriodIndex, 
+                 normalize_by: str, **kwargs) -> pandas.DatetimeIndex
+             
+    This function is called once for each element of `at` list. It will receive
+    the series of all `each` periods of the span in `periods` parameter, 
+    `base_unit_freq` in `normalize_by` and a collection of keyword 
+    arguments constituting the currently processed element of `at`. 
+    The function is expected to return a series of points in time.
+        
+    Attributes
+    ----------
+    Same as parameters.
+    
     Examples
     --------
-    >>> from timeboard import Marker
-    
     Mark a span by weeks (set a mark on each Monday at 00:00):
 
-    >>> Marker(each='W')
+    >>> tb.Marker(each='W')
     
     Set a mark on each Wednesday and each Saturday at 00:00. Note that 
     there is no mark on Monday because now `at` list is not empty but 
     Monday is not explicitly specified in the list.    
         
-    >>> Marker(each='W', at=[{'days': 2}, {'days': 5}]) 
+    >>> tb.Marker(each='W', at=[{'days': 2}, {'days': 5}]) 
 
     Set a mark on each Monday, Wednesday, and Saturday at 00:00:  
         
-    >>> Marker(each='W', at=[{'days': 0}, {'days': 2}, {'days': 5}])
+    >>> tb.Marker(each='W', at=[{'days': 0}, {'days': 2}, {'days': 5}])
   
     No marks will be set in the following example. Adding 7 days to the start 
     of the week places the candidate point into the next week, i.e. outside 
     the current `each` period, hence this point is not a valid mark.
    
-    >>> Marker(each='W', at=[{'days': 7}])
+    >>> tb.Marker(each='W', at=[{'days': 7}])
         
     Mark a span by days (set a mark at each midnight):
     
-    >>> Marker(each='D')
+    >>> tb.Marker(each='D')
           
     Set marks at 09:00 and 18:00 on each day (but not at the midnight):
       
-    >>> Marker(each='D', at=[{'hours': 9}, {'hours':18}])
+    >>> tb.Marker(each='D', at=[{'hours': 9}, {'hours':18}])
       
     Set a mark on the beginning of the 31st day of each month. If there 
     is no 31st day, there will be no mark in this month. For example, 
     if the span is a calendar year, marks will be set on Jan 31, 
     Mar 31, May 31, Jul 31, Aug 31, Oct 31, and Dec 31:
            
-    >>> Marker(each='M', at=[{'days': 30}])
+    >>> tb.Marker(each='M', at=[{'days': 30}])
 
     Set marks on the last Monday in May and the first Monday in September 
     of each year:
     
-    >>> Marker(each='A', 
-               at=[{'month': 5, 'week': -1, 'weekday': 1},
-                   {'month': 9, 'week': 1, 'weekday': 1}],
-               how='nth_weekday_of_month')
+    >>> tb.Marker(each='A', 
+                  at=[{'month': 5, 'week': -1, 'weekday': 1},
+                      {'month': 9, 'week': 1, 'weekday': 1}],
+                  how='nth_weekday_of_month')
                
     See more examples and explanations in "Making a Timeboard" section of 
     the documentation.
@@ -1472,22 +1520,27 @@ class Marker(object):
 class RememberingPattern(object):
     """Pattern keeping track of assigned labels across invocations.
     
+    An instance of this class is an iterator. 
+    
     Parameters
     ----------
     labels : iterable
         An iterable of workshift labels
         
+    Attributes
+    ----------
+    length : int
+        Number of elements in `labels`
+        
     Examples
     --------
-    >>> from timeboard import Marker, Organizer, RememberingPattern
-    
     Weeks are organized in a cycle of shifts `'A', 'B', 'C', 'D'` with 
     weekends being days off. The cycle of shifts resumes on Mondays keeping 
     the track of uninterrupted shifts' order:
     
-    >>> shifts_order = RememberingPattern(['A', 'B', 'C', 'D'])
-    >>> week = Marker(each='W', at=[{'days':0}, {'days':4}])
-    >>> shifts = Organizer(marker=week, structure=[shifts_order, [-1]])
+    >>> shifts_order = tb.RememberingPattern(['A', 'B', 'C', 'D'])
+    >>> week = tb.Marker(each='W', at=[{'days':0}, {'days':4}])
+    >>> shifts = tb.Organizer(marker=week, structure=[shifts_order, [-1]])
     
     See more examples and explanations in "Making a Timeboard" section of 
     the documentation.
@@ -1495,6 +1548,9 @@ class RememberingPattern(object):
     def __init__(self, labels):
         self._labels = labels
         self._label_generator = cycle(labels)
+
+    def __repr__(self):
+        return "RememberingPattern({!r})".format(self._labels)
 
     def __next__(self):
         return next(self._label_generator)
@@ -1504,6 +1560,9 @@ class RememberingPattern(object):
 
     def __iter__(self):
         return self
+
+    def __getitem__(self, i):
+        return self._labels[i]
 
     @property
     def length(self):
@@ -1515,8 +1574,4 @@ class RememberingPattern(object):
     def __bool__(self):
         return self.length > 0
 
-    def __getitem__(self, i):
-        return self._labels[i]
 
-    def __repr__(self):
-        return "RememberingPattern({!r})".format(self._labels)

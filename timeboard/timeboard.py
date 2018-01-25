@@ -86,11 +86,11 @@ class Timeboard(object):
     
     Raises
     ------
-    UnsupportedPeriodError (ValueError)
+    UnsupportedPeriodError
         If `base_unit_freq` is not supported or an Organizer attempted 
         to partition the reference frame  by a period which is not a multiple 
         of `base_unit_freq`.
-    VoidIntervalError (ValueError)
+    VoidIntervalError
         If an instantiation of a zero-duration timeboard is attempted.
     KeyError
         If `amendments` contain several references to the same workshift.
@@ -432,7 +432,8 @@ class Timeboard(object):
         -----
         An instance of Timeboard is callable. If it is called with a single 
         non-keyword argument, the call is passed to `get_workshift`. (And 
-        should the call  fail, `get_interval` is tried instead.) Call 
+        should the call  fail, :py:method:`.get_interval` is tried instead.) 
+        Call 
         `get_workshift` explicitly if you want to pass additional arguments.
 
         See also
@@ -464,30 +465,23 @@ class Timeboard(object):
                      clip_period=True, closed='11', schedule=None):
         """Create interval on the timeline.
         
-        A number of techniques to define the interval can be used. They are 
-        mutually exclusive. Accepted  parameters are listed below along with 
-        the techniques.
+        A number of techniques to define the interval can be used. A technique 
+        to be executed it identified by a combination of the parameters passed 
+        to he method. 
         
-            1. Create the interval from two points in time which refer to 
+        1. Create the interval from two points in time which refer to 
             the first and the last workshifts of the interval.
         
-            Parameters
-            ----------
             interval_ref : sequence of (Timestamp-like, Timestamp-like)
-                Each element is an object convertible to a timestamp, such as
-                a string, or a pandas Timestamp, or a datetime object.
             length : parameter must be omitted
             period : parameter must be omitted
             
-            2. Create an interval of a specific length starting from a 
+        2. Create an interval of a specific length starting from a 
             workshift referred to by a point in time .
         
-            Parameters
-            ----------
             interval_ref : Timestamp-like
-                An object convertible to a timestamp, such as
-                a string, or a pandas Timestamp, or a datetime object.
-            length : int (!=0)
+                A point in time within the first workshift.
+            length : int !=0
                 Number of workshifts in the interval. If `length` is positive, 
                 the interval extends into the future from the workshift 
                 referred to by `interval_ref`.  If `length` is negative, 
@@ -496,7 +490,7 @@ class Timeboard(object):
                 workshift. Zero `length` is not allowed.
             period : parameter must be omitted
         
-            3. Create the interval from a calendar period identified by 
+        3. Create the interval from a calendar period identified by 
             a point in time within the period and a calendar frequency 
             of the period (i.e. 'M' for month). 
         
@@ -517,42 +511,51 @@ class Timeboard(object):
             aligned with workshifts, the start or end time of the produced 
             interval will be different from that of the period.
         
-            Parameters
-            ----------
             interval_ref : Timestamp-like
-                An object convertible to a timestamp, such as
-                a string, or a pandas Timestamp, or a datetime object.
+                A point in time within the period.
             period : str
-                A pandas-compatible frequency defining a calendar period (i.e. 
+                pandas-compatible frequency defining the period (i.e. 
                 'M' for month).
             length : parameter must be omitted
             clip_period : bool, optional (default True)
-                If True, clip a calendar period at the bound(s) of the timeline.
             
-            4. Create the interval from a calendar period identified by a 
+        4. Create the interval from a calendar period identified by a 
             pandas Period object. 
             
             The same considerations are applied as for technique 3.
     
-            Parameters
-            ----------
             interval_ref : pandas.Period
             length : parameter must be omitted
             period : parameter must be omitted
             clip_period : bool, optional (default True)
-                If True, clip a calendar period at the bound(s) of the timeline.
             
-            5. Create the interval that spans the entire timeline.
+        5. Create the interval that spans the entire timeline.
             
-            Parameters
-            ----------
             interval_ref : parameter must be omitted
             length : parameter must be omitted
             period : parameter must be omitted
         
         
-        Parameters valid for any option
-        -------------------------------
+        Parameters
+        ----------
+        interval_ref : optional
+            The reference object(s) of the interval. Depending on the 
+            technique of interval definition this can be:
+            
+            - Timestamp-like (object convertible to a timestamp, such as 
+              a string, or a pandas Timestamp, or a datetime object
+            - sequence (Timestamp-like, Timestamp-like)
+            - pandas.Period
+            
+        length : int !=0, optional
+            Number of workshifts in the interval. 
+        period : str, optional
+            pandas-compatible calendar frequency. Parameters `period` and 
+            `length` are mutually exclusive.
+        clip_period : bool, optional (default True)
+            If True, clip a calendar period at the bound(s) of the timeline. 
+            Effective only when creating an interval with the use of `period`
+            parameter.
         closed : {'11', '01', '10', '00'}, optional (default '11')
             Interpret the interval definition as closed ('11'), half-open 
             ('01' or '10'), or open ('00'). The symbol of zero indicates 
@@ -566,6 +569,7 @@ class Timeboard(object):
         Returns
         -------
         Interval
+            Interval defined by parameters
         
         Raises
         ------
@@ -584,12 +588,12 @@ class Timeboard(object):
             
         Notes
         -----
-        - If you attempt to create an interval from two points in time or by 
+        1. If you attempt to create an interval from two points in time or by 
         length, and the interval would extend beyond the timeline, 
         OutOfBoundsError is always raised. `clip_period` is effective only if
         you are creating the interval from a calendar period.
         
-        - An instance of Timeboard is callable. If it is called with 
+        2. An instance of Timeboard is callable. If it is called with 
         arguments not suitable for `get_workshift` method, it will pass the 
         call to `get_interval`. To instantiate an interval this way, all 
         techniques may be used except technique 4. (An instance of Timeboard
@@ -599,11 +603,10 @@ class Timeboard(object):
         
         See also
         --------
-        timeboard.interval.Interval(timeboard, (location1: int, location2: 
-        int), schedule=None)
+        timeboard.interval.Interval
             The alternative approach to instantiating an interval. You will 
-            need to know the positions of the first (`location1`) and the last 
-            (`location2`) workshifts of the interval within the timeline.
+            need to know the positions of the first and the last 
+            workshifts of the interval within the timeline.
         
         Examples
         --------

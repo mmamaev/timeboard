@@ -131,8 +131,6 @@ class Interval(object):
     def schedule(self):
         return self._schedule
 
-    #def labels(self):
-    #    return self._tb._timeline.iloc[self._loc[0] : self._loc[1]+1]
 
     def _find_my_bounds_in_idx(self, idx):
         #TODO: optimize this search
@@ -381,6 +379,7 @@ class Interval(object):
          
         The interval contains 6 of 12 off duty workshifts of October 1, 
         and all 12 off duty workshifts of October 2. 
+        
         >>> ivl.count_periods('D', duty='off')
         1.5
         >>> 6/12 + 12/12
@@ -396,7 +395,6 @@ class Interval(object):
         extrapolation would be ambiguous.
         
         >>> ivl.count_periods('W')
-        ---------------------------------------------------------------------
         OutOfBoundsError                     Traceback (most recent call last)
         ...
         OutOfBoundsError: The 1st bound of interval or period referenced by 

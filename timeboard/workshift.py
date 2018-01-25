@@ -194,8 +194,7 @@ class Workshift(object):
             - 'on' : step on on-duty workshifts only
             - 'off' : step on off-duty workshifts only
             - 'same' : step only on workshifts with the same duty status as self
-            - 'alt' : step only on workshifts with the duty status other than 
-            that of self
+            - 'alt' : step only on workshifts with the duty status other than that of self
             - 'any' : step on all workshifts
         schedule : _Schedule, optional
             If `schedule` is not given, the workshift's schedule is used.
@@ -236,7 +235,7 @@ class Workshift(object):
         
         See also
         --------
-        + :  
+        __add__ :  
             ``ws + n`` is the same as ``ws.rollforward(n, duty='on')``
         rollback : 
             Return a workshift which is in the specified number of steps in
@@ -288,7 +287,9 @@ class Workshift(object):
         
         Note that ``ws0.rollforward(-1)`` and ``ws0 - 1`` produce different 
         results:
-        
+
+        >>> ws0.rollforward(-1)
+        Workshift(5) of 'D' at 2017-10-05
         >>> ws0 - 1
         Workshift(3) of 'D' at 2017-10-03
         
@@ -331,7 +332,7 @@ class Workshift(object):
             - 'off' : step on off-duty workshifts only
             - 'same' : step only on workshifts with the same duty status as self
             - 'alt' : step only on workshifts with the duty status other than 
-            that of self
+               that of self
             - 'any' : step on all workshifts
         schedule : _Schedule, optional
             If `schedule` is not given, the workshift's schedule is used.
@@ -372,7 +373,7 @@ class Workshift(object):
         
         See also
         --------
-        - :  
+        __sub__ :  
             ``ws - n`` is the same as ``ws.rollback(n, duty='on')``
         rollforward : 
             Return a workshift which is in the specified number of steps in  
@@ -425,6 +426,8 @@ class Workshift(object):
         Note that ``ws0.rollback(-1)`` and ``ws0 + 1`` produce different 
         results:
         
+        >>> ws0.rollback(-1)
+        Workshift(7) of 'D' at 2017-10-07
         >>> ws0 + 1
         Workshift(9) of 'D' at 2017-10-09
         
@@ -460,14 +463,14 @@ class Workshift(object):
         return Workshift(self._tb, idx[i - steps], schedule)
 
     def __add__(self, other):
-        """ws + n is the same as ws.rollforward(n, duty='on')"""
+        """``ws + n`` is the same as ``ws.rollforward(n, duty='on')``"""
         if isinstance(other, int):
             return self.rollforward(steps=other, duty='on')
         else:
             return NotImplemented
 
     def __sub__(self, other):
-        """ws - n is the same as ws.rollback(n, duty='on')"""
+        """``ws - n`` is the same as ``ws.rollback(n, duty='on')``"""
         if isinstance(other, int):
             return self.rollback(steps=other, duty='on')
         elif isinstance(other, type(self)):
