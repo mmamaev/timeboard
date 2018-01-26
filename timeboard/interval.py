@@ -8,7 +8,7 @@ from .core import _Frame, _check_groupby_freq
 class Interval(object):
     """A sequence of workshifts within the timeboard.
     
-    :py:obj:`Interval` is defined by two positions on the timeline which are
+    Interval is defined by two positions on the timeline which are
     the zero-based sequence numbers of the first and the last workshifts 
     of the interval. An interval can contain one or more workshifts; 
     empty interval is not allowed.
@@ -102,13 +102,13 @@ class Interval(object):
     8   2017-10-08 2017-10-08         1 2017-10-08    0.0    False
     9   2017-10-09 2017-10-09         1 2017-10-09    1.0     True        
     
-    Notes
-    -----
-    :py:meth:`.Timeboard.get_interval` provides convenient ways to 
-    instantiate an interval instead of calling Interval() constructor 
-    directly. Moreover, in many cases you can shortcut a 
-    :py:meth:`get_interval` call by calling the instance of 
-    :py:class:`.Timeboard` itself.
+    See also
+    --------
+    .Timeboard.get_interval :
+        provides convenient ways to instantiate an interval instead of 
+        calling `Interval()` constructor directly. Moreover, in many cases 
+        you can shortcut a :py:meth:`get_interval` call by calling 
+        the instance of :py:class:`Timeboard` itself.
     """
 
     def __init__(self, timeboard, bounds, schedule=None):
@@ -257,7 +257,7 @@ class Interval(object):
 
         Returns
         -------
-        Workshift
+        :py:class:`.Workshift`
 
         Raises
         ------
@@ -314,7 +314,7 @@ class Interval(object):
         
         See also
         --------
-        nth
+        .nth :
             Return n-th workshift with the specified duty in the interval.
         """
         return self.nth(0, duty, schedule)
@@ -337,11 +337,10 @@ class Interval(object):
 
         See also
         --------
-        nth
+        .nth :
             Return n-th workshift with the specified duty in the interval.
         """
         return self.nth(-1, duty, schedule)
-
 
     def count(self, duty='on', schedule=None):
         """Return the count of interval's workshifts with the specified duty.
@@ -399,8 +398,8 @@ class Interval(object):
         Parameters
         ----------
         period : str
-            pandas-compatible frequency of calendar periods to be counted 
-            (i.e. 'M' for month). Pandas-native business periods (i.e. 'BM')  
+            `pandas`-compatible frequency of calendar periods to be counted 
+            (i.e. ``'M'`` for month). `pandas`-native business periods (i.e. 'BM')  
             as well as  periods with multipliers (i.e. '3M') are not applicable.
         duty : {``'on'``, ``'off'``, ``'any'``} , optional (default ``'on'``)
             Specify the duty of workshifts to be accounted for. 

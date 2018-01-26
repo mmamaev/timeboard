@@ -7,9 +7,8 @@ from numpy import searchsorted
 class Workshift(object):
     """A period of time during which a business agent is either on or off duty. 
     
-    Timeboard's timeline is a sequence of workshifts. A workshift 
-    consists of at least one base unit and may span a number of consecutive 
-    base units. 
+    A workshift consists of at least one base unit and may span 
+    a number of consecutive base units. 
     
     Each workshift has a label. The label is interpreted by a given schedule 
     to determine whether the workshift is on duty or off duty under this 
@@ -18,7 +17,7 @@ class Workshift(object):
     
     Parameters
     ----------
-    timeboard : Timeboard
+    timeboard : :py:class:`.Timeboard`
     location : int >=0
         Position of the workshift on the timeline of the timeboard (zero-based).
     schedule : _Schedule, optional
@@ -36,7 +35,7 @@ class Workshift(object):
     end_time : Timestamp
         When the workshift ends.
     duration : int >0
-        Number of base unit making up the workshift.
+        Number of base units in the workshift.
     label
         An application-specific label associated with the workshift. 
         Schedule's `selector` interprets the label to identify the duty status
@@ -45,18 +44,27 @@ class Workshift(object):
         Schedule used by workshift's methods unless explicitly redefined in 
         the method call. Use `name` attribute of `schedule` to review its 
         identity.
+
+    See also
+    --------
+    .Timeboard.get_workshift :
+        provides a convenient way 
+        to instantiate a workshift from a point in time instead of calling 
+        `Workshift()` constructor directly.
     
     Examples
     --------
     >>> clnd = tb.Timeboard('D', '30 Sep 2017', '15 Oct 2017', layout=[0,1])
-    >>> tb.workshift.Workshift(clnd, 1)
+    >>> ws = tb.workshift.Workshift(clnd, 1)
+    >>> ws
     Workshift(1) of 'D' at 2017-10-01
     
-    Notes
-    -----
-    Calling  Timeboard's instance or its `get_workshift` method provides a
-    convenient way to instantiate a workshift from a point in time instead of 
-    calling Workshift() constructor directly.
+    >>> print(ws)
+    Workshift(1) of 'D' at 2017-10-01
+    .
+         workshift      start  duration        end  label  on_duty
+    loc                                                           
+    1   2017-10-01 2017-10-01         1 2017-10-01    1.0     True
     """
 
     def __init__(self, timeboard, location, schedule=None):
@@ -135,7 +143,7 @@ class Workshift(object):
 
     def is_on_duty(self, schedule=None):
         """True if the workshift is on duty under a specific schedule.
-        
+
         Parameters
         ----------
         schedule : _Schedule, optional
@@ -183,19 +191,19 @@ class Workshift(object):
 
     def rollforward(self, steps=0, duty='on', schedule=None):
         """
-        Return a workshift which is `steps` workshifts away in the future. 
+        Find a workshift which is in specified number of steps in the future. 
         
         `duty` parameter selects which workshifts are counted as steps.
         
         Parameters
         ----------
         steps : int, optional (default 0)
-        duty : {'on', 'off', 'same', 'alt', 'any'} , optional (default 'on')
-            - 'on' : step on on-duty workshifts only
-            - 'off' : step on off-duty workshifts only
-            - 'same' : step only on workshifts with the same duty status as self
-            - 'alt' : step only on workshifts with the duty status other than that of self
-            - 'any' : step on all workshifts
+        duty : {``'on'``, ``'off'``, ``'same'``, ``'alt'``, ``'any'``} , optional
+            - ``'on'`` : (default) step on on-duty workshifts only
+            - ``'off'`` : step on off-duty workshifts only
+            - ``'same'`` : step only on workshifts with the same duty status as self
+            - ``'alt'`` : step only on workshifts with the duty status other than that of self
+            - ``'any'`` : step on all workshifts
         schedule : _Schedule, optional
             If `schedule` is not given, the workshift's schedule is used.
     
@@ -237,7 +245,7 @@ class Workshift(object):
         --------
         __add__ :  
             ``ws + n`` is the same as ``ws.rollforward(n, duty='on')``
-        rollback : 
+        .rollback : 
             Return a workshift which is in the specified number of steps in
             the past. Methods `rollback` and `rollforward` differ in the 
             definition of the zero step workshift and the default direction 
@@ -320,27 +328,28 @@ class Workshift(object):
 
     def rollback(self, steps=0, duty='on', schedule=None):
         """
-        Return a workshift which is `steps` workshifts away in the past. 
-        
+        Find a workshift which is in specified number of steps in the past. 
+
         `duty` parameter selects which workshifts are counted as steps.
 
         Parameters
         ----------
         steps : int, optional (default 0)
-        duty : {'on', 'off', 'same', 'alt', 'any'} , optional (default 'on')
-            - 'on' : step on on-duty workshifts only
-            - 'off' : step on off-duty workshifts only
-            - 'same' : step only on workshifts with the same duty status as self
-            - 'alt' : step only on workshifts with the duty status other than 
+        duty : {``'on'``, ``'off'``, ``'same'``, ``'alt'``, ``'any'``} , optional
+            - ``'on'`` : (default) step on on-duty workshifts only
+            - ``'off'`` : step on off-duty workshifts only
+            - ``'same'`` : step only on workshifts with the same duty status 
+               as self
+            - ``'alt'`` : step only on workshifts with the duty status other than 
                that of self
-            - 'any' : step on all workshifts
+            - ``'any'`` : step on all workshifts
         schedule : _Schedule, optional
             If `schedule` is not given, the workshift's schedule is used.
-    
+
         Returns
         -------
         Workshift
-        
+
         Raises
         ------
         OutOfBoundsError
@@ -356,7 +365,7 @@ class Workshift(object):
         the zero step workshift is self, otherwise it is the first workshift 
         toward the past which conforms to `duty` parameter. If `steps`=0,
         the method terminates here and returns the zero step workshift.
-         
+        
         If `steps` is positive, the methods counts workshifts toward the past
         stepping only on workshifts with the specified duty, and returns the 
         last workshift on which it has stepped. For example, with `steps`=1 the 
@@ -370,17 +379,17 @@ class Workshift(object):
         
         Note that the zero step workshift is sought toward the past 
         even if `steps` is negative.
-        
+
         See also
         --------
         __sub__ :  
             ``ws - n`` is the same as ``ws.rollback(n, duty='on')``
-        rollforward : 
+        .rollforward : 
             Return a workshift which is in the specified number of steps in  
             the future. Methods `rollback` and `rollforward` differ in the 
             definition of the zero step workshift and the default direction 
             of stepping.
-            
+
         Examples
         --------
         >>> clnd = tb.Timeboard('D', '30 Sep 2017', '15 Oct 2017', layout=[0,1])

@@ -7,7 +7,6 @@ from .when import (from_start_of_each,
                    from_easter_western, from_easter_orthodox)
 import pandas as pd
 import numpy as np
-from numpy import nonzero, arange
 from itertools import cycle, dropwhile
 from collections import Iterable, OrderedDict
 import re
@@ -99,9 +98,9 @@ def _check_groupby_freq(base_unit_freq, group_by_freq):
     Parameters
     ----------
     base_unit_freq : str
-        pandas-compatible period frequency for smaller periods.
+        `pandas`-compatible period frequency for smaller periods.
     group_by_freq : str
-        pandas-compatible period frequency for periods used as groups of the 
+        `pandas`-compatible period frequency for periods used as groups of the 
         smaller periods.
     
     Returns
@@ -169,16 +168,16 @@ class _Frame(pd.PeriodIndex):
         Pandas-compatible calendar frequency (i.e. 'D' for day or '8H' for 
         8 hours regarded as one unit) defining the constituent period of 
         the frame. Pandas-native business periods (i.e. 'BM') are not supported. 
-    start : Timestamp-like
-        A pandas Timestamp, a datetime object, or a string convertible to 
-        Timestamp - a point in time defining the first element of the frame 
+    start : `Timestamp`-like
+        `pandas.Timestamp`, a `datetime` object, or a string convertible to 
+        `Timestamp` - a point in time defining the first element of the frame 
         (it may be found anywhere with this element).
-    end : Timestamp-like
-        Same as start but for the last element of the frame.
+    end : `Timestamp`-like
+        Same as `start` but for the last element of the frame.
     
     Raises
     ------
-    VoidIntervalError (ValueError)
+    VoidIntervalError
         If the time of `start` precedes the time of `end`.
     
     Attributes
@@ -281,7 +280,7 @@ class _Frame(pd.PeriodIndex):
         Parameters
         ----------
         span : _Span
-        points_in_time : Iterable of Timestamp-like 
+        points_in_time : Iterable of `Timestamp`-like 
             List of points in time referring to frame's elements that will 
             become the first elements of spans.
             
@@ -338,7 +337,7 @@ class _Frame(pd.PeriodIndex):
         Parameters
         ----------
         span : _Span
-        points_in_time : Iterable of Timestamp-like 
+        points_in_time : Iterable of `Timestamp`-like 
             List of points in time referring to frame's elements that will 
             become the first elements of spans.
             
@@ -488,7 +487,7 @@ class _Frame(pd.PeriodIndex):
         Parameters
         ----------
         span : _Span
-        marks: Iterable of Timestamp-like 
+        marks: Iterable of `Timestamp`-like 
             List of points in time referring to base units that will 
             become the first elements of subspans. A point in time may fall 
             anywhere within the base unit.
@@ -581,8 +580,8 @@ class _Timeline(object):
     """
     def __init__(self, frame, organizer=None, workshift_ref=None, data=None):
         self._frame = frame
-        self._frameband = pd.Series(index=frame, data=arange(len(frame)))
-        self._wsband = pd.Series(index=arange(len(frame)), data=data)
+        self._frameband = pd.Series(index=frame, data=np.arange(len(frame)))
+        self._wsband = pd.Series(index=np.arange(len(frame)), data=data)
         if organizer is not None:
             self._organize(organizer)
         if workshift_ref is None:
@@ -691,7 +690,7 @@ class _Timeline(object):
         
         Parameters
         ----------
-        point_in_time : Timestamp-like
+        point_in_time : `Timestamp`-like
             
         Returns
         -------
@@ -720,7 +719,7 @@ class _Timeline(object):
         
         Parameters
         ----------
-        point_in_time : Timestamp-like
+        point_in_time : `Timestamp`-like
 
         Returns
         -------
@@ -757,7 +756,7 @@ class _Timeline(object):
 
         Parameters
         ----------
-        point_in_time : Timestamp-like
+        point_in_time : `Timestamp`-like
 
         Returns
         -------
@@ -817,7 +816,7 @@ class _Timeline(object):
         Parameters
         ----------
         amendments : dictionary-like 
-            The keys of `amendments` are Timestamp-like points in time 
+            The keys of `amendments` are `Timestamp`-like points in time 
             used to identify workshifts (the point in time may be located 
             anywhere within the workshift). The values of `amendments` are 
             labels to be set for the corresponding workshifts. 
@@ -955,7 +954,7 @@ class _Timeline(object):
             else:
                 # make compound workshift from the span, use layout as label
                 self._wsband.loc[span.first] = layout
-                self._wsband.drop(index=arange(span.first+1,
+                self._wsband.drop(index=np.arange(span.first+1,
                                                span.last+1), inplace=True)
                 self._frameband.iloc[span.first:
                                      span.last+1] = span.first
@@ -965,18 +964,22 @@ class _Timeline(object):
         #                     timer1-timer0, timer2-timer1, timer3-timer2)
 
     def to_dataframe(self, first_ws=None, last_ws=None):
-        """Convert (a part of) timeline into pandas dataframe.
+        """Convert (a part of) timeline into `pandas.Dataframe`.
         
         Each workshift is represented as a row. The dataframe has the 
         following columns:
         
-        'loc' : zero-based position of the workshift on the timeline
-        'workshift' : the reference time of the workshift
-        'start' : the start time of the workshift
-        'end' : the start time of the workshift
-        'duration' : the number of base units in the workshift
-        'label' : workshift's label
-        
+        ================ =====================================================
+        Column           Explanation
+        ================ =====================================================
+        'loc'            zero-based position of the workshift on the timeline
+        'workshift'      the reference time of the workshift
+        'start'          the start time of the workshift
+        'end'            the start time of the workshift
+        'duration'       the number of base units in the workshift
+        'label'          workshift's label
+        ================ =====================================================                 
+
         Parameters
         ----------
         first_ws : int >=0, optional
@@ -1026,7 +1029,7 @@ class _Timeline(object):
 class _Schedule(object):
     """Duty schedule of workshifts.
 
-    For a given timeline, define the duty status of 
+    For a given timeline, a schedule defines the duty status of 
     the workshifts by applying a selector function to workshift's labels. 
 
     Parameters
@@ -1051,11 +1054,24 @@ class _Schedule(object):
         Ascending list of schedule's off-duty workshift positions on the 
         timeline.
 
+    Notes
+    -----
+    :py:meth:`._Schedule` constructor is not supposed to be called directly.
+
+    Default schedule for a timeboard is generated automatically. To add another
+    schedule call :py:meth:`.Timeboard.add_schedule`. To remove a schedule 
+    from the timeboard call :py:meth:`.Timeboard.drop_schedule`.
+
+    Users identify schedules by name. To find out the name of a schedule 
+    inspect attribute :py:attr:`._Schedule.name`. To obtain a schedule by 
+    name use :py:attr:`.Timeboard.schedules["name"]`.
+    
     Examples
     --------
     If a timeline consists of four workshifts, and the schedule's selector 
     defines workshifts 0 and 2 as on duty, and the rest as off duty, 
     the schedules's attributes are  as follows::
+    
         index = np.array([0, 1, 2, 3])
         on_duty_index = np.array([0, 2])
         off_duty_index = np.array([1, 3])
@@ -1067,8 +1083,8 @@ class _Schedule(object):
         self._selector = selector
 
         on_duty_bool_index = self._timeline.labels.apply(self._selector)
-        self._on_duty_index = nonzero(on_duty_bool_index)[0]
-        self._off_duty_index = nonzero(~on_duty_bool_index)[0]
+        self._on_duty_index = np.nonzero(on_duty_bool_index)[0]
+        self._off_duty_index = np.nonzero(~on_duty_bool_index)[0]
 
     @property
     def name(self):
@@ -1084,7 +1100,7 @@ class _Schedule(object):
 
     @property
     def index(self):
-        return arange(len(self._timeline))
+        return np.arange(len(self._timeline))
 
     def label(self, n):
         return self._timeline[n]
@@ -1107,7 +1123,7 @@ class Organizer(object):
     
     Spans begin on base units referred to by points in 
     time called marks. The locations of the marks are defined in 
-    :py:class:`Organizer` by either `marker` or `marks` parameter. 
+    `Organizer` by either `marker` or `marks` parameter. 
     
     Given `marker` parameter,  marks are computed according to 
     the rules set by a :py:class:`.Marker` passed as the value of 
@@ -1118,18 +1134,18 @@ class Organizer(object):
     
     One and only one of `marker` or `marks` parameters must be supplied.
 
-    The second parameter of :py:class:`Organizer`, `structure`,  tells how 
+    The second parameter of `Organizer`, `structure`,  tells how 
     to organize the spans. `structure` is an iterable and its elements
     are mapped onto the spans: the first element of `structure` is applied to
     the first span, the second element - to the second span, and so on. 
     
     Each element of `structure` must be one of the following:
     
-    - another :py:class:`Organizer`,
+    - another `Organizer`,
     - a pattern (an iterable of workshift labels), 
     - a single label.
     
-    If an element of `structure` is an :py:class:`Organizer`, it is used 
+    If an element of `structure` is an `Organizer`, it is used 
     to recursively partition this span into sub-spans. 
     
     Pattern is an iterable of workshift labels, such as an explicit list 
@@ -1156,16 +1172,16 @@ class Organizer(object):
     Parameters
     ----------
     marker : :py:class:`.Marker` or str
-        If a string is given, it must be  a pandas-compatible calendar 
+        If a string is given, it must be a `pandas`-compatible calendar 
         frequency (accepts same kind of values as `base_unit_freq` of 
         timeboard). Under the hood ``marker=freq`` is silently converted  
         to ``marker=Marker(each=freq)``.
-    marks : Iterable of Timestamp-like
+    marks : Iterable of `Timestamp`-like
         Parameters `marker` and `marks` are mutually exclusive.
     structure : Iterable
         An element of `structure` may be one of the following:
         
-            - an :py:class:`Organizer`,
+            - an `Organizer`,
             - a pattern (iterable or iteraror of labels), 
             - a single label.
         
@@ -1220,7 +1236,8 @@ class Organizer(object):
                            at=[{'hours':2}, {'hours':8}, {'hours':18}])
     >>> shifts = tb.Organizer(marker=day_parts, structure=['A', 'B', 'C', 'D'])
 
-    See more examples and explanations in "Making a Timeboard" section of 
+    See more examples and explanations in 
+    :doc:`Making a Timeboard <making_a_timeboard>` section of 
     the documentation.
     """
     def __init__(self, marker=None, marks=None, structure=None):
@@ -1334,17 +1351,19 @@ class Marker(object):
     """Specification of markup of a timeboard's frame.
     
     Markup is an ordered sequence of marks placed at calculated points in time 
-    within some span being a part of a frame or an entire frame. Locations 
-    of marks are calculated as follows. 
+    within some span being a part of a frame or an entire frame. Marks are 
+    produced by an algorithm defined by attributes of a Marker. 
     
-    In each calendar period of frequency `each` located partly or entirely within 
-    the span find points in time defined by `at` parameter which is a list of 
-    dictionaries. Each dictionary in 
-    `at` list is a collection of keyword arguments; it defines a point in 
-    time. Hence, the number of points sought in each `each` period is equal 
-    to the length of `at` list. 
+    In each calendar period of frequency `each` located partly or entirely 
+    within the span the algorithm finds points in time defined by `at` 
+    parameter which is a list of dictionaries. 
     
-    The interpretation of `at` keywords is defined by parameter `how`. 
+    Each dictionary in `at` list is a collection of keyword arguments; 
+    it defines a point in time. Hence, the number of points sought in each 
+    `each` period is equal to the length of `at` list. 
+    
+    The interpretation of `at` keywords by the algorithm is defined 
+    by parameter `how`. 
     
     ====================== ====================================================
     Value of `how`         Interpretation of keyword arguments in `at`
@@ -1353,24 +1372,39 @@ class Marker(object):
                            of `each` period. Acceptable keyword arguments
                            are ``'seconds'``, ``'minutes'``, ``'hours'``, 
                            ``'days'``, ``'weeks'``, ``'months'``, ``'years'``. 
-                           Offsets nominated in different time units are added up.
+                           Offsets nominated in different time units are added 
+                           up.
                            
                            Example: ``at=[{'days':0}, {'days':1, 'hours':2}]``
+                           (the first mark is at the start of the period, 
+                           the second is in 1 day and 2 hours from the start of
+                           the period).
                            
-    'from_easter_western'  Keyword arguments define an offset from the day of Western 
-                           Easter. Acceptable arguments are the same as above.
+    'from_easter_western'  Keyword arguments define an offset from the day of 
+                           Western Easter. Acceptable arguments are the same 
+                           as above.
                            
-    'from_easter_orthodox' Keyword arguments define an offset from the day of Orthodox 
-                           Easter. Acceptable arguments are the same as above.
+    'from_easter_orthodox' Keyword arguments define an offset from the day of 
+                           Orthodox Easter. Acceptable arguments are the same 
+                           as above.
     
-    'nth_weekday_of_month' Keywords arguments refer to N-th weekday of M-th month 
-                           from the start of `each` period. Acceptable keywords
-                           are 
+    'nth_weekday_of_month' Keywords arguments refer to N-th weekday of 
+                           M-th month from the start of `each` period. 
+                           Acceptable keywords are: 
                            
-                           - ``'month'`` : 1..12 (1 is for the first month such as January for annual periods), 
-                           - ``'weekday'``: 1..7 (1 is for Monday),
-                           - ``'week'``: -5..-1,1..5 (-1 is for the last, 1 is for the first occurence of the weekday in the month)
-                           - ``'shift'`` : int, optional, default 0 (an offset in days from the weekday found)
+                           - ``'month'`` : 1..12 
+                              1 is for the first month (such as January 
+                              for annual periods). 
+                              
+                           - ``'weekday'`` : 1..7 
+                              1 is for Monday, 7 is for Sunday.
+                           
+                           - ``'week'`` : -5..-1,1..5 
+                              -1 is for the last and 1 is for the first 
+                              occurence of the weekday in the month.
+                              
+                           - ``'shift'`` : int, optional, default 0 
+                              An offset in days from the weekday found.
     
                            Example: ``at=[{'month':5, 'weekday':7, 'week':-1}]``
                            (the last Sunday of the 5th month)
@@ -1384,18 +1418,17 @@ class Marker(object):
     If `at` parameter is not provided or `at` list is empty, the marks are 
     set on the start times of calendar periods specified by `each`.
     
-    :py:class:`.Organizer` uses markup defined by :py:class:`Marker` 
-    to partition the frame into spans. 
-    The first span always starts on the first base unit 
+    `Organizer` uses markup defined by `Marker` to partition the frame 
+    into spans. The first span always starts on the first base unit 
     of the frame. The second span starts on the base unit which contains 
     the first mark. The last span starts on the base unit containing 
     the last mark and ends on the last base unit of the span. If no marks 
-    have been set, only one span is created which contains the whole span.
+    have been set, only one span is created which contains the entire frame.
     
     Parameters
     ----------
     each : str
-        pandas-compatible calendar frequency; accepts same values as 
+        `pandas`-compatible calendar frequency; accepts same values as 
         `base_unit_freq` of timeboard.
     at : list of dict, optional
         Each dictionary is a collection of keyword arguments interpreted 
@@ -1403,14 +1436,21 @@ class Marker(object):
     how : str or function, optional
         Acceptable string values:
         
-        - ``'from_start_of_each'`` (default) : keyword arguments in `at` define an 
-          offset (number of hours, days, etc.) from the start of `each` period.
-        - ``'from_easter_western'`` : keyword arguments in `at` define an offset 
-          from the Western Easter in `each` period.
-        - ``'from_easter_orthodox'`` :  keyword arguments in `at` define an offset 
-          from the Orthodox Easter in `each` period.
-        - ``'nth_weekday_of_month'`` : keyword arguments in `at` define N-th weekday 
-          of M-th month from the start of `each` period.
+        - ``'from_start_of_each'``  : (default)
+           Keyword arguments in `at` define an offset (number of hours, 
+           days, etc.) from the start of `each` period.
+           
+        - ``'from_easter_western'`` : 
+           Keyword arguments in `at` define an offset from the Western Easter 
+           in `each` period.
+           
+        - ``'from_easter_orthodox'`` :  
+           Keyword arguments in `at` define an offset from the Orthodox Easter 
+           in `each` period.
+           
+        - ``'nth_weekday_of_month'`` : 
+           Keyword arguments in `at` define 
+           N-th weekday of M-th month from the start of `each` period.
     
     Notes
     -----
@@ -1478,7 +1518,8 @@ class Marker(object):
                       {'month': 9, 'week': 1, 'weekday': 1}],
                   how='nth_weekday_of_month')
                
-    See more examples and explanations in "Making a Timeboard" section of 
+    See more examples and explanations in 
+    :doc:`Making a Timeboard <making_a_timeboard>` section of 
     the documentation.
     """
 
@@ -1542,7 +1583,8 @@ class RememberingPattern(object):
     >>> week = tb.Marker(each='W', at=[{'days':0}, {'days':4}])
     >>> shifts = tb.Organizer(marker=week, structure=[shifts_order, [-1]])
     
-    See more examples and explanations in "Making a Timeboard" section of 
+    See more examples and explanations in 
+    :doc:`Making a Timeboard <making_a_timeboard>` section of 
     the documentation.
     """
     def __init__(self, labels):
