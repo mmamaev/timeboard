@@ -451,7 +451,7 @@ class Timeboard(object):
 
         Examples
         --------
-        >>> clnd = Timeboard('D', '30 Sep 2017', '15 Oct 2017', layout=[0,1])
+        >>> clnd = tb.Timeboard('D', '30 Sep 2017', '15 Oct 2017', layout=[0,1])
         >>> clnd.get_workshift('01 Oct 2017')
         Workshift(1) of 'D' at 2017-10-01
         
@@ -628,7 +628,7 @@ class Timeboard(object):
         --------
         Technique 1 (from two point in time):
         
-        >>> clnd = Timeboard('D', '30 Sep 2017', '15 Oct 2017', layout=[0,1])
+        >>> clnd = tb.Timeboard('D', '30 Sep 2017', '15 Oct 2017', layout=[0,1])
         >>> clnd.get_interval(('02 Oct 2017', '08 Oct 2017'))
         Interval(2, 8): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]
         
@@ -807,10 +807,46 @@ class Timeboard(object):
                 _Location(result1, locs[1].where)]
 
     def add_schedule(self, name, selector):
-        """Add schedule to the timeboard - NOT IMPLEMENTED"""
-        raise NotImplementedError
+        """Add schedule to the timeboard.
+        
+        The schedule is built, added to `schedules` attribute of 
+        the timeboard and returned by this method. You may ignore the return
+        value and later obtain the schedule by its name from 
+        :py:attr:`.Timeboard.schedules`.
+        
+        Parameters
+        ----------
+        name : str
+            A descriptive name for the schedule.
+        selector : function
+            Function taking one argument (workshift's label) and returning True 
+            if the workshift with this label is on duty, and False if it is off 
+            duty.
+            
+        Returns
+        -------
+        _Schedule
+        """
+        name = str(name)
+        if name in self.schedules:
+            raise KeyError('Attempted to add schedule "{}" - '
+                           'name already taken.'.format(name))
+        schedule = _Schedule(self._timeline, name, selector)
+        self.schedules[name] = schedule
+        return schedule
 
     def drop_schedule(self, schedule):
-        """Remove schedule from the timeboard - NOT IMPLEMENTED"""
-        raise NotImplementedError
+        """Remove schedule from the timeboard.
+        
+        Parameters
+        ----------
+        schedule : _Schedule
+            Schedule to be removed
+            
+        Returns
+        -------
+        None
+        """
+        del self.schedules[schedule.name]
+
 

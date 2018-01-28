@@ -201,7 +201,7 @@ class TestIntervalCompoundConstructor:
                                     clip_period=False)
 
 
-class TestIntervalCompoundCountPeriodsWithLocsNotStriding(object):
+class TestIntervalCompoundCountPeriodsWithLocsNotStraddling(object):
 
     def test_ivl_compound_count_periods_one_float_right_duty_on(self):
         clnd = tb_10_8_6_hours()
@@ -285,9 +285,9 @@ class TestIntervalCompoundCountPeriodsWithLocsNotStriding(object):
         assert ivl.count_periods('D', duty='any') == 2.0 + 2.0/3.0
 
 
-class TestIntervalCompoundCountPeriodsWithLocsStriding(object):
+class TestIntervalCompoundCountPeriodsWithLocsStraddling(object):
 
-    def test_ivl_compound_count_periods_stride_float_left_duty_on(self):
+    def test_ivl_compound_count_periods_straddle_float_left_duty_on(self):
         clnd = tb_10_8_6_hours()
         ivl = Interval(clnd, (6, 8))
         assert ivl.count_periods('D') == 1.0 / 2.0 + 1.0
@@ -295,7 +295,7 @@ class TestIntervalCompoundCountPeriodsWithLocsStriding(object):
         ivl = Interval(clnd, (6, 8))
         assert ivl.count_periods('D') == 1.0
 
-    def test_ivl_compound_count_periods_stride_float_left_duty_off(self):
+    def test_ivl_compound_count_periods_straddle_float_left_duty_off(self):
         clnd = tb_10_8_6_hours()
         ivl = Interval(clnd, (9, 11))
         assert ivl.count_periods('D', duty='off') == 1.0 / 2.0 + 1.0
@@ -303,7 +303,7 @@ class TestIntervalCompoundCountPeriodsWithLocsStriding(object):
         ivl = Interval(clnd, (9, 11))
         assert ivl.count_periods('D', duty='off') == 1.0
 
-    def test_ivl_compound_count_periods_stride_float_right_duty_on(self):
+    def test_ivl_compound_count_periods_straddle_float_right_duty_on(self):
         clnd = tb_10_8_6_hours()
         ivl = Interval(clnd, (4, 6))
         assert ivl.count_periods('D') == 1.0
@@ -311,7 +311,7 @@ class TestIntervalCompoundCountPeriodsWithLocsStriding(object):
         ivl = Interval(clnd, (4, 6))
         assert ivl.count_periods('D') == 1.0 + 1.0 / 2.0
 
-    def test_ivl_compound_count_periods_stride_float_right_duty_off(self):
+    def test_ivl_compound_count_periods_straddle_float_right_duty_off(self):
         clnd = tb_10_8_6_hours()
         ivl = Interval(clnd, (7, 9))
         assert ivl.count_periods('D', duty='off') == 1.0
@@ -319,7 +319,7 @@ class TestIntervalCompoundCountPeriodsWithLocsStriding(object):
         ivl = Interval(clnd, (7, 9))
         assert ivl.count_periods('D', duty='off') == 1.0 + 1.0 / 2.0
 
-    def test_ivl_compound_count_periods_many_stride_both_ends_duty_on(self):
+    def test_ivl_compound_count_periods_many_straddle_both_ends_duty_on(self):
         clnd = tb_10_8_6_hours()
         ivl = Interval(clnd, (3, 12))
         assert ivl.count_periods('D') == 3.0
@@ -327,7 +327,7 @@ class TestIntervalCompoundCountPeriodsWithLocsStriding(object):
         ivl = Interval(clnd, (3, 12))
         assert ivl.count_periods('D') == 3.0 + 1.0 / 2.0
 
-    def test_ivl_compound_count_periods_many_stride_both_ends_duty_off(self):
+    def test_ivl_compound_count_periods_many_straddle_both_ends_duty_off(self):
         clnd = tb_10_8_6_hours()
         ivl = Interval(clnd, (3, 12))
         assert ivl.count_periods('D', duty='off') == 1.0 / 2.0 + 3.0
@@ -335,7 +335,7 @@ class TestIntervalCompoundCountPeriodsWithLocsStriding(object):
         ivl = Interval(clnd, (3, 12))
         assert ivl.count_periods('D', duty='off') == 3.0
 
-    def test_ivl_compound_count_periods_many_stride_both_ends_duty_any(self):
+    def test_ivl_compound_count_periods_many_straddle_both_ends_duty_any(self):
         clnd = tb_10_8_6_hours()
         ivl = Interval(clnd, (3, 12))
         assert ivl.count_periods('D', duty='any') == 1.0 / 4.0 + 3.0

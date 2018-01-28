@@ -3,7 +3,7 @@ from .exceptions import (OutOfBoundsError,
                          VoidIntervalError,
                          UnsupportedPeriodError)
 from .workshift import Workshift
-from .core import _Frame, _check_groupby_freq
+from .core import _Frame, _check_groupby_freq, _Schedule
 
 class Interval(object):
     """A sequence of workshifts within the timeboard.
@@ -147,6 +147,10 @@ class Interval(object):
             self._schedule = timeboard.default_schedule
         else:
             self._schedule = schedule
+        if not isinstance(self._schedule, _Schedule):
+            raise TypeError('Wrong type of schedule. Expected _Schedule,'
+                            ' received {}'.format(type(schedule)))
+
 
 
     def __repr__(self):

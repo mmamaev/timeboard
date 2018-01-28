@@ -1401,7 +1401,8 @@ class Marker(object):
                            
                            - ``'week'`` : -5..-1,1..5 
                               -1 is for the last and 1 is for the first 
-                              occurence of the weekday in the month.
+                              occurence of the weekday in the month. Zero is not
+                              allowed.
                               
                            - ``'shift'`` : int, optional, default 0 
                               An offset in days from the weekday found.

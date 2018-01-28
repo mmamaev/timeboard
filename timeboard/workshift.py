@@ -1,6 +1,6 @@
 from __future__ import division
 from .exceptions import OutOfBoundsError
-from .core import get_period
+from .core import get_period, _Schedule
 from numpy import searchsorted
 
 
@@ -70,6 +70,9 @@ class Workshift(object):
     def __init__(self, timeboard, location, schedule=None):
         if schedule is None:
             schedule = timeboard.default_schedule
+        if not isinstance(schedule, _Schedule):
+            raise TypeError('Wrong type of schedule. Expected _Schedule,'
+                            ' received {}'.format(type(schedule)))
         try:
             self._label = schedule.label(location)
         except TypeError:
@@ -152,6 +155,7 @@ class Workshift(object):
         Returns
         -------
         bool
+        
         """
         if schedule is None:
             schedule = self.schedule
@@ -168,6 +172,7 @@ class Workshift(object):
         Returns
         -------
         bool
+        
         """
 
         if schedule is None:

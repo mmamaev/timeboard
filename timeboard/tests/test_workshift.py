@@ -12,9 +12,9 @@ import pandas as pd
 def tb_12_days():
     return tb.Timeboard(base_unit_freq='D',
                         start='31 Dec 2016', end='12 Jan 2017',
-                        layout=[0, 1, 0])
+                        layout=[0, 1, 0, 0, 2, 0])
     # 31  01  02  03  04  05  06  07  08  09  10  11  12
-    #  0   1   0   0   1   0   0   1   0   0   1   0   0
+    #  0   1   0   0   2   0   0   1   0   0   2   0   0
 
 class TestWorkshiftConstructor(object):
 
@@ -45,7 +45,7 @@ class TestWorkshiftConstructor(object):
         assert ws.start_time == datetime.datetime(2017, 1, 4, 0, 0, 0)
         assert ws.end_time > datetime.datetime(2017, 1, 4, 23, 59, 59)
         assert ws.end_time < datetime.datetime(2017, 1, 5, 0, 0, 0)
-        assert ws.label == 1
+        assert ws.label == 2
         assert ws.schedule == clnd.default_schedule
         assert ws.is_on_duty()
         assert not ws.is_off_duty()
@@ -61,7 +61,7 @@ class TestWorkshiftConstructor(object):
         assert ws.start_time == datetime.datetime(2017, 1, 4, 0, 0, 0)
         assert ws.end_time > datetime.datetime(2017, 1, 4, 23, 59, 59)
         assert ws.end_time < datetime.datetime(2017, 1, 5, 0, 0, 0)
-        assert ws.label == 1
+        assert ws.label == 2
         assert ws.schedule == clnd.default_schedule
         assert ws.is_on_duty()
         assert not ws.is_off_duty()
@@ -77,7 +77,7 @@ class TestWorkshiftConstructor(object):
         assert ws.start_time == datetime.datetime(2017, 1, 4, 0, 0, 0)
         assert ws.end_time > datetime.datetime(2017, 1, 4, 23, 59, 59)
         assert ws.end_time < datetime.datetime(2017, 1, 5, 0, 0, 0)
-        assert ws.label == 1
+        assert ws.label == 2
         assert ws.schedule == clnd.default_schedule
         assert ws.is_on_duty()
         assert not ws.is_off_duty()
@@ -115,7 +115,7 @@ class TestWorkshiftConstructor(object):
         assert ws.start_time == datetime.datetime(2017, 1, 4, 0, 0, 0)
         assert ws.end_time > datetime.datetime(2017, 1, 4, 23, 59, 59)
         assert ws.end_time < datetime.datetime(2017, 1, 5, 0, 0, 0)
-        assert ws.label == 1
+        assert ws.label == 2
         assert ws.schedule == clnd.default_schedule
         assert ws.is_on_duty()
         assert not ws.is_off_duty()
@@ -132,6 +132,7 @@ class TestWorkshiftConstructor(object):
             Workshift(clnd, 10.5, clnd.default_schedule)
         with pytest.raises(TypeError):
             Workshift(clnd, '05 Jan 2017', clnd.default_schedule)
+
 
 class TestRollForward(object):
 
@@ -388,7 +389,7 @@ class TestWorkshiftAddSubNumber(object):
         assert ws._loc == 7
 
 
-class TestWorkshiftSubAnotherWS:
+class TestWorkshiftSubAnotherWS(object):
 
     def test_workshift_sub_non_ws(self):
         clnd = tb_12_days()
@@ -453,5 +454,127 @@ class TestWorkshiftSubAnotherWS:
         clnd = tb_12_days()
         with pytest.raises(TypeError):
             clnd('07 Jan 2017') - datetime.datetime(2017,1,1,0,0,0)
+            
+            
+class TestWorkshiftSchedules(object):
+    
+    def test_ws_on_duty_schedules(self):
+        clnd = tb_12_days()
+        sdl = clnd.add_schedule(name='sdl', selector=lambda x: x>1)
+        ws0 = clnd('01 Jan 2017')
+        ws1 = clnd.get_workshift('01 Jan 2017', schedule=sdl)
+        assert ws0.is_on_duty() == True
+        assert ws1.is_on_duty() == False
+        assert ws0.is_on_duty(schedule=sdl) == False
+        assert ws1.is_on_duty(schedule=clnd.default_schedule) == True
+        assert ws0.schedule.name == 'on_duty'
+        assert ws1.schedule.name == 'sdl'
+     
+
+    def test_ws_rollforward_0_schedules(self):
+        clnd = tb_12_days()
+        sdl = clnd.add_schedule(name='sdl', selector=lambda x: x>1)
+        ws0 = clnd('01 Jan 2017')
+        ws1 = clnd.get_workshift('01 Jan 2017', schedule=sdl)
+        ws =  ws0.rollforward()
+        assert ws._loc == 1
+        assert ws.schedule.name == 'on_duty'
+        ws = ws1.rollforward() 
+        assert ws._loc == 4
+        assert ws.schedule.name == 'sdl'
+        ws = ws0.rollforward(schedule=sdl)
+        assert  ws._loc == 4
+        assert ws.schedule.name =='sdl'
+        ws = ws1.rollforward(schedule=clnd.default_schedule)
+        assert  ws._loc == 1
+        assert ws.schedule.name =='on_duty'
+
+    def test_ws_rollback_0_schedules(self):
+        clnd = tb_12_days()
+        sdl = clnd.add_schedule(name='sdl', selector=lambda x: x>1)
+        ws0 = clnd('08 Jan 2017')
+        ws1 = clnd.get_workshift('08 Jan 2017', schedule=sdl)
+        ws =  ws0.rollback()
+        assert ws._loc == 7
+        assert ws.schedule.name == 'on_duty'
+        ws = ws1.rollback() 
+        assert ws._loc == 4
+        assert ws.schedule.name == 'sdl'
+        ws = ws0.rollback(schedule=sdl)
+        assert  ws._loc == 4
+        assert ws.schedule.name =='sdl'
+        ws = ws1.rollback(schedule=clnd.default_schedule)
+        assert  ws._loc == 7
+        assert ws.schedule.name =='on_duty'
+
+    def test_ws_rollforward_n_schedules(self):
+        clnd = tb_12_days()
+        sdl = clnd.add_schedule(name='sdl', selector=lambda x: x>1)
+        ws0 = clnd('01 Jan 2017')
+        ws1 = clnd.get_workshift('01 Jan 2017', schedule=sdl)
+        ws =  ws0.rollforward(1)
+        assert ws._loc == 4
+        assert ws.schedule.name == 'on_duty'
+        ws = ws1.rollforward(1)
+        assert ws._loc == 10
+        assert ws.schedule.name == 'sdl'
+        ws = ws0.rollforward(1, schedule=sdl)
+        assert  ws._loc == 10
+        assert ws.schedule.name =='sdl'
+        ws = ws1.rollforward(1, schedule=clnd.default_schedule)
+        assert  ws._loc == 4
+        assert ws.schedule.name =='on_duty'
+
+    def test_ws_rollback_n_schedules(self):
+        clnd = tb_12_days()
+        sdl = clnd.add_schedule(name='sdl', selector=lambda x: x>1)
+        ws0 = clnd('11 Jan 2017')
+        ws1 = clnd.get_workshift('11 Jan 2017', schedule=sdl)
+        ws =  ws0.rollback(1)
+        assert ws._loc == 7
+        assert ws.schedule.name == 'on_duty'
+        ws = ws1.rollback(1)
+        assert ws._loc == 4
+        assert ws.schedule.name == 'sdl'
+        ws = ws0.rollback(1, schedule=sdl)
+        assert  ws._loc == 4
+        assert ws.schedule.name =='sdl'
+        ws = ws1.rollback(1, schedule=clnd.default_schedule)
+        assert  ws._loc == 7
+        assert ws.schedule.name =='on_duty'
+
+    def test_ws_rollforward_any_schedules(self):
+        clnd = tb_12_days()
+        sdl = clnd.add_schedule(name='sdl', selector=lambda x: x>1)
+        ws0 = clnd('31 Dec 2016')
+        ws1 = clnd.get_workshift('31 Dec 2016', schedule=sdl)
+        ws = ws0.rollforward(2, duty='any')
+        assert ws._loc == 2
+        assert ws.schedule.name =='on_duty'
+        ws = ws1.rollforward(2, duty='any')
+        assert ws._loc == 2
+        assert ws.schedule.name =='sdl'
+        ws = ws0.rollforward(2, duty='any', schedule=sdl)
+        assert ws._loc == 2
+        assert ws.schedule.name =='sdl'
+        ws = ws1.rollforward(2, duty='any', schedule=clnd.default_schedule)
+        assert ws._loc == 2
+        assert ws.schedule.name =='on_duty'
+
+    def test_ws_rollforward_schedules_OOB(self):
+        clnd = tb_12_days()
+        sdl = clnd.add_schedule(name='sdl', selector=lambda x: x>1)
+        ws0 = clnd('03 Jan 2017')
+        ws1 = clnd.get_workshift('03 Jan 2017', schedule=sdl)
+        assert ws0.rollforward(2)._loc == 10
+        with pytest.raises(OutOfBoundsError):
+            ws1.rollforward(2)
+
+    def test_ws_bad_schedule(self):
+        clnd = tb_12_days()
+        sdl = clnd.add_schedule(name='sdl', selector=lambda x: x>1)
+        with pytest.raises(TypeError):
+            ws1 = clnd.get_workshift('03 Jan 2017', schedule='sdl')
+
 
 

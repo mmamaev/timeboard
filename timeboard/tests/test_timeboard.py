@@ -113,7 +113,7 @@ class TestTBConstructor(object):
         assert (sdl.off_duty_index == [0, 1, 2, 4, 5, 6, 8, 9, 10]).all()
 
 
-class TestTBConstructorWithOrgs:
+class TestTBConstructorWithOrgs(object):
 
     def test_tb_constructor_week5x8(self):
         week5x8 = tb.Organizer(marker='W', structure=[[1, 1, 1, 1, 1, 0, 0]])
@@ -142,11 +142,70 @@ class TestTBConstructorWithOrgs:
         assert clnd('02 Apr 2017').is_off_duty()
 
 
+class TestTimeboardSchedules(object):
+
+    def test_tb_add_schedule(self):
+        clnd = tb.Timeboard(base_unit_freq='D',
+                            start='31 Dec 2016', end='12 Jan 2017',
+                            layout=[0, 1, 0, 0, 2, 0])
+        assert len(clnd.schedules) == 1
+        assert 'on_duty' in clnd.schedules
+        clnd.add_schedule(name='sdl', selector=lambda x: x > 1)
+        assert len(clnd.schedules) == 2
+        assert 'sdl' in clnd.schedules
+        sdl = clnd.schedules['sdl']
+        assert sdl.name == 'sdl'
+        assert not sdl.is_on_duty(1)
+        assert clnd.default_schedule.name == 'on_duty'
+        assert clnd.default_schedule.is_on_duty(1)
+
+    def test_tb_drop_schedule(self):
+        clnd = tb.Timeboard(base_unit_freq='D',
+                            start='31 Dec 2016', end='12 Jan 2017',
+                            layout=[0, 1, 0, 0, 2, 0])
+        clnd.add_schedule(name='sdl', selector=lambda x: x > 1)
+        assert len(clnd.schedules) == 2
+        sdl = clnd.schedules['sdl']
+        clnd.drop_schedule(sdl)
+        assert len(clnd.schedules) == 1
+        with pytest.raises(KeyError):
+            clnd.schedules['sdl']
+        # object itself continues to exists while referenced
+        assert not sdl.is_on_duty(1)
+
+    def test_tb_schedule_names(self):
+        clnd = tb.Timeboard(base_unit_freq='D',
+                            start='31 Dec 2016', end='12 Jan 2017',
+                            layout=[0, 1, 0, 0, 2, 0])
+        clnd.add_schedule(name=1, selector=lambda x: x > 1)
+        assert len(clnd.schedules) == 2
+        assert clnd.schedules['1'].name == '1'
+        with pytest.raises(KeyError):
+            clnd.add_schedule(name='1', selector=lambda x: x > 2)
+
+    def test_tb_bad_schedule(self):
+        clnd = tb.Timeboard(base_unit_freq='D',
+                            start='31 Dec 2016', end='12 Jan 2017',
+                            layout=[0, 1, 0, 0, 2, 0])
+        with pytest.raises(ValueError):
+            clnd.add_schedule(name='sdl', selector='selector')
+        with pytest.raises(TypeError):
+                clnd.add_schedule(name='sdl', selector=lambda x,y: x+y)
 
 
 
 
 
 
-#TODO: test timeboards with multiplied freqs
+
+
+
+
+
+
+
+
+
+
+                #TODO: test timeboards with multiplied freqs
 

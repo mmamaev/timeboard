@@ -13,15 +13,15 @@ import pytest
 def tb_12_days():
     return tb.Timeboard(base_unit_freq='D',
                         start='31 Dec 2016', end='12 Jan 2017',
-                        layout=[0, 1, 0])
+                        layout=[0, 1, 0, 0, 2, 0])
     # 31  01  02  03  04  05  06  07  08  09  10  11  12
-    #  0   1   0   0   1   0   0   1   0   0   1   0   0
+    #  0   1   0   0   2   0   0   1   0   0   2   0   0
     #
     # _on_duty_idx == [0:1, 1:4, 2:7, 3:10]
     # _off_duty_idx == [0:0, 1:2, 2:3, 3:5, 4:6, 5:8, 6:9, 7:11, 8:12]
 
 
-class TestIntervalFindMyBounds:
+class TestIntervalFindMyBounds(object):
 
     def test_interval_find_my_bounds_on(self):
         clnd = tb_12_days()
@@ -79,7 +79,7 @@ class TestIntervalFindMyBounds:
         assert duty_loc == (None, None)
 
 
-class TestIntervalFirstLastNth:
+class TestIntervalFirstLastNth(object):
 
     def test_interval_nth_on(self):
         clnd = tb_12_days()
@@ -203,7 +203,7 @@ class TestIntervalFirstLastNth:
             ivl.nth(13, duty='any')
 
 
-class TestIntervalCount:
+class TestIntervalCount(object):
 
     def test_interval_count_on(self):
         clnd = tb_12_days()
@@ -241,6 +241,7 @@ class TestIntervalCount:
         assert ivl.count(duty='off') == 9
         assert ivl.count(duty='any') == 13
 
+
 @pytest.fixture(scope='module')
 def tb_281116_020517_8x5():
     week5x8 = tb.Organizer(marker='W', structure=[[1, 1, 1, 1, 1, 0, 0]])
@@ -253,7 +254,8 @@ def tb_281116_020517_8x5():
                         layout=week5x8,
                         amendments = amendments)
 
-class TestIntervalDaysCountPeriodsM:
+
+class TestIntervalDaysCountPeriodsM(object):
 
     def test_interval_d_count_periods_m_part_full_part(self):
         clnd = tb_281116_020517_8x5()
@@ -308,7 +310,8 @@ class TestIntervalDaysCountPeriodsM:
         assert ivl2.count_periods('M', duty='off') == 1
         assert ivl2.count_periods('M', duty='any') == 29.0 / 31.0
 
-class TestIntervalDaysCountPeriodsCornerCases:
+
+class TestIntervalDaysCountPeriodsCornerCases(object):
 
     def test_interval_d_count_periods_extending_outside_tb(self):
         clnd = tb_281116_020517_8x5()
@@ -383,15 +386,74 @@ class TestIntervalDaysCountPeriodsCornerCases:
                 ivl.count_periods(p)
 
 
-class TestIntervalDaysCountPeriodsW:
+class TestIntervalDaysCountPeriodsW(object):
     #TODO: test shifted periods like W-TUE
     pass
 
-class TestIntervalDaysCountPeriodsY:
+class TestIntervalDaysCountPeriodsY(object):
     #TODO: test shifted periods like A-MAR
     pass
 
 
+class TestIntervalSchedules(object):
+    
+    def test_ivl_count_with_schedules(self):
+        clnd = tb_12_days()
+        sdl = clnd.add_schedule(name='sdl', selector=lambda x: x>1)
+        ivl0 = clnd()
+        ivl1 = clnd(schedule=sdl)
+        assert ivl0.count() == 4
+        assert ivl1.count() == 2
+        assert ivl0.count(schedule=sdl) == 2
+        assert ivl1.count(schedule=clnd.default_schedule) == 4
+
+    def test_ivl_nth_with_schedules(self):
+        clnd = tb_12_days()
+        sdl = clnd.add_schedule(name='sdl', selector=lambda x: x>1)
+        ivl0 = clnd()
+        ivl1 = clnd(schedule=sdl)
+        ws = ivl0.nth(1)
+        assert ws._loc == 4
+        assert ws.schedule.name == 'on_duty'
+        ws = ivl1.nth(1)
+        assert ws._loc == 10
+        assert ws.schedule.name == 'sdl'
+        ws = ivl0.nth(1,schedule=sdl)
+        assert ws._loc == 10
+        assert ws.schedule.name == 'sdl'
+        ws = ivl1.nth(1,schedule=clnd.default_schedule)
+        assert ws._loc == 4
+        assert ws.schedule.name == 'on_duty'
+
+    def test_ivl_nth_with_schedules_OOB(self):
+        clnd = tb_12_days()
+        sdl = clnd.add_schedule(name='sdl', selector=lambda x: x>1)
+        ivl0 = clnd()
+        ivl1 = clnd(schedule=sdl)
+        assert ivl0.nth(2)._loc == 7
+        with pytest.raises(OutOfBoundsError):
+            ivl1.nth(2)
+
+    def test_ivl_count_periods_with_schedules(self):
+        clnd = tb.Timeboard('H', '01 Oct 2017', '02 Oct 2017 23:59',
+                            layout=[0, 1, 0, 2])
+        sdl = clnd.add_schedule(name='sdl', selector=lambda x: x > 1)
+        ivl0 = clnd(('01 Oct 2017 14:00', '02 Oct 2017 23:59'))
+        ivl1 = clnd(('01 Oct 2017 14:00', '02 Oct 2017 23:59'), schedule=sdl)
+        assert ivl0.count_periods('D') == 5.0/12.0 + 1.0
+        assert ivl1.count_periods('D') == 1.5
+        assert ivl0.count_periods('D', schedule=sdl) == 1.5
+        assert ivl1.count_periods('D', schedule=clnd.default_schedule) == \
+                   5.0 / 12.0 + 1.0
+
+    def test_ivl_bad_schedule(self):
+        clnd = tb_12_days()
+        sdl = clnd.add_schedule(name='sdl', selector=lambda x: x>1)
+        with pytest.raises(TypeError):
+            clnd(schedule='sdl')
+
+
+    
 
 
 
