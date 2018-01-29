@@ -65,7 +65,7 @@ def changes(eve_hours):
 
 
 class Weekly8x5(CalendarBase):
-    """Russian business calendar for 5 days x 8 hours working week.
+    """Russian official calendar for 5 days x 8 hours working week.
     
     Workshifts are calendar days. Workshift labels are numbers of working hours
     per day: 0 for days off, 8 for regular business days, 7 for some pre- or 
@@ -73,16 +73,16 @@ class Weekly8x5(CalendarBase):
     
     Parameters
     ----------
-    custom_start : Timestamp-like, optional
+    custom_start : `Timestamp`-like, optional
         Change the first date of the calendar. This date must be within 
-        the default calendar range returned by `Weekly8x5.parameters()`. 
+        the default calendar range returned by :py:meth:`Weekly8x5.parameters()`. 
         By default the calendar starts on the date defined by 'start' 
-        element of `Weekly8x5.parameters()`.
-    custom_end : Timestamp-like, optional
+        element of :py:meth:`Weekly8x5.parameters()`.
+    custom_end : `Timestamp`-like, optional
         Change the last date of the calendar. This date must be within 
-        the default calendar range returned by `Weekly8x5.parameters()`. 
+        the default calendar range returned by :py:meth:`Weekly8x5.parameters()`. 
         By default the calendar ends on the date defined by 'end' 
-        element of `Weekly8x5.parameters()`.
+        element of :py:meth:`Weekly8x5.parameters()`.
     do_not_amend : bool, optional (default False)
         If set to True, the calendar is created without any amendments, 
         meaning that effects of holiday observations are not accounted for.
@@ -107,38 +107,41 @@ class Weekly8x5(CalendarBase):
     ------
     OutOfBoundsError
         If `custom_start` or `custom_end` fall outside the calendar range 
-        returned by `Weekly8x5.parameters()`
+        returned by :py:meth:`Weekly8x5.parameters()`
     
     Returns
     -------
-    Timeboard
+    :py:class:`.Timeboard`
     
-    Class Methods
-    -------------
+    Methods
+    -------
     parameters() : dict
-        Returns a dictionary of `Timeboard` parameters used for building the 
-        calendar. 
+        This class method returns a dictionary of :py:class:`.Timeboard` 
+        parameters used for building the calendar. 
     
     Examples
     --------
     >>> import timeboard.calendars.RU as RU
     
-    #create an official business calendar for the available range of dates
+    Create an official business calendar for the available range of dates:
+    
     >>> clnd = RU.Weekly8x5()
     
-    # create a business calendar for years 2010-2017, ignoring short eves 
-    # and making December 31 always a day off
+    Create a business calendar for years 2010-2017, ignoring short eves 
+    and making December 31 always a day off:
+    
     >>> clnd = RU.Weekly8x5(custom_start='01 Jan 2010', 
                             custom_end='31 Dec 2017', 
                             work_on_dec31 = False,
                             short_eves = False)
     
-    #inspect the default calendar range
+    Inspect the default calendar range:
+    
     >>> params = RU.Weekly8x5.parameters()
-    >>> print(params['start'])
-    2005-01-01 00:00:00
-    >>> print(params['end'])
-    2018-12-31 00:00:00
+    >>> params['start']
+    Timestamp('2005-01-01 00:00:00')
+    >>> params['end']
+    Timestamp('2018-12-31 23:59:59')
     
     """
 
@@ -147,7 +150,7 @@ class Weekly8x5(CalendarBase):
         return {
             'base_unit_freq': 'D',
             'start': get_timestamp('01 Jan 2005'),
-            'end': get_timestamp('31 Dec 2018'),
+            'end': get_timestamp('31 Dec 2018 23:59:59'),
             'layout': Organizer(marker='W', structure=[[8, 8, 8, 8, 8, 0, 0]])
         }
 

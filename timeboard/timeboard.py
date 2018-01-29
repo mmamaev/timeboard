@@ -262,13 +262,13 @@ class Timeboard(object):
         Workshift(1) of 'D' at 2017-10-01
         
         >>> clnd(('02 Oct 2017', '08 Oct 2017'))
-        Interval(2, 8): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]
+        Interval((2, 8)): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]
         >>> clnd('02 Oct 2017', length=7)
-        Interval(2, 8): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]
+        Interval((2, 8)): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]
         >>> clnd('05 Oct 2017', period='W')
-        Interval(2, 8): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]      
+        Interval((2, 8)): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]      
         >>> clnd()
-        Interval(0, 15): 'D' at 2017-09-30 -> 'D' at 2017-10-15 [16]
+        Interval((0, 15)): 'D' at 2017-09-30 -> 'D' at 2017-10-15 [16]
 
         Call `get_interval()` directly to obtain an interval from a 
         `pandas.Period` object as it is interpreted as a valid argument for 
@@ -630,39 +630,39 @@ class Timeboard(object):
         
         >>> clnd = tb.Timeboard('D', '30 Sep 2017', '15 Oct 2017', layout=[0,1])
         >>> clnd.get_interval(('02 Oct 2017', '08 Oct 2017'))
-        Interval(2, 8): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]
+        Interval((2, 8)): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]
         
         Shortcut: 
         
         >>> clnd(('02 Oct 2017', '08 Oct 2017'))
-        Interval(2, 8): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]
+        Interval((2, 8)): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]
         
         Technique 2 (with length):
         
         >>> clnd.get_interval('02 Oct 2017', length=7)
-        Interval(2, 8): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]
+        Interval((2, 8)): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]
         
         Shortcut:
         
         >>> clnd('02 Oct 2017', length=7)
-        Interval(2, 8): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]
+        Interval((2, 8)): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]
 
         Technique 3 (from period):
         
         >>> clnd.get_interval('05 Oct 2017', period='W')
-        Interval(2, 8): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]
+        Interval((2, 8)): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]
         
         Shortcut:
         
         >>> clnd('05 Oct 2017', period='W')
-        Interval(2, 8): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]      
+        Interval((2, 8)): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]      
         
         Technique 4 (from `pandas.Period` object):
         
         >>> import pandas as pd
         >>> p = pd.Period('05 Oct 2017', freq='W')
         >>> clnd.get_interval(p)
-        Interval(2, 8): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]
+        Interval((2, 8)): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]
         
         NO shortcut!
         
@@ -672,12 +672,12 @@ class Timeboard(object):
         Technique 5 (entire timeline):
         
         >>> clnd.get_interval()
-        Interval(0, 15): 'D' at 2017-09-30 -> 'D' at 2017-10-15 [16]
+        Interval((0, 15)): 'D' at 2017-09-30 -> 'D' at 2017-10-15 [16]
         
         Shortcut:
         
         >>> clnd()
-        Interval(0, 15): 'D' at 2017-09-30 -> 'D' at 2017-10-15 [16]
+        Interval((0, 15)): 'D' at 2017-09-30 -> 'D' at 2017-10-15 [16]
         """
 
         if closed not in ['00', '01', '10', '11']:

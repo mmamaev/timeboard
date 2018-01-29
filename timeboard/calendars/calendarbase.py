@@ -207,12 +207,12 @@ class CalendarBase(object):
     
     Parameters
     ----------
-    custom_start : Timestamp-like, optional
+    custom_start : `Timestamp`-like, optional
         Change the first date of the calendar. This date must be within 
         the default calendar range returned by `parameters()` class method. 
         By default the calendar starts on the date defined by 'start' 
         element of `parameters()`.
-    custom_end : Timestamp-like, optional
+    custom_end : `Timestamp`-like, optional
         Change the last date of the calendar. This date must be within 
         the default calendar range returned by `parameters()` class method. 
         By default the calendar ends on the date defined by 'end' 
@@ -251,35 +251,39 @@ class CalendarBase(object):
         
     Returns
     -------
-    Timeboard
+    :py:class:`.Timeboard`
     
     Examples
     --------
-    class MyCalendar(CalendarBase):
-        @classmethod
-        def parameters(cls):
-            return {
-                'base_unit_freq': ? ,
-                'start': ? ,
-                'end': ? ,
-                'layout': ?
-                ...
-        }
-        
-        @classmethod
-        def amendments(cls, custom_start=None, custom_end=None,
-                       custom_amendments=None, your_parameter=?):
-            calculate_amendments
-            return dict
+    ::
+        class MyCalendar(CalendarBase):
+            @classmethod
+            def parameters(cls):
+                return {
+                    'base_unit_freq': ? ,
+                    'start': ? ,
+                    'end': ? ,
+                    'layout': ?
+                    ...
+            }
+            
+            @classmethod
+            def amendments(cls, custom_start=None, custom_end=None,
+                           custom_amendments=None, your_parameter=?):
+                calculate_amendments
+                return dict
 
-    #inspect calendar parameters
-    parameters_dict = MyCalendar.parameters()
+    Inspect calendar parameters:
     
-    #inspect calendar amendments
-    amendments_dict = MyCalendar.amendments(**kwargs)
+    >>> parameters_dict = MyCalendar.parameters()
     
-    #create a timeboard with your calendar
-    clnd = MyCalendar(**kwargs)
+    Inspect calendar amendments
+    
+    >>> amendments_dict = MyCalendar.amendments(**kwargs)
+    
+    Create a timeboard with your calendar:
+    
+    >>> clnd = MyCalendar(**kwargs)
     """
     @classmethod
     def parameters(cls):

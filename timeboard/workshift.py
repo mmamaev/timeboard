@@ -87,8 +87,18 @@ class Workshift(object):
         self._loc = location
         self._schedule = schedule
 
+    def _repr_schedule_label(self):
+        schedule_label=self.schedule.name
+        if schedule_label == self._tb.default_schedule.name:
+            schedule_label=""
+        else:
+            schedule_label=", " + schedule_label
+        return schedule_label
+
     def __repr__(self):
-        return "Workshift({}) of ".format(self._loc) + self.compact_str
+
+        return "Workshift({}{}) of ".format(
+                self._loc, self._repr_schedule_label()) + self.compact_str
 
     @property
     def compact_str(self):
@@ -98,11 +108,12 @@ class Workshift(object):
         return "{}'{}' at {}".\
                 format(duration_str,
                        self._tb.base_unit_freq,
-                       get_period(self.to_timestamp(),
+                       get_period(self.start_time,
                                   freq=self._tb.base_unit_freq))
 
     def __str__(self):
-        return "Workshift({}) of ".format(self._loc) + self.compact_str + \
+        return "Workshift({}{}) of ".format(
+                self._loc, self._repr_schedule_label()) + self.compact_str + \
                "\n\n{}".format(self._tb.to_dataframe(self._loc, self._loc))
 
     @property
@@ -326,7 +337,7 @@ class Workshift(object):
         if i == len_idx or i + steps < 0 or i + steps >= len_idx:
             return self._tb._handle_out_of_bounds("Rollforward of ws {} with "
                        "steps={}, duty={}, schedule={}"
-                       ".".format(self.to_timestamp(), steps, duty,
+                       ".".format(self.compact_str, steps, duty,
                                   schedule.name))
 
         return Workshift(self._tb, idx[i + steps], schedule)
@@ -471,7 +482,7 @@ class Workshift(object):
         if i == -1 or i - steps < 0 or i - steps >= len_idx:
             return self._tb._handle_out_of_bounds("Rollback of ws {} with "
                        "steps={}, duty={}, schedule={}"
-                       ".".format(self.to_timestamp(), steps, duty,
+                       ".".format(self.compact_str, steps, duty,
                                   schedule.name))
 
         return Workshift(self._tb, idx[i - steps], schedule)

@@ -57,7 +57,7 @@ class Interval(object):
     >>> clnd = tb.Timeboard('D', '30 Sep 2017', '15 Oct 2017', layout=[0,1])
     >>> ivl = tb.interval.Interval(clnd, (2,9))
     >>> ivl
-    Interval(2, 9): 'D' at 2017-10-02 -> 'D' at 2017-10-09 [8]
+    Interval((2, 9)): 'D' at 2017-10-02 -> 'D' at 2017-10-09 [8]
     
     >>> len(ivl)
     8
@@ -89,7 +89,7 @@ class Interval(object):
      Workshift(9) of 'D' at 2017-10-09] 
     
     >>> print(ivl)
-    Interval(2, 9): 'D' at 2017-10-02 -> 'D' at 2017-10-09 [8]
+    Interval((2, 9)): 'D' at 2017-10-02 -> 'D' at 2017-10-09 [8]
     .
          workshift      start  duration        end  label  on_duty
     loc                                                           
@@ -152,18 +152,26 @@ class Interval(object):
                             ' received {}'.format(type(schedule)))
 
 
-
-    def __repr__(self):
-        return self.compact_str
+    def _repr_schedule_label(self):
+        schedule_label=self.schedule.name
+        if schedule_label == self._tb.default_schedule.name:
+            schedule_label=""
+        else:
+            schedule_label=", " + schedule_label
+        return schedule_label
 
     @property
     def compact_str(self):
-        return "Interval{!r}: {} -> {} [{}]".format(
+        return "Interval({!r}{}): {} -> {} [{}]".format(
             self._loc,
+            self._repr_schedule_label(),
             Workshift(self._tb, self._loc[0]).compact_str,
             Workshift(self._tb, self._loc[1]).compact_str,
             self._length,
         )
+
+    def __repr__(self):
+        return self.compact_str
 
     def __str__(self):
         return self.compact_str + "\n\n{}".format(
@@ -396,8 +404,8 @@ class Interval(object):
         If a period does not contain workshifts of the required duty,
         it contributes zero to the returned value.
         
-        Regardless of `period`, the method returns 0.0 if the interval 
-        does not have workshifts with the specified duty.
+        Regardless of the period frequency, the method returns 0.0 if there 
+        are no workshifts with the specified duty in the interval.
 
         Parameters
         ----------
@@ -460,7 +468,7 @@ class Interval(object):
         Note that we cannot count how many weeks are in this interval. The 
         workshifts of the interval belong to the weeks of Sep 25 - Oct 1 and 
         Oct 2 - Oct 8. The first of these extends beyond the timeboard. 
-        We do not guess what layout *could* be applied to the workshifts of
+        We may not guess what layout *could* be applied to the workshifts of
         Sep 25 - Sep 30 if the week were included in the timeboard entirely.
         We are not authorized to extrapolate the existing layout outside the 
         timeboard. Moreover, for some complex layouts any attempt of 

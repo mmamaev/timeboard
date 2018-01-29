@@ -56,16 +56,16 @@ class Weekly8x5(CalendarBase):
 
     Parameters
     ----------
-    custom_start : Timestamp-like, optional
+    custom_start : `Timestamp`-like, optional
         Change the first date of the calendar. This date must be within 
-        the default calendar range returned by `Weekly8x5.parameters()`. 
+        the default calendar range returned by :py:meth:`Weekly8x5.parameters()`. 
         By default the calendar starts on the date defined by 'start' 
-        element of `Weekly8x5.parameters()`.
-    custom_end : Timestamp-like, optional
+        element of :py:meth:`Weekly8x5.parameters()`.
+    custom_end : `Timestamp`-like, optional
         Change the last date of the calendar. This date must be within 
-        the default calendar range returned by `Weekly8x5.parameters()`. 
+        the default calendar range returned by :py:meth:`Weekly8x5.parameters()`. 
         By default the calendar ends on the date defined by 'end' 
-        element of `Weekly8x5.parameters()`.
+        element of :py:meth:`Weekly8x5.parameters()`.
     do_not_amend : bool, optional (default False)
         If set to True, the calendar is created without any amendments, 
         meaning that effects of holiday observations are not accounted for.
@@ -78,9 +78,10 @@ class Weekly8x5(CalendarBase):
         amendments (add missing or override existing amendments). 
     exclusions : set-like, optional 
         Holidays to be ignored. The following values are accepted into 
-        the set: 'new_year', 'mlk' for Martin Luther King Jr. Day, 
-        'presidents', 'memorial', 'independence', 'labor', 'columbus', 
-        'veterans', 'thanksgiving', 'black_friday', 'christmas'.
+        the set: ``'new_year'``, ``'mlk'`` for Martin Luther King Jr. Day, 
+        ``'presidents'``, ``'memorial'``, ``'independence'``, ``'labor'``, 
+        ``'columbus'``, ``'veterans'``, 
+        ``'thanksgiving'``, ``'black_friday'``, ``'christmas'``.
     long_weekends : bool, optional (default True)
         If false, do not extend weekends if a holiday falls on Saturday or
         Sunday.
@@ -89,31 +90,41 @@ class Weekly8x5(CalendarBase):
     ------
     OutOfBoundsError
         If `custom_start` or `custom_end` fall outside the calendar range 
-        returned by `Weekly8x5.parameters()`
-
+        returned by :py:meth:`Weekly8x5.parameters()`
+    
     Returns
     -------
-    Timeboard
+    :py:class:`.Timeboard`
+    
+    Methods
+    -------
+    parameters() : dict
+        This class method returns a dictionary of :py:class:`.Timeboard` 
+        parameters used for building the calendar. 
 
     Examples
     --------
     >>> import timeboard.calendars.US as US
 
-    #create an official business calendar for the available range of dates
+    Create an official business calendar for the available range of dates:
+    
     >>> clnd = US.Weekly8x5()
     
-    #create a 2010-2017 business calendar with Black Friday a working day
+    Create a 2010-2017 business calendar with Black Friday a working day:
+    
     >>> clnd = US.Weekly8x5(custom_start='01 Jan 2010', 
                             custom_end='31 Dec 2017', 
                             exclusions = {'black_friday'})
 
 
-    #inspect the default calendar range
+    Inspect the default calendar range:
+    
     >>> params = US.Weekly8x5.parameters()
-    >>> print(params['start'])
-    2000-01-01 00:00:00
-    >>> print(params['end'])
-    2020-12-31 00:00:00
+    >>> params['start']
+    Timestamp('2000-01-01 00:00:00')
+    >>> params['end']
+    Timestamp('2020-12-31 00:00:00')
+    
     """
 
     @classmethod
@@ -121,7 +132,7 @@ class Weekly8x5(CalendarBase):
         return {
             'base_unit_freq': 'D',
             'start': get_timestamp('01 Jan 2000'),
-            'end': get_timestamp('31 Dec 2020'),
+            'end': get_timestamp('31 Dec 2020 23:59:59'),
             'layout': Organizer(marker='W', structure=[[8, 8, 8, 8, 8, 0, 0]])
         }
 
