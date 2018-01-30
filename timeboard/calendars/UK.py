@@ -4,7 +4,7 @@ from ..core import get_timestamp, get_period
 from ..timeboard import Organizer
 from itertools import product
 
-def bank_holidays(start_year, end_year, country = 'england', exclusions=None,
+def bank_holidays(start_year, end_year, country='england', do_not_observe=None,
                   long_weekends=True, label=0):
 
     bank_holidays_fixed = {'new_year': '01 Jan',
@@ -26,21 +26,21 @@ def bank_holidays(start_year, end_year, country = 'england', exclusions=None,
         'easter_monday': 1
     }
 
-    if exclusions is None:
-        exclusions = set()
+    if do_not_observe is None:
+        do_not_observe = set()
     else:
-        exclusions = set(exclusions)
+        do_not_observe = set(do_not_observe)
     if country == 'england':
-        exclusions |= {'new_year2', 'st_parricks', 'orangemens', 'st_andrews'}
+        do_not_observe |= {'new_year2', 'st_parricks', 'orangemens', 'st_andrews'}
     if country == 'scotland':
         bank_holidays_floating['summer'] = (8, 1, 1)
-        exclusions |= {'st_patricks', 'orangemens', 'easter_monday'}
+        do_not_observe |= {'st_patricks', 'orangemens', 'easter_monday'}
     if country == 'northern_ireland':
-        exclusions |= {'new_year2', 'st_andrews'}
+        do_not_observe |= {'new_year2', 'st_andrews'}
 
     years = range(start_year, end_year + 1)
     days = [day for holiday, day in bank_holidays_fixed.items()
-            if holiday not in exclusions]
+            if holiday not in do_not_observe]
 
     amendments = {"{} {}".format(day, year): label
                   for day, year in product(days, years)}
@@ -49,10 +49,10 @@ def bank_holidays(start_year, end_year, country = 'england', exclusions=None,
 
     floating_dates_to_seek = [date_tuple for holiday, date_tuple
                               in bank_holidays_floating.items()
-                              if holiday not in exclusions]
+                              if holiday not in do_not_observe]
     easter_dates_to_seek = [shift for holiday, shift
                             in bank_holidays_easter.items()
-                            if holiday not in exclusions]
+                            if holiday not in do_not_observe]
     for year in years:
         amendments.update(
             nth_weekday_of_month(year, floating_dates_to_seek, label))
@@ -64,17 +64,17 @@ def bank_holidays(start_year, end_year, country = 'england', exclusions=None,
             del amendments[get_timestamp('27 May 2002')]
         except KeyError:
             pass
-        if 'royal' not in exclusions:
+        if 'royal' not in do_not_observe:
             amendments[get_timestamp('03 Jun 2002')] = label
             amendments[get_timestamp('04 Jun 2002')] = label
-    if 2011 in years and 'royal' not in exclusions:
+    if 2011 in years and 'royal' not in do_not_observe:
         amendments[get_timestamp('29 Apr 2011')] = label
     if 2012 in years:
         try:
             del amendments[get_timestamp('28 May 2012')]
         except KeyError:
             pass
-        if 'royal' not in exclusions:
+        if 'royal' not in do_not_observe:
             amendments[get_timestamp('04 Jun 2012')] = label
             amendments[get_timestamp('05 Jun 2012')] = label
 
@@ -118,7 +118,7 @@ class Weekly8x5(CalendarBase):
         amendments (add missing or override existing amendments). 
     country : {``'england'``, ``'northern_ireland'``, ``'scotland'``} , optional
         Default is ``'england'`` for England and Wales.
-    exclusions : set-like, optional 
+    do_not_observe : set, optional 
         Holidays to be ignored. The following values are accepted into 
         the set: ``'new_year'``, ``'new_year2'`` (for the 2nd of January), 
         ``'st_patricks'``, ``'good_friday'``, ``'easter_monday'``, 
@@ -160,7 +160,7 @@ class Weekly8x5(CalendarBase):
     >>> clnd = UK.Weekly8x5(custom_start='01 Jan 2010', 
                             custom_end='31 Dec 2017', 
                             country = 'scotland',
-                            exclusions = {'st_andrews'})
+                            do_not_observe = {'st_andrews'})
 
     Inspect the default calendar range:
     
@@ -184,10 +184,10 @@ class Weekly8x5(CalendarBase):
     @classmethod
     def amendments(cls, custom_start=None, custom_end=None,
                    custom_amendments=None, country='england',
-                   exclusions=None, long_weekends=True, ):
+                   do_not_observe=None, long_weekends=True):
         start, end = cls._get_bounds(custom_start, custom_end)
 
-        result = bank_holidays(start.year, end.year, country, exclusions,
+        result = bank_holidays(start.year, end.year, country, do_not_observe,
                                long_weekends)
         if custom_amendments is not None:
             freq = cls.parameters()['base_unit_freq']

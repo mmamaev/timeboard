@@ -146,7 +146,7 @@ class TestCalendarsUS(object):
             '04 Jul 2011', '05 Sep 2011', '10 Oct 2011', '11 Nov 2011',
             '24 Nov 2011', '25 Nov 2011', '26 Dec 2011'
         ]
-        clnd = US.Weekly8x5(exclusions=['independence', 'christmas',
+        clnd = US.Weekly8x5(do_not_observe=['independence', 'christmas',
                                       'black_friday'])
         assert clnd('04 Jul 2011').is_on_duty()
         assert clnd('25 Nov 2011').is_on_duty()
@@ -231,8 +231,8 @@ class TestCalendarsUK(object):
             '30 Nov 2012', '25 Dec 2012', '26 Dec 2012'
         ]
         clnd = UK.Weekly8x5(country='scotland',
-                            exclusions=['new_year', 'good_friday', 'royal',
-                                      'summer'])
+                            do_not_observe=['new_year', 'good_friday',
+                                            'royal', 'summer'])
         assert clnd('01 Jan 2012').is_off_duty()
         assert clnd('03 Jan 2012').is_on_duty()
         assert clnd('06 Apr 2012').is_on_duty()
