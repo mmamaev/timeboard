@@ -88,6 +88,8 @@ todo_include_todos = True
 # a list of builtin themes.
 #
 html_theme = 'nature'
+html_logo = 'timeboard_logo.png'
+#
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the

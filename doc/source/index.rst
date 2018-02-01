@@ -2,9 +2,9 @@
    sphinx-quickstart on Thu Jan 18 18:48:32 2018.
 
 Welcome to timeboard's documentation!
-=====================================
+======================================
 
-:py:mod:`timeboard` is a library that builds calendars of business days and schedules of work shifts and performs calculations over them.
+:py:mod:`timeboard` performs calendar calculations over business schedules such as business days or work shifts.
 
 .. toctree::
    :maxdepth: 1

@@ -2,9 +2,9 @@
 About timeboard
 ***************
 
-:py:mod:`timeboard` is is a library that builds calendars of business days and schedules of work shifts and performs calculations over them.
+:py:mod:`timeboard` performs calendar calculations over business schedules such as business days or work shifts.
 
-:py:mod:`timeboard` facilitates answering calendar-related questions. For example: 
+Examples of problems solved by :py:mod:`timeboard`: 
 
 - If we have 20 business days to complete the project, when will be the deadline? 
 
@@ -61,3 +61,7 @@ License
     NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+Attribution
+-----------
+
+Icon 'Worker' made by Freepik from www.flaticon.com is used as an element of the logo.

@@ -1,0 +1,13 @@
+include README.rst
+include LICENSE.txt
+include MANIFEST.in
+include setup.py
+
+graft timeboard
+
+graft doc/source
+prune doc/source/_build
+
+global-exclude *.py[co]
+global-exclude __pycache__
+global-exclude .cache

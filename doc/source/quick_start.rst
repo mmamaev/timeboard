@@ -2,7 +2,7 @@
 Quick Start Guide
 *****************
 
-Firstly, you need to construct a timeboard (calendar). The simplest way to do it is to use a preconfigured calendar which is shipped with the package. Let's take a regular business day calendar for the United States. ::
+Firstly, you need to build a timeboard (calendar). The simplest way to do it is to use a preconfigured calendar which is shipped with the package. Let's take a regular business day calendar for the United States. ::
 
     >>> import timeboard.calendars.US as US
     >>> clnd = US.Weekly8x5()

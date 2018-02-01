@@ -2,9 +2,9 @@
 `timeboard` - business calendar calculations
 ********************************************
 
-:py:mod:`timeboard` is is a library that builds calendars of business days and schedules of work shifts and performs calculations over them.
+:py:mod:`timeboard` performs calendar calculations over business schedules such as business days or work shifts.
 
-:py:mod:`timeboard` facilitates answering calendar-related questions. For example: 
+Examples of problems solved by :py:mod:`timeboard`: 
 
 - If we have 20 business days to complete the project, when will be the deadline? 
 
@@ -42,7 +42,7 @@ Quick Start Guide
 =================
 
 
-Firstly, you need to construct a timeboard (calendar). The simplest way to do it is to use a preconfigured calendar which is shipped with the package. Let's take a regular business day calendar for the United States. ::
+Firstly, you need to build a timeboard (calendar). The simplest way to do it is to use a preconfigured calendar which is shipped with the package. Let's take a regular business day calendar for the United States. ::
 
     >>> import timeboard.calendars.US as US
     >>> clnd = US.Weekly8x5()
@@ -101,42 +101,7 @@ Indeed, the 1st, the 2nd, as well as the 29th and the 30th of April in 2017 fell
 License
 =======
 
-::
-
-    3-Clause BSD License
-
-    Copyright (c) 2018, Maxim Mamaev
-    All rights reserved.
-
-    Redistribution and use in source and binary forms, with or without
-    modification, are permitted provided that the following conditions are met:
-
-    1. Redistributions of source code must retain the above copyright notice,
-    this list of conditions and the following disclaimer.
-
-    2. Redistributions in binary form must reproduce the above copyright
-    notice, this list of conditions and the following disclaimer in the
-    documentation and/or other materials provided with the distribution.
-
-    3. Neither the name of the copyright holder nor the names of its
-    contributors may be used to endorse or promote products derived from this
-    software without specific prior written permission.
-
-    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
-    IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
-    THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-    PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
-    CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-    EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-    PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-    PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-    LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-    NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-
-
-
+`BSD 3 <LICENSE>`_
 
 
 
