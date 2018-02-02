@@ -2,10 +2,8 @@ from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
 import sys
 
-from timeboard import __version__ as version
-
-def readme():
-    with open('README.rst') as f:
+def read_file(path):
+    with open(path) as f:
         return f.read()
 
 class PyTest(TestCommand):
@@ -22,9 +20,9 @@ class PyTest(TestCommand):
 PACKAGES = find_packages(where='.', exclude=['timeboard.tests'])
 
 setup(name='timeboard',
-    version=version,
+    version=read_file('timeboard/VERSION.txt').strip(),
     description='Calendar calculations over business days and work shifts',
-    long_description=readme(),
+    long_description=read_file('README.rst'),
     classifiers=[
         'Development Status :: 4 - Beta',
         'License :: OSI Approved :: BSD License',

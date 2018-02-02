@@ -3,6 +3,11 @@ import datetime
 import pytest
 import pandas as pd
 
+class TestVersion(object):
+
+    def test_version(self):
+        version = tb.read_from('VERSION.txt')
+        assert version == tb.__version__
 
 class TestTBConstructor(object):
 

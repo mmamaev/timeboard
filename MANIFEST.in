@@ -10,4 +10,4 @@ prune doc/source/_build
 
 global-exclude *.py[co]
 global-exclude __pycache__
-global-exclude .cache
+prune timeboard/**/.cache
