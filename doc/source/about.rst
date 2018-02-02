@@ -64,4 +64,6 @@ License
 Attribution
 -----------
 
+Logo design by Olga Mamaeva.
+
 Icon 'Worker' made by Freepik from www.flaticon.com is used as an element of the logo.
