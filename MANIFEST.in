@@ -2,6 +2,7 @@ include README.rst
 include LICENSE.txt
 include MANIFEST.in
 include setup.py
+include timeboard/VERSION.txt
 
 graft timeboard
 
