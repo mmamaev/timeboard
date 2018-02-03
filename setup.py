@@ -37,6 +37,7 @@ setup(name='timeboard',
     author_email='mmamaev2@gmail.com',
     license='BSD 3-Clause',
     packages=PACKAGES,
+    include_package_data=True,
     install_requires=[
         'pandas>=0.22',
         'numpy>=1.13',
