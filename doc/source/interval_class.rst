@@ -6,4 +6,4 @@
 
 
 .. autoclass:: timeboard.Interval
-   :members: first, last, nth, count, count_periods
+   :members: first, last, nth, count, count_periods, sum

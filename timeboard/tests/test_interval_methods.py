@@ -542,6 +542,29 @@ class TestIntervalSchedules(object):
             clnd(schedule='sdl')
 
 
+class TestIntervalSum(object):
+
+    def test_ivl_sum(self):
+        clnd = tb. Timeboard('D', '01 Oct 2017', '10 Oct 2017',
+                             layout=[1])
+        assert clnd().sum() == 10
+
+        clnd = tb. Timeboard('D', '01 Oct 2017', '10 Oct 2017',
+                             layout=[-2, 1.5])
+        assert clnd().sum() == -2.5
+
+        clnd = tb. Timeboard('D', '01 Oct 2017', '10 Oct 2017',
+                             layout=['a'])
+        with pytest.raises(TypeError):
+            clnd().sum()
+
+        # try some exotic type of labels
+        clnd = tb. Timeboard('D', '01 Oct 2017', '10 Oct 2017',
+                             layout=[pd.Period('2017', freq='A')])
+        with pytest.raises(TypeError):
+            clnd().sum()
+
+
     
 
 

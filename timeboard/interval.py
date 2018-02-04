@@ -557,6 +557,10 @@ class Interval(object):
 
         return result
 
+    def sum(self):
+        """Return the arithmetic sum of workshift labels"""
+        return sum(self.labels)
+
     def where(self, ws, duty='same'):
         #TODO: Interval.where
         raise NotImplementedError
