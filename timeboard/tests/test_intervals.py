@@ -353,6 +353,22 @@ class TestIntervalConstructorWithTS:
         with pytest.raises(VoidIntervalError):
             clnd(('08 Jan 2017 15:00', '02 Jan 2017 15:00'))
 
+    def test_interval_constructor_two_pd_periods_as_ts(self):
+        clnd = tb.Timeboard(base_unit_freq='D',
+                        start='31 Dec 2016', end='31 Mar 2017',
+                        layout=[0, 1, 0])
+        ivl = clnd.get_interval((pd.Period('05 Jan 2017 15:00', freq='M'),
+                                 pd.Period('19 Feb 2017 15:00', freq='M')))
+        assert ivl.start_time == datetime.datetime(2017, 1, 1, 0, 0, 0)
+        assert ivl.end_time > datetime.datetime(2017, 2, 1, 23, 59, 59)
+        assert ivl.end_time < datetime.datetime(2017, 2, 2, 0, 0, 0)
+        assert ivl._loc == (1,32)
+        assert len(ivl) == 32
+
+        ivlx = clnd((pd.Period('05 Jan 2017 15:00', freq='M'),
+                     pd.Period('19 Feb 2017 15:00', freq='M')))
+        assert ivlx._loc == ivl._loc
+
 
 class TestIntervalConstructorDefault:
 
@@ -387,7 +403,7 @@ class TestIntervalConstructorDefault:
             ivl = clnd.get_interval(closed='00')
 
 
-class TestIntervalConstructorOtherWays:
+class TestIntervalConstructorFromPeriod:
 
     def test_interval_constructor_with_period(self):
         clnd = tb_12_days()
@@ -443,6 +459,155 @@ class TestIntervalConstructorOtherWays:
         with pytest.raises(ValueError):
             clnd.get_interval('bad_timestamp', period='W')
 
+    def test_interval_constructor_from_pd_period(self):
+        clnd = tb_12_days()
+        ivl = clnd.get_interval(pd.Period('05 Jan 2017 15:00', freq='W'))
+        assert ivl.start_time == datetime.datetime(2017, 1, 2, 0, 0, 0)
+        assert ivl.end_time > datetime.datetime(2017, 1, 8, 23, 59, 59)
+        assert ivl.end_time < datetime.datetime(2017, 1, 9, 0, 0, 0)
+        assert ivl._loc == (2, 8)
+        assert len(ivl) == 7
+
+        # if we call timeboard instance directly, it cannot figure that we
+        # want a period, as only one argument is given and it can be converted
+        # to a timestamp
+        ws = clnd(pd.Period('05 Jan 2017 15:00', freq='W'))
+        assert ws._loc == 2
+
+    def test_interval_constructor_from_pd_period_OOB(self):
+        clnd = tb_12_days()
+        # period defined by good ts but extends beyond the reight bound of clnd
+        ivl = clnd.get_interval(pd.Period('10 Jan 2017 15:00', freq='W'))
+        assert ivl._loc == (9, 12)
+        with pytest.raises(OutOfBoundsError):
+            clnd.get_interval(pd.Period('10 Jan 2017 15:00', freq='W'),
+                              clip_period=False)
+        # period defined by good ts but extends beyond the left bound of clnd
+        ivl = clnd.get_interval(pd.Period('01 Jan 2017 15:00', freq='W'))
+        assert ivl._loc == (0, 1)
+        with pytest.raises(OutOfBoundsError):
+            clnd.get_interval(pd.Period('01 Jan 2017 15:00', freq='W'),
+                              clip_period=False)
+        # period overlapping clnd
+        ivl = clnd.get_interval(pd.Period('08 Mar 2017 15:00', freq='A-MAR'))
+        assert ivl._loc == (0, 12)
+        with pytest.raises(OutOfBoundsError):
+            clnd.get_interval(pd.Period('08 Mar 2017 15:00', freq='A-MAR'),
+                              clip_period=False)
+        # period completely outside clnd
+        with pytest.raises(OutOfBoundsError):
+            clnd.get_interval(pd.Period('25 Jan 2017 15:00', freq='W'))
+
+    def test_interval_constructor_period_smaller_than_bu(self):
+        clnd = tb.Timeboard(base_unit_freq='H',
+                         start='04 Oct 2017', end='04 Oct 2017 23:59',
+                         layout=[0, 1],
+                         )
+        clnd2 = tb.Timeboard(base_unit_freq='H',
+                         start='04 Oct 2017', end='04 Oct 2017 23:59',
+                         layout=[0, 1],
+                         workshift_ref='end'
+                         )
+        # no ws reference time falls within this period:
+        with pytest.raises(VoidIntervalError):
+            clnd.get_interval('04 Oct 2017 01:15', period='T')
+        with pytest.raises(VoidIntervalError):
+            clnd2.get_interval('04 Oct 2017 01:15', period='T')
+
+        # reference time of clnd.ws 1 (01:00) falls within this period:
+        ivl = clnd.get_interval('04 Oct 2017 01:00', period='T')
+        assert ivl._loc == (1, 1)
+        # but not within this
+        with pytest.raises(VoidIntervalError):
+            clnd.get_interval('04 Oct 2017 01:59', period='T')
+
+        # vice versa for clnd 2
+        with pytest.raises(VoidIntervalError):
+            clnd2.get_interval('04 Oct 2017 01:00', period='T')
+        ivl = clnd2.get_interval('04 Oct 2017 01:59', period='T')
+        assert ivl._loc == (1, 1)
+
+
+    def test_interval_constructor_period_straddles_2_ws(self):
+        shifts = tb.Organizer(marker='90T', structure=[0, 1, 0, 2])
+        clnd = tb.Timeboard(base_unit_freq='T',
+                         start='04 Oct 2017', end='04 Oct 2017 23:59',
+                         layout=shifts,
+                         )
+        # period straddles ws 0 and 1
+        # but only ref time of ws 1 falls into the period
+        ivl = clnd.get_interval('04 Oct 2017 01:00', period='H')
+        assert ivl._loc == (1, 1)
+
+    def test_interval_constructor_period_start_aligned_end_inside_ws(self):
+        shifts = tb.Organizer(marker='90T', structure=[0, 1, 0, 2])
+        clnd = tb.Timeboard(base_unit_freq='T',
+                         start='04 Oct 2017', end='04 Oct 2017 23:59',
+                         layout=shifts,
+                         )
+        # period (00:00 - 00:59) is inside ws 0 (00:00 - 01:29)
+        # ref time of ws 0 falls into the period
+        ivl = clnd.get_interval('04 Oct 2017 00:00', period='H')
+        assert ivl._loc == (0, 0)
+
+        # now ref time is end time and ws 0 ref time is outside the period
+        clnd = tb.Timeboard(base_unit_freq='T',
+                            start='04 Oct 2017', end='04 Oct 2017 23:59',
+                            layout=shifts,
+                            workshift_ref='end'
+                            )
+        with pytest.raises(VoidIntervalError):
+            clnd.get_interval('04 Oct 2017 00:00', period='H')
+
+
+    def test_interval_constructor_period_begin_inside_ws_end_aligned(self):
+        shifts = tb.Organizer(marker='90T', structure=[0, 1, 0, 2])
+        clnd = tb.Timeboard(base_unit_freq='T',
+                         start='04 Oct 2017', end='04 Oct 2017 23:59',
+                         layout=shifts,
+                         )
+        # period (02:00 - 02:59) is inside ws 1 (01:30 - 02:59)
+        # ref time of ws 1 is outside the period
+        with pytest.raises(VoidIntervalError):
+            clnd.get_interval('04 Oct 2017 02:00', period='H')
+
+        # now ref time is end time and ws 1 ref time is within the period
+        clnd = tb.Timeboard(base_unit_freq='T',
+                         start='04 Oct 2017', end='04 Oct 2017 23:59',
+                         layout=shifts,
+                         workshift_ref='end'
+                         )
+
+        ivl = clnd.get_interval('04 Oct 2017 02:00', period='H')
+        assert ivl._loc == (1, 1)
+
+    def test_interval_constructor_period_entirely_inside_ws(self):
+        shifts = tb.Organizer(marker='3H', structure=[0, 1, 0, 2])
+        clnd = tb.Timeboard(base_unit_freq='T',
+                         start='04 Oct 2017', end='04 Oct 2017 23:59',
+                         layout=shifts,
+                         )
+        # period (04:00 - 04:59) is inside workshift  (03:00 - 05:59)
+        # and does not includes workshift's start or end times.
+        # No matter if the ref time is 'start' or 'end',
+        # it is outside the period
+        with pytest.raises(VoidIntervalError):
+           clnd.get_interval('04 Oct 2017 04:00', period='H')
+
+        clnd = tb.Timeboard(base_unit_freq='T',
+                         start='04 Oct 2017', end='04 Oct 2017 23:59',
+                         layout=shifts,
+                         workshift_ref='end'
+                         )
+        with pytest.raises(VoidIntervalError):
+            clnd.get_interval('04 Oct 2017 04:00', period='H')
+
+        # if we supported workshift_ref being somewhere in the middle of
+        # workshift, an interval could be constructed
+
+
+class TestIntervalConstructorWithLength:
+
     def test_interval_constructor_with_length(self):
         clnd = tb_12_days()
         ivl = clnd.get_interval('02 Jan 2017 15:00', length=7)
@@ -472,7 +637,6 @@ class TestIntervalConstructorOtherWays:
         ivl = clnd.get_interval('02 Jan 2017 15:00', length=-1)
         assert ivl._loc == (2,2)
         assert len(ivl) == 1
-
 
     def test_interval_constructor_with_zero_length(self):
         # same treatment as interval with reverse timestamps
@@ -514,60 +678,8 @@ class TestIntervalConstructorOtherWays:
         with pytest.raises(ValueError):
             clnd.get_interval('bad_timestamp', length=5)
 
-    def test_interval_constructor_from_pd_period(self):
-        clnd = tb_12_days()
-        ivl = clnd.get_interval(pd.Period('05 Jan 2017 15:00', freq='W'))
-        assert ivl.start_time == datetime.datetime(2017, 1, 2, 0, 0, 0)
-        assert ivl.end_time > datetime.datetime(2017, 1, 8, 23, 59, 59)
-        assert ivl.end_time < datetime.datetime(2017, 1, 9, 0, 0, 0)
-        assert ivl._loc == (2, 8)
-        assert len(ivl) == 7
 
-        # if we call timeboard instance directly, it cannot figure that we
-        # want a period, as only one argument is given and it can be converted
-        # to a timestamp
-        ws = clnd(pd.Period('05 Jan 2017 15:00', freq='W'))
-        assert ws._loc == 2
-
-    def test_interval_constructor_from_pd_period_OOB(self):
-        clnd = tb_12_days()
-        # period defined by good ts but extends beyond the reight bound of clnd
-        ivl = clnd.get_interval(pd.Period('10 Jan 2017 15:00', freq='W'))
-        assert ivl._loc == (9, 12)
-        with pytest.raises(OutOfBoundsError):
-            clnd.get_interval(pd.Period('10 Jan 2017 15:00', freq='W'),
-                              clip_period=False)
-        # period defined by good ts but extends beyond the left bound of clnd
-        ivl = clnd.get_interval(pd.Period('01 Jan 2017 15:00', freq='W'))
-        assert ivl._loc == (0, 1)
-        with pytest.raises(OutOfBoundsError):
-            clnd.get_interval(pd.Period('01 Jan 2017 15:00', freq='W'),
-                              clip_period=False)
-        # period overlapping clnd
-        ivl = clnd.get_interval(pd.Period('08 Mar 2017 15:00', freq='A-MAR'))
-        assert ivl._loc == (0, 12)
-        with pytest.raises(OutOfBoundsError):
-            clnd.get_interval(pd.Period('08 Mar 2017 15:00', freq='A-MAR'),
-                              clip_period=False)
-        # period completely outside clnd
-        with pytest.raises(OutOfBoundsError):
-            clnd.get_interval(pd.Period('25 Jan 2017 15:00', freq='W'))
-
-    def test_interval_constructor_two_pd_periods_as_ts(self):
-        clnd = tb.Timeboard(base_unit_freq='D',
-                        start='31 Dec 2016', end='31 Mar 2017',
-                        layout=[0, 1, 0])
-        ivl = clnd.get_interval((pd.Period('05 Jan 2017 15:00', freq='M'),
-                                 pd.Period('19 Feb 2017 15:00', freq='M')))
-        assert ivl.start_time == datetime.datetime(2017, 1, 1, 0, 0, 0)
-        assert ivl.end_time > datetime.datetime(2017, 2, 1, 23, 59, 59)
-        assert ivl.end_time < datetime.datetime(2017, 2, 2, 0, 0, 0)
-        assert ivl._loc == (1,32)
-        assert len(ivl) == 32
-
-        ivlx = clnd((pd.Period('05 Jan 2017 15:00', freq='M'),
-                     pd.Period('19 Feb 2017 15:00', freq='M')))
-        assert ivlx._loc == ivl._loc
+class TestIntervalConstructorBadArgs:
 
     def test_interval_constructor_bad_arg_combinations(self):
         clnd = tb_12_days()

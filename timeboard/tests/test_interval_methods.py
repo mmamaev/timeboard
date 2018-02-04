@@ -395,6 +395,95 @@ class TestIntervalDaysCountPeriodsY(object):
     pass
 
 
+@pytest.fixture(scope='module')
+def clnd_variable_mins(workshift_ref=None):
+    if workshift_ref is None:
+        workshift_ref = 'start'
+    halfhours = tb.Organizer('30T', structure=[0, 1])
+    splitter = tb.Organizer(marks=['01 Oct 2017 03:05',
+                                   '01 Oct 2017 06:05',
+                                   '01 Oct 2017 09:05',
+                                   '01 Oct 2017 12:05'],
+                            structure=[0, halfhours, 0, halfhours, 0])
+
+    return tb.Timeboard('T', '01 Oct 2017', '01 Oct 2017 14:59',
+                        layout=splitter,
+                        workshift_ref=workshift_ref)
+
+    #                   start  duration                 end  label  on_duty
+    # loc
+    # 0   2017-10-01 00:00:00       185 2017-10-01 03:04:59    0.0    False
+    # 1   2017-10-01 03:05:00        30 2017-10-01 03:34:59    0.0    False
+    # 2   2017-10-01 03:35:00        30 2017-10-01 04:04:59    1.0     True
+    # 3   2017-10-01 04:05:00        30 2017-10-01 04:34:59    0.0    False
+    # 4   2017-10-01 04:35:00        30 2017-10-01 05:04:59    1.0     True
+    # 5   2017-10-01 05:05:00        30 2017-10-01 05:34:59    0.0    False
+    # 6   2017-10-01 05:35:00        30 2017-10-01 06:04:59    1.0     True
+    # 7   2017-10-01 06:05:00       180 2017-10-01 09:04:59    0.0    False
+    # 8   2017-10-01 09:05:00        30 2017-10-01 09:34:59    0.0    False
+    # 9   2017-10-01 09:35:00        30 2017-10-01 10:04:59    1.0     True
+    # 10  2017-10-01 10:05:00        30 2017-10-01 10:34:59    0.0    False
+    # 11  2017-10-01 10:35:00        30 2017-10-01 11:04:59    1.0     True
+    # 12  2017-10-01 11:05:00        30 2017-10-01 11:34:59    0.0    False
+    # 13  2017-10-01 11:35:00        30 2017-10-01 12:04:59    1.0     True
+    # 14  2017-10-01 12:05:00       175 2017-10-01 14:59:59    0.0    False
+
+class TestIntervalCountPeriodsCornerCases(object):
+
+    def test_ivl_count_periods_shorter_than_ws_at_start(self):
+        clnd = clnd_variable_mins()
+        ivl = clnd(('01 Oct 2017 00:00', '01 Oct 2017 04:59'))
+        # 3H long ws #0 is first in ivl
+        with pytest.raises(UnsupportedPeriodError):
+            ivl.count_periods('H')
+        with pytest.raises(UnsupportedPeriodError):
+            ivl.count_periods('H', duty='off')
+        with pytest.raises(UnsupportedPeriodError):
+            ivl.count_periods('H', duty='any')
+
+    def test_ivl_count_periods_shorter_than_ws_at_mid(self):
+        clnd = clnd_variable_mins()
+        ivl = clnd(('01 Oct 2017 05:00', '01 Oct 2017 09:59'))
+        # 3H long ws #7 is in the middle of ivl
+        with pytest.raises(UnsupportedPeriodError):
+            ivl.count_periods('H')
+        with pytest.raises(UnsupportedPeriodError):
+            ivl.count_periods('H', duty='off')
+        with pytest.raises(UnsupportedPeriodError):
+            ivl.count_periods('H', duty='any')
+
+    def test_ivl_count_periods_shorter_than_ws_at_end(self):
+        clnd = clnd_variable_mins()
+        ivl = clnd(('01 Oct 2017 11:00', '01 Oct 2017 14:59'))
+        # 3H long ws #14 is the last in ivl
+        with pytest.raises(UnsupportedPeriodError):
+            ivl.count_periods('H')
+        with pytest.raises(UnsupportedPeriodError):
+            ivl.count_periods('H', duty='off')
+        with pytest.raises(UnsupportedPeriodError):
+            ivl.count_periods('H', duty='any')
+
+    def test_ivl_count_periods_avoiding_long_ws(self):
+        clnd = clnd_variable_mins()
+        ivl = clnd(('01 Oct 2017 03:05', '01 Oct 2017 04:34'))
+        # ivl contains ws 1, 2, 3
+        # ws 1, 2 fall into hour of 03:00; ws 3, 4 fall into hour of 04:00
+        assert ivl.count_periods('H') == 1.0 # (1/1 + 0/1)
+        assert ivl.count_periods('H', duty='off')  == 2.0
+        assert ivl.count_periods('H', duty='any') == 1.5 # (2/2 + 1/2)
+
+    def test_ivl_count_periods_long_ws_caught_by_period(self):
+        clnd = clnd_variable_mins('end')
+        ivl = clnd(('01 Oct 2017 03:05', '01 Oct 2017 04:34'))
+        # ivl contains ws 1, 2, 3
+        # hour of 03:00 catches ws 0 as ws ref time is end time
+        # ws 0 is 3 hours long but it is NOT in the interval so we don't raise
+        # ws 0, 1 fall into hour of 03:00; ws 2, 3 fall into hour of 04:00
+        assert ivl.count_periods('H') == 1.0 # (0/0 + 1/1)
+        assert ivl.count_periods('H', duty='off')  == 1.5 # (1/2 + 1/1)
+        assert ivl.count_periods('H', duty='any') == 1.5 # (1/2 + 2/2)
+
+
 class TestIntervalSchedules(object):
     
     def test_ivl_count_with_schedules(self):

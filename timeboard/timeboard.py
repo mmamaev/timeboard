@@ -8,8 +8,8 @@ from collections import namedtuple
 from math import copysign
 import warnings
 
-OOB_LEFT = -911
-OOB_RIGHT = -119
+OOB_LEFT = -1
+OOB_RIGHT = 1
 LOC_WITHIN = 0
 
 _Location = namedtuple('_Location', ['position', 'where'])
@@ -593,8 +593,16 @@ class Timeboard(object):
             
         VoidIntervalError
             If creation of an empty interval is attempted. This includes the 
-            case when the points in time specifying the interval bounds are 
-            passed in reverse order.
+            following cases:
+            
+            - when the points in time specifying the interval bounds are 
+            passed in reverse order;
+            
+            - when value of `length` is zero;
+            
+            - in a corner case when trying to obtain an interval from period
+            which is smaller than a workshift and located in such a position 
+            that it does not contain any workshift's reference time.
             
         TypeError
             If the combination of parameters passed to the method is not 
@@ -712,35 +720,41 @@ class Timeboard(object):
                 interval_ref, period, clip_period, drop_head, drop_tail)
         else:
             raise TypeError("Unacceptable combination of interval reference "
-                            "and 'length' or 'period' parameters")
+                            "and `length` or `period` parameters")
+
+        if not self._locations_in_order(locs):
+            return self._handle_void_interval(
+                "Attempted to create reversed or void interval "
+                "referenced by `{}` within {}".format(interval_ref,
+                                                      self.compact_str))
 
         if locs[0].position is None and locs[1].position is None:
-            if clip_period and locs[0].where > locs[1].where:
-                return self._handle_void_interval(
-                    "Attempted to create reversed overlapping interval "
-                    "referenced by `{}` within {}".format(interval_ref,
-                                                          self.compact_str))
-            else:
-                raise OutOfBoundsError("Interval referenced by `{}` is "
-                                       "completely outside {}".
-                                       format(interval_ref, self.compact_str))
+            raise OutOfBoundsError("Interval referenced by `{}` is "
+                                   "completely outside {}".
+                                   format(interval_ref, self.compact_str))
         if locs[0].position is None:
-            raise OutOfBoundsError("The 1st bound of interval or "
+            raise OutOfBoundsError("The left bound of interval or "
                                    "period referenced by `{}` "
                                    "is outside {}".format(interval_ref,
                                                           self.compact_str))
         if locs[1].position is None:
-            raise OutOfBoundsError("The 2nd bound of interval or "
+            raise OutOfBoundsError("The right bound of interval or "
                                    "period referenced by `{}` "
                                    "is outside {}".format(interval_ref,
                                                           self.compact_str))
-        if locs[0].position > locs[1].position:
-            return self._handle_void_interval(
-                    "Attempted to create interval with reversed indices "
-                    "({}, {}) within {}".
-                    format(locs[0].position, locs[1].position, self.compact_str))
 
         return Interval(self, (locs[0].position, locs[1].position), schedule)
+
+    def _locations_in_order(self, locs):
+        """Determine if locs[0] is equal or precedes locs[1]
+        
+        Compare locations even if one ore both are outside the timeboard,
+        """
+        if locs[0].where == LOC_WITHIN and locs[1].where == LOC_WITHIN:
+            return locs[0].position <= locs[1].position
+        else:
+            return locs[0].where <= locs[1].where
+
 
     def _get_interval_locs_from_reference(self, interval_ref,
                                           drop_head, drop_tail):
