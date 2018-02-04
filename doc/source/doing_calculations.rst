@@ -415,7 +415,9 @@ On the other hand, if you try to obtain an interval from another hour of the sam
     ---------------------------------------------------------------------------
     VoidIntervalError                         Traceback (most recent call last)
     ...
-    VoidIntervalError: Attempted to create reversed or void interval referenced by `02 Oct 2017 01:00` within Timeboard of 'D': 2017-09-30 -> 2017-10-05
+    VoidIntervalError: Attempted to create reversed or void interval 
+    referenced by `02 Oct 2017 01:00` within Timeboard of 'D': 2017-09-30 -> 
+    2017-10-05
 
 
 Interval-based calculations
@@ -565,7 +567,7 @@ If the type of labels does not define `sum`, `TypeError` is raised.
 Counting periods
 ----------------
 
-Call :py:meth:`~timeboard.Interval.count_periods` to find out how many calendar periods of the specific frequency fit into the interval. As with the other methods, duty of workhifts is taken into account. The method returns a float number.
+Call :py:meth:`~timeboard.Interval.count_periods` to find out how many calendar periods of the specific frequency fit into the interval. As with the other methods, duty of workshifts is taken into account. The method returns a float number.
 
 To obain the result, the interval is sliced into calendar periods of the given frequency and then each slice of the interval is compared to its corresponding period duty-wise. That is to say, the count of workshifts in the interval's slice is divided by the total count of workshifts in the  period containing this slice but only workshifts with the specified duty are counted. The quotients for each period are summed to produce the return value of the method.
         
@@ -672,4 +674,4 @@ You may accidentally run into this issue in two situations:
 
 - You use compound workshifts and while most of the workshifts (usually those covering the working time) are of one size, there are a few workshifts (usually those covering the closed time) which are much larger. Trying to count periods, you have in mind the smaller workshifts. If a larger one gets into the interval and your period is not long enough, you will find yourself with UnacceptablePeriodError.
 
-- You have misinterpreted the purpose of :py:meth:`count_periods` method and try to use it as a general time counter. For example, in a timeboard with workhifts of varying duration measured in hours, you want to find out how many clock hours there are in an interval. In order to do that use `pandas.Timedelta` tools with `start_time` and `end_time` attributes of workshifts and intervals.
+- You have misinterpreted the purpose of :py:meth:`count_periods` method and try to use it as a general time counter. For example, in a timeboard with workshifts of varying duration measured in hours, you want to find out how many clock hours there are in an interval. In order to do that use `pandas.Timedelta` tools with `start_time` and `end_time` attributes of workshifts and intervals.

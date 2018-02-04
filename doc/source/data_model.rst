@@ -26,7 +26,7 @@ Workshift
 
 **Workshift** is a period of time during which a business agent is either active or not. 
 
-No assumtions are made about what "business" is and who its "agents" may be. It could be regular office workers, or operators in a 24x7 call center, or trains calling at a station on specific days. 
+No assumptions are made about what "business" is and who its "agents" may be. It could be regular office workers, or operators in a 24x7 call center, or trains calling at a station on specific days. 
 
 The activity state of a workshift is called **duty**; therefore for a given business agent the workshift is either "on duty" or "off duty". It is not relevant whether the agent is continuously active through the workshift, or has breaks, or works only for a part of the workshift. The duty is assigned to a workshift as a whole. 
 
@@ -37,7 +37,7 @@ Note that both "on duty" and "off duty" periods are called "workshifts" although
 Frame and Base Units
 ====================
 
-The span of time covered by the timeboard is represented as a reference frame. **Frame** is a monotonous sequence of uniform periods of time called **base units**. The base unit is atomic, meaning that everything on the timeboard consists of an interger number of base units.
+The span of time covered by the timeboard is represented as a reference frame. **Frame** is a monotonous sequence of uniform periods of time called **base units**. The base unit is atomic, meaning that everything on the timeboard consists of an integer number of base units.
 
 
 Timeline
@@ -82,7 +82,7 @@ When reasoning about business days, the time of day when working hours start or 
 
 Moreover, if the number of working hours do vary from day to day (i.e. Friday's hours are shorter) and you need to track that, the task can be solved just with workshift labeling. A workshift still takes a whole day, and within week workshifts are labeled as ``[8, 8, 8, 8, 7, 0, 0]`` reflecting the number of working hours. The default ``selector=bool(label)`` works fine with that. Therefore, while actual workshifts do have varying duration, you do not *need* to model this in the timeline. You can use a simpler timeboard where each workshift correspond to a base unit of one calendar day.
 
-Now consider the case of a 24x7 call center operating in 8 hour shifts. Clearly, a workshift is to be represented by a 8 hour period but this does not necessarily calls for worskhifts consisting of 8 base units, each base unit one hour long. When building the frame, you are not limited to use of base units equal to a single calendar period, i.e. one hour, one day, and so on. You can take a base unit which spans multiple consecutive calendar periods, for example, 8 hours. Therefore, in this case there is still no need to create workshifts consisting of several base units, as 8 hour base units can be directly mapped to 8 hour workshifts.
+Now consider the case of a 24x7 call center operating in 8 hour shifts. Clearly, a workshift is to be represented by a 8 hour period but this does not necessarily calls for workshifts consisting of 8 base units, each base unit one hour long. When building the frame, you are not limited to use of base units equal to a single calendar period, i.e. one hour, one day, and so on. You can take a base unit which spans multiple consecutive calendar periods, for example, 8 hours. Therefore, in this case there is still no need to create workshifts consisting of several base units, as 8 hour base units can be directly mapped to 8 hour workshifts.
 
 However, the things change if we assume that the call center operates shifts of varying durations, i.e. 08:00 to 18:00 (10 hours), 18:00 to 02:00 (8 hours), and 02:00 to 08:00 (6 hours). 
 
@@ -90,7 +90,7 @@ Now the base unit has to be a common divisor of all workshift durations which is
 
 This case cannot be elegantly handled by workshifts bound to base units. This way we would end up, for any day, not with three workshifts of 10, 8 and 6 hours long but with a succession of 24 one-hour workshifts of which either 10, 8 or 6 consecutive ones will be labeled as "on duty". Creating meaningful work schedules and performing calculations for such timeline would be a rather cumbersome challenge. Therefore we have to decouple workshifts from base units and create the timeline where individual workshifts have durations of 10, 8, and 6 base units in the repeating pattern.
 
-Having said that, while in many cases a workshift will coinside with a base unit, these entities have different purposes.
+Having said that, while in many cases a workshift will coincide with a base unit, these entities have different purposes.
 
 A workshift comprising more than one base unit is called **compound workshift**.
 

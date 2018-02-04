@@ -1,12 +1,12 @@
 class OutOfBoundsError(LookupError):
     """Raise on attempt to create or access an object which is outside 
-    timeboard's bounds"""
+    timeboard's bounds."""
     pass
 
 
 class PartialOutOfBoundsError(ValueError):
     """Raise on attempt to construct an object which partially lays within 
-    the timeboard but extends beyond the timeboard's bounds"""
+    the timeboard but extends beyond the timeboard's bounds."""
     pass
 
 class VoidIntervalError(ValueError):
@@ -17,6 +17,6 @@ class VoidIntervalError(ValueError):
 
 class UnacceptablePeriodError(ValueError):
     """Raise on attempt to pass an unsupported or unacceptable calendar 
-    frequency"""
+    frequency."""
     pass
 

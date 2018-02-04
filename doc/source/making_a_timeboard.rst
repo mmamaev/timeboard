@@ -38,7 +38,7 @@ start : `Timestamp`-like
 end : `Timestamp`-like
     Same as `start` but for the last base unit of the timeboard.
 
-The forth parameter, `layout`, describes the timeline of workhifts. 
+The forth parameter, `layout`, describes the timeline of workshifts. 
 
 In the basic case `layout` is simply an iterable of workshift labels. In the above example ``layout=[1, 0, 0]`` means that each workshift occupies one base unit; the workshift at the first base unit receives label 1, the second workshift recevies label 0, the third - again label 0. Further on, label assignment repeats in cycles: the forth workshift will get label 1, the fifth - 0, the sixth - 0, the seventh - 1, and so on. This way the timeline is created.
 
@@ -162,7 +162,7 @@ There are two things in this example to point out.
 
 First, to avoid the compound workshifts we use the 8 hour base unit but we need to align the base units with the workshifts, hence the frame starts at 02:00 o'clock. Note that duration of each workshift equals to one (base unit).
 
-Second, we have overriden the selector function for the default schedule which now sets on duty status for workhifts labeled as 'A'. The name for the default schedule has been changed accordingly to 'shift_A'.
+Second, we have overriden the selector function for the default schedule which now sets on duty status for workshifts labeled as 'A'. The name for the default schedule has been changed accordingly to 'shift_A'.
 
 Should you need to know which workshifts are on duty for the shift labeled with another symbol, you may add another schedule to the timeboard and supply the appropriate selector function::
 
@@ -460,15 +460,15 @@ More sophisticated partitioning is achieved with the tool called :py:class:`.Mar
 
 For each calendar period of frequency `each` we obtain candidate marks by adding offsets from `at` list to the start time of the period.  After that we retain only those candidates that fall within the period (and, obviously, within the frame) - these points become the marks.
 
-For example::
+The expression in the above example::
 
     tb.Marker(each='A', at=[{'months':4}, {'months':8, 'days':15}])
 
-This expression means::
+means::
 
  there are two marks per year; 
  to get the first mark add 4 month to the start of each year; 
- to get the second mark add 8 month and 14 days to the start of the same year. 
+ to get the second mark add 8 month and 15 days to the start of the same year. 
 
 Therefore, the frame is partitioned into spans starting on the 1st of May and on the 16th of September of each year provided that these dates are within the frame bounds.
 
@@ -830,7 +830,7 @@ Caveats
 Not all `Marker` frequencies are valid
 --------------------------------------
 
-Currently `UnsupportedPeriodError` is raised for some combinations of base unit frequency and `Marker` frequency which may result in one base unit belonging to differen adjacent calendar periods marked by the `Marker`.
+Currently `UnacceptablePeriodError` is raised for some combinations of base unit frequency and `Marker` frequency which may result in one base unit belonging to differen adjacent calendar periods marked by the `Marker`.
 
 Base unit is not a subperiod
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -842,9 +842,9 @@ Organizing fails when base unit is not a natural subperiod of the period used by
                             start='01 Oct 2017', end='31 Dec 2017',
                             layout=org)
     ---------------------------------------------------------------------------
-    UnsupportedPeriodError                    Traceback (most recent call last)
+    UnacceptablePeriodError                    Traceback (most recent call last)
     ...
-    UnsupportedPeriodError: Ambiguous organizing: W is not a subperiod of M
+    UnacceptablePeriodError: Ambiguous organizing: W is not a subperiod of M
 
 Indeed, a week may start in one month, and end in another, therefore it is not obvious to which span such a base unit should belong.
 
@@ -874,9 +874,9 @@ Now change base unit frequency from ``'D'`` to ``'24H'``::
                             start='02 Oct 2017', end='15 Oct 2017',
                             layout=org)
     ---------------------------------------------------------------------------
-    UnsupportedPeriodError                    Traceback (most recent call last)
+    UnacceptablePeriodError                    Traceback (most recent call last)
     ...
-    UnsupportedPeriodError: Ambiguous organizing: 24H is not a subperiod of W
+    UnacceptablePeriodError: Ambiguous organizing: 24H is not a subperiod of W
 
 It failed for the following reason. A period of frequency ``'D'`` always starts at 00:00 of a calendar day and thus is guaranteed to be entirely within some week. A period of frequency ``'24H'`` is guaranteed to start at the beginning of some hour but this hour is not necessarily a midnight. For example, a ``'24H'`` period *may* start at 20:00 of a Sunday, therefore its first four hours will fall into one week, and the rest - into another.
 
