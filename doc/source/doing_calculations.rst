@@ -435,6 +435,8 @@ Method          Result
 |count|         Count workshifts with the specified duty in the interval.
 
 |count_periods| How many calendar periods fit into the interval (duty-aware).
+
+|sum|           The sum of labels of workshifts with the specified duty.
 =============== ===============================================================
 
 .. |nth| replace:: :py:meth:`~timeboard.Interval.nth`
@@ -446,6 +448,8 @@ Method          Result
 .. |count| replace:: :py:meth:`~timeboard.Interval.count`
 
 .. |count_periods| replace:: :py:meth:`~timeboard.Interval.count_periods`
+
+.. |sum| replace:: :py:meth:`~timeboard.Interval.sum`
 
 All methods are duty-aware meaning that they "see" only workshifts with the specified duty ignoring the others.
 
@@ -521,6 +525,41 @@ Not taking the duty into account::
     Workshift(8) of 'D' at 2017-10-08
     >>> ivl.count(duty='any')
     7
+
+
+Summing up labels
+-----------------
+
+If labels are numbers, their arithmetic sum is returned. ::
+
+    >>> clnd = tb.Timeboard('D', '01 Oct 2017', '10 Oct 2017',
+                            layout=[1, 2],
+                            default_selector=lambda label: label > 1)
+    >>> ivl = clnd()
+
+In this interval there are ten workshifts: five with label `1` that are off duty and five with label `2` that are on duty. ::
+
+    >>> ivl.sum()
+    10.0
+    >>> ivl.sum(duty='off')
+    5.0
+    >>> ivl.sum(duty='any')
+    15.0
+
+If labels are strings, they are getting concatenated::
+
+    >>> clnd = tb. Timeboard('D', '01 Oct 2017', '10 Oct 2017',
+                             layout=['a', 'b'],
+                             default_selector=lambda label: label=='b')
+    >>> ivl = clnd()
+    >>> ivl.sum()
+    'bbbbb'
+    >>> ivl.sum(duty='off')
+    'aaaaa'
+    >>> ivl.sum(duty='any')
+    'ababababab'
+
+If the type of labels does not define `sum`, `TypeError` is raised.
 
 
 Counting periods

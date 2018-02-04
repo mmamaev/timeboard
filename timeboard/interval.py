@@ -261,8 +261,8 @@ class Interval(object):
             the interval (`n=-1` returns the last workshift with the specified
             duty). 
         duty : {``'on'``, ``'off``', ``'any``'} , optional (default ``'on'``)
-            Duty of workshifts to be counted. If duty='on',
-            off duty workshifts are ignored, and vice versa. If duty='any',
+            Duty of workshifts to be counted. If ``duty='on'``,
+            off duty workshifts are ignored, and vice versa. If ``duty='any'``,
             all workshifts are counted whatever the duty.
         schedule : _Schedule, optional
             If `schedule` is not given, the interval's schedule is used.
@@ -360,8 +360,8 @@ class Interval(object):
         Parameters
         ----------
         duty : {``'on'``, ``'off'``, ``'any'``} , optional (default ``'on'``)
-            Specify the duty of workshifts to be counted. If duty='on',
-            off-duty workshifts are ignored, and vice versa. If duty='any',
+            Specify the duty of workshifts to be counted. If ``duty='on'``,
+            off-duty workshifts are ignored, and vice versa. If ``duty='any'``,
             all workshifts are counted whatever the duty.
         schedule : _Schedule, optional
             If `schedule` is not given, the interval's schedule is used.
@@ -557,9 +557,59 @@ class Interval(object):
 
         return result
 
-    def sum(self):
-        """Return the arithmetic sum of workshift labels"""
-        return sum(self.labels)
+    def sum(self, duty='on', schedule=None):
+        """Return the sum of labels of workshifts with the specified duty.
+        
+        Parameters
+        ----------
+        duty : {``'on'``, ``'off'``, ``'any'``} , optional (default ``'on'``)
+            Specify the duty of workshifts whose labels are to be summed up. 
+            If ``duty='on'``, off-duty workshifts are ignored, and vice versa. 
+            If ``duty='any'``, all workshifts' labels are summed whatever 
+            the duty.
+        schedule : _Schedule, optional
+            If `schedule` is not given, the interval's schedule is used.
+            
+        Returns
+        -------
+        Result of applying `sum` operation to labels. If labels are numbers, 
+        the arithmetic sum is returned. If labels are strings, they are 
+        concatenated.
+        
+        Raises
+        ------
+        TypeError
+            When the type of labels does not define `sum`.
+            
+        Examples
+        --------
+        >>> clnd = tb.Timeboard('D', '01 Oct 2017', '10 Oct 2017',
+                                layout=[1, 2],
+                                default_selector=lambda label: label > 1)
+        >>> ivl = clnd()
+        
+        In this interval there are ten workshifts: five with label `1` that are 
+        off duty and five with label `2` that are on duty.
+        
+        >>> ivl.sum()
+        10.0
+        >>> ivl.sum(duty='off')
+        5.0
+        >>> ivl.sum(duty='any')
+        15.0
+        
+        """
+        if schedule is None:
+            schedule = self.schedule
+        duty_idx, duty_idx_bounds = self._get_duty_idx(duty, schedule)
+
+        if duty_idx_bounds[0] is None or duty_idx_bounds[1] is None:
+            return 0
+        else:
+            return self._tb._timeline[duty_idx[duty_idx_bounds[0]:
+                                               duty_idx_bounds[1]+1]].sum()
+
+        #return sum(self.labels)
 
     def where(self, ws, duty='same'):
         #TODO: Interval.where

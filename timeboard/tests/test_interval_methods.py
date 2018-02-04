@@ -544,25 +544,59 @@ class TestIntervalSchedules(object):
 
 class TestIntervalSum(object):
 
-    def test_ivl_sum(self):
+    def test_ivl_sum_numbers(self):
         clnd = tb. Timeboard('D', '01 Oct 2017', '10 Oct 2017',
-                             layout=[1])
-        assert clnd().sum() == 10
+                             layout=[1,2],
+                             default_selector=lambda label: label>1)
+        ivl = tb.Interval(clnd,(2,9))
+        assert ivl.sum() == 8
+        assert ivl.sum(duty='off') == 4
+        assert ivl.sum(duty='any') == 12
 
         clnd = tb. Timeboard('D', '01 Oct 2017', '10 Oct 2017',
-                             layout=[-2, 1.5])
-        assert clnd().sum() == -2.5
+                             layout=[-2, 1.5],
+                             default_selector=lambda label: label > 0)
+        assert clnd().sum() == 7.5
+        assert clnd().sum(duty='off') == -10.0
+        assert clnd().sum(duty='any') == -2.5
 
+    def test_ivl_sum_strings(self):
         clnd = tb. Timeboard('D', '01 Oct 2017', '10 Oct 2017',
-                             layout=['a'])
-        with pytest.raises(TypeError):
-            clnd().sum()
+                             layout=['a', 'b'],
+                             default_selector=lambda label: label=='b')
+        ivl = tb.Interval(clnd, (2, 9))
+        assert ivl.sum() == 'bbbb'
+        assert ivl.sum(duty='off') == 'aaaa'
+        assert ivl.sum(duty='any') == 'abababab'
+
+    def test_ivl_sum_no_such_duty(self):
+        clnd = tb.Timeboard('D', '01 Oct 2017', '10 Oct 2017',
+                            layout=[1, 2],
+                            )
+        ivl = tb.Interval(clnd, (2, 9))
+        assert ivl.sum() == 12
+        assert ivl.sum(duty='off') == 0
+        assert ivl.sum(duty='any') == 12
+
+        clnd = tb.Timeboard('D', '01 Oct 2017', '10 Oct 2017',
+                            layout=[1, 2],
+                            default_selector=lambda label: label > 2)
+        ivl = tb.Interval(clnd, (2, 9))
+        assert ivl.sum() == 0
+        assert ivl.sum(duty='off') == 12
+        assert ivl.sum(duty='any') == 12
+
+    def test_ivl_sum_exotic_fails(self):
 
         # try some exotic type of labels
         clnd = tb. Timeboard('D', '01 Oct 2017', '10 Oct 2017',
                              layout=[pd.Period('2017', freq='A')])
         with pytest.raises(TypeError):
             clnd().sum()
+        with pytest.raises(TypeError):
+            clnd().sum(duty='any')
+        # however ther is not "off" duty in the interval
+        assert clnd().sum(duty='off') == 0
 
 
     
