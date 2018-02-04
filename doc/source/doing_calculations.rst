@@ -326,7 +326,7 @@ If you intend to base your calculation on another schedule you may pass it in `s
 Caveats
 -------
 
-There are two caveats when you instantiate an interval from a calendar period.
+There are a few caveats when you instantiate an interval from a calendar period.
 
 Period extends beyond timeline
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -336,14 +336,13 @@ If the calendar period extends beyond the timeline, the interval is created as t
     >>> clnd('Oct 2017', period='M')
     Interval(1, 15): 'D' at 2017-10-01 -> 'D' at 2017-10-15 [15]
         
-There is a parameter called `clip_period` which determines how this situation is handled. By default ``clip_period=True`` which results in the behavior illustrated above. If it is set to False, `OutOfBoundsError` is raised::
+There is a parameter called `clip_period` which determines how this situation is handled. By default ``clip_period=True`` which results in the behavior illustrated above. If it is set to False, `PartialOutOfBoundsError` is raised::
 
     >>> clnd('Oct 2017', period='M', clip_period=False)
     -----------------------------------------------------------------------
-    OutOfBoundsError                     Traceback (most recent call last)
+    PartialOutOfBoundsError               Traceback (most recent call last)
     ...
-    OutOfBoundsError: The 2nd bound of interval referenced by `Oct 2017` 
-    is outside Timeboard of 'D': 2017-09-30 -> 2017-10-15
+    PartialOutOfBoundsError: The right bound of interval referenced by `Oct 2017` is outside Timeboard of 'D': 2017-09-30 -> 2017-10-15
 
 .. _workshift-straddling-1:
 
@@ -391,6 +390,32 @@ If ``workshift_ref='end'``, then the end time of workshift is used as the indica
 
     >>> clnd('02 Oct 2017', period='D')
     Interval((0, 1)): '12H' at 2017-10-01 21:00 -> '12H' at 2017-10-02 09:00 [2]
+
+
+Period too short for workshifts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In a corner case you can try to obtain an interval from a period which is shorter than the workshifts in this area of the timeline. For example, in a timeboard with daily workshifts you seek an interval defined by an hour::
+
+    >>> clnd = tb.Timeboard('D', '30 Sep 2017', '05 Oct 2017', layout=[1])
+    >>> ivl = clnd.get_interval('02 Oct 2017 00:00', period='H')
+
+However meaningless, this operation is handled according to the same logic of attributing a workshift to the period as discussed in the previous section. In this timeboard the workshift reference time is its start time (the default setting). The hour starting at 02 Oct 2017 00:00 contains the reference time of the daily workshift of October 2. Hence, technically this one day workshift is the member of that one hour period and, therefore, becomes the only element of the sought interval::
+
+    >>> print(ivl)
+    Interval((2, 2)): 'D' at 2017-10-02 -> 'D' at 2017-10-02 [1]
+
+         workshift      start  duration        end  label  on_duty
+    loc                                                           
+    2   2017-10-02 2017-10-02         1 2017-10-02    1.0     True
+
+On the other hand, if you try to obtain an interval from another hour of the same day, `VoidIntervalError` will be raised as no workshift has it reference time within that hour::
+
+    >>> clnd.get_interval('02 Oct 2017 01:00', period='H')
+    ---------------------------------------------------------------------------
+    VoidIntervalError                         Traceback (most recent call last)
+    ...
+    VoidIntervalError: Attempted to create reversed or void interval referenced by `02 Oct 2017 01:00` within Timeboard of 'D': 2017-09-30 -> 2017-10-05
 
 
 Interval-based calculations
@@ -588,9 +613,9 @@ All workshifts of `ivl1` belong to the week of October 2 - 8 which is situated e
         0.14285714285714285
         >>> ivl2.count_periods('W')
         ----------------------------------------------------------------------
-        OutOfBoundsError                     Traceback (most recent call last)
+        PartialOutOfBoundsError              Traceback (most recent call last)
         ...
-        OutOfBoundsError: The 1st bound of interval or period referenced by `2017-09-25/2017-10-01` is outside Timeboard of 'H': 2017-10-01 00:00 -> 2017-10-08 23:00
+        PartialOutOfBoundsError: The left bound of interval or period referenced by `2017-09-25/2017-10-01` is outside Timeboard of 'H': 2017-10-01 00:00 -> 2017-10-08 23:00
 
 
 Workshift straddles period boundary
@@ -598,3 +623,14 @@ Workshift straddles period boundary
 
 This case is analogous to already reviewed  
 :ref:`issue <workshift-straddling-1>` of contructing an interval from a calendar period. :py:class:`.Timeboard`\ .\ :py:attr:`workshift_ref` attribute  is used to identify workshift's membership in a period. 
+
+Period too short for workshifts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you try to count periods which are shorter than (some) of the workshifts in the interval, you are likely to encounter a period which does not contain *any* workshift's reference whatever the duty. This makes any result meaningless and, concequently, `UnacceptablePeriodError` is raised. 
+
+You may accidentally run into this issue in two situations:
+
+- You use compound workshifts and while most of the workshifts (usually those covering the working time) are of one size, there are a few workshifts (usually those covering the closed time) which are much larger. Trying to count periods, you have in mind the smaller workshifts. If a larger one gets into the interval and your period is not long enough, you will find yourself with UnacceptablePeriodError.
+
+- You have misinterpreted the purpose of :py:meth:`count_periods` method and try to use it as a general time counter. For example, in a timeboard with workhifts of varying duration measured in hours, you want to find out how many clock hours there are in an interval. In order to do that use `pandas.Timedelta` tools with `start_time` and `end_time` attributes of workshifts and intervals.

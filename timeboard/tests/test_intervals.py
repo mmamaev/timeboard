@@ -1,7 +1,8 @@
 import timeboard as tb
 from timeboard.interval import Interval
 from timeboard.workshift import Workshift
-from timeboard.exceptions import OutOfBoundsError, VoidIntervalError
+from timeboard.exceptions import (OutOfBoundsError, PartialOutOfBoundsError,
+                                  VoidIntervalError)
 from timeboard.timeboard import _Location, OOB_LEFT, OOB_RIGHT, LOC_WITHIN
 
 import datetime
@@ -295,23 +296,23 @@ class TestIntervalConstructorWithTS:
     def test_interval_constructor_with_OOB_ts(self):
         clnd = tb_12_days()
         # only one end of the interval is OOB
-        with pytest.raises(OutOfBoundsError):
+        with pytest.raises(PartialOutOfBoundsError):
             ivl = clnd.get_interval(('02 Jan 2017 15:00', '13 Jan 2017 15:00'))
-        with pytest.raises(OutOfBoundsError):
+        with pytest.raises(PartialOutOfBoundsError):
             clnd.get_interval(('02 Jan 2017 15:00', '13 Jan 2017 15:00'),
                               clip_period=False)
-        with pytest.raises(OutOfBoundsError):
+        with pytest.raises(PartialOutOfBoundsError):
             clnd(('02 Jan 2017 15:00', '13 Jan 2017 15:00'),
                               clip_period=False)
-        with pytest.raises(OutOfBoundsError):
+        with pytest.raises(PartialOutOfBoundsError):
             ivl = clnd.get_interval(('30 Dec 2016 15:00', '08 Jan 2017 15:00'))
-        with pytest.raises(OutOfBoundsError):
+        with pytest.raises(PartialOutOfBoundsError):
             clnd.get_interval(('30 Dec 2016 15:00', '08 Jan 2017 15:00'),
                               clip_period=False)
         # the interval spans over the timeboard
-        with pytest.raises(OutOfBoundsError):
+        with pytest.raises(PartialOutOfBoundsError):
             ivl = clnd.get_interval(('30 Dec 2016 15:00', '13 Jan 2017 15:00'))
-        with pytest.raises(OutOfBoundsError):
+        with pytest.raises(PartialOutOfBoundsError):
             clnd.get_interval(('30 Dec 2016 15:00', '13 Jan 2017 15:00'),
                               clip_period=False)
         with pytest.raises(VoidIntervalError):
@@ -422,10 +423,10 @@ class TestIntervalConstructorFromPeriod:
         #period is defined by good ts but extends beyond the left bound of clnd
         ivl = clnd.get_interval('01 Jan 2017 15:00', period='W')
         assert ivl._loc == (0, 1)
-        with pytest.raises(OutOfBoundsError):
+        with pytest.raises(PartialOutOfBoundsError):
             clnd.get_interval('01 Jan 2017 15:00', period='W',
                               clip_period=False)
-        with pytest.raises(OutOfBoundsError):
+        with pytest.raises(PartialOutOfBoundsError):
             clnd('01 Jan 2017 15:00', period='W',
                               clip_period=False)
         #same period defined by outside ts
@@ -434,7 +435,7 @@ class TestIntervalConstructorFromPeriod:
         #period is defined by good ts but extends beyond the right bound of clnd
         ivl = clnd.get_interval('10 Jan 2017 15:00', period='W')
         assert ivl._loc == (9, 12)
-        with pytest.raises(OutOfBoundsError):
+        with pytest.raises(PartialOutOfBoundsError):
             clnd.get_interval('10 Jan 2017 15:00', period='W',
                               clip_period=False)
         #same period defined by outside ts
@@ -443,7 +444,7 @@ class TestIntervalConstructorFromPeriod:
         #period spans over clnd (a year ending on 31 March)
         ivl = clnd.get_interval('10 Mar 2017 15:00', period='A-MAR')
         assert ivl._loc == (0, 12)
-        with pytest.raises(OutOfBoundsError):
+        with pytest.raises(PartialOutOfBoundsError):
             clnd.get_interval('10 Mar 2017 15:00', period='A-MAR',
                               clip_period=False)
         #period is completely outside clnd
@@ -479,19 +480,19 @@ class TestIntervalConstructorFromPeriod:
         # period defined by good ts but extends beyond the reight bound of clnd
         ivl = clnd.get_interval(pd.Period('10 Jan 2017 15:00', freq='W'))
         assert ivl._loc == (9, 12)
-        with pytest.raises(OutOfBoundsError):
+        with pytest.raises(PartialOutOfBoundsError):
             clnd.get_interval(pd.Period('10 Jan 2017 15:00', freq='W'),
                               clip_period=False)
         # period defined by good ts but extends beyond the left bound of clnd
         ivl = clnd.get_interval(pd.Period('01 Jan 2017 15:00', freq='W'))
         assert ivl._loc == (0, 1)
-        with pytest.raises(OutOfBoundsError):
+        with pytest.raises(PartialOutOfBoundsError):
             clnd.get_interval(pd.Period('01 Jan 2017 15:00', freq='W'),
                               clip_period=False)
         # period overlapping clnd
         ivl = clnd.get_interval(pd.Period('08 Mar 2017 15:00', freq='A-MAR'))
         assert ivl._loc == (0, 12)
-        with pytest.raises(OutOfBoundsError):
+        with pytest.raises(PartialOutOfBoundsError):
             clnd.get_interval(pd.Period('08 Mar 2017 15:00', freq='A-MAR'),
                               clip_period=False)
         # period completely outside clnd
@@ -653,11 +654,15 @@ class TestIntervalConstructorWithLength:
         # some other interval you did not ask for
         #
         # starts inside clnd, ends OOB
-        with pytest.raises(OutOfBoundsError):
+        # this is PartialOutOfBoundsError because we can clip the interval
+        # at timeboard's bound and may not care about the outside
+        with pytest.raises(PartialOutOfBoundsError):
             clnd.get_interval('02 Jan 2017 15:00', length=20)
-        with pytest.raises(OutOfBoundsError):
+        with pytest.raises(PartialOutOfBoundsError):
             clnd('02 Jan 2017 15:00', length=20)
-        # starts OOB, ends inside clnd
+        # we cannot start an interval OOB because we cannot the  outside
+        # is not structured into workshifts, hence we cannot count them.
+        # So this is NOT PartialOutOfBoundsError
         with pytest.raises(OutOfBoundsError):
             clnd.get_interval('30 Dec 2016 15:00', length=10)
         # starts and ends OOB, spans over clnd

@@ -1,7 +1,7 @@
 from __future__ import division
 from .exceptions import (OutOfBoundsError,
                          VoidIntervalError,
-                         UnsupportedPeriodError)
+                         UnacceptablePeriodError)
 from .when import (from_start_of_each,
                    nth_weekday_of_month,
                    from_easter_western, from_easter_orthodox)
@@ -366,7 +366,7 @@ class _Frame(pd.PeriodIndex):
         
         Raises
         ------
-        UnsupportedPeriodError (ValueError)
+        UnacceptablePeriodError
             If `marker` uses a period which is not guaranteed to be a 
             multiple of frame's `base_unit_freq` aligned with boundaries of
             base units.
@@ -398,9 +398,9 @@ class _Frame(pd.PeriodIndex):
         each, and their `skip_left` and `skip_right` attributes are zeroed. 
         """
         if not _check_groupby_freq(self._base_unit_freq, marker.each):
-            raise UnsupportedPeriodError('Ambiguous organizing: '
+            raise UnacceptablePeriodError('Ambiguous organizing: '
                                          '{} is not a subperiod of {}'
-                                         .format(self._base_unit_freq,
+                                          .format(self._base_unit_freq,
                                                  marker.each))
         self.check_span(span)
         span_start_ts = self[span.first].start_time
@@ -562,11 +562,11 @@ class _Timeline(object):
         
     Raises
     ------
-    UnsupportedPeriodError (ValueError)
+    UnacceptablePeriodError
         If `base_unit_freq` is not supported or Organizer required to 
         partition the frame in periods whose frequency is not a multiple of 
         `base_unit_freq`.
-    VoidIntervalError (ValueError)
+    VoidIntervalError
         If an instantiation of an empty timeline is attempted.
         
     Attributes

@@ -2,8 +2,8 @@ import timeboard as tb
 from timeboard.interval import Interval
 from timeboard.workshift import Workshift
 from timeboard.exceptions import (OutOfBoundsError,
-                                  VoidIntervalError,
-                                  UnsupportedPeriodError)
+                                  PartialOutOfBoundsError,
+                                  UnacceptablePeriodError)
 
 import datetime
 import pandas as pd
@@ -317,7 +317,7 @@ class TestIntervalDaysCountPeriodsCornerCases(object):
         clnd = tb_281116_020517_8x5()
         ivl = clnd.get_interval(('29 Nov 2016', '01 Dec 2016'))
         # Part of Nov 2016 is outside the tb
-        with pytest.raises(OutOfBoundsError):
+        with pytest.raises(PartialOutOfBoundsError):
             ivl.count_periods('M')
         # however ivl does not have off-duty units,
         # so if duty='off' is given, the result will be zero for any periods,
@@ -325,7 +325,7 @@ class TestIntervalDaysCountPeriodsCornerCases(object):
         assert   ivl.count_periods('M', duty='off') == 0
         # Part of May 2017 is outside the tb
         ivl = clnd.get_interval(('24 Apr 2017', '01 May 2017'))
-        with pytest.raises(OutOfBoundsError):
+        with pytest.raises(PartialOutOfBoundsError):
             ivl.count_periods('M')
 
 
@@ -365,9 +365,9 @@ class TestIntervalDaysCountPeriodsCornerCases(object):
     def test_interval_d_count_periods_higher_freq(self):
         clnd = tb_281116_020517_8x5()
         ivl = clnd.get_interval(('30 Mar 2017', '01 Apr 2017'))
-        with pytest.raises(UnsupportedPeriodError):
+        with pytest.raises(UnacceptablePeriodError):
             ivl.count_periods('H')
-        with pytest.raises(UnsupportedPeriodError):
+        with pytest.raises(UnacceptablePeriodError):
             ivl.count_periods('T')
 
     def test_interval_d_count_periods_unsupported(self):
@@ -377,12 +377,12 @@ class TestIntervalDaysCountPeriodsCornerCases(object):
         # We do not support periods with multipliers,
         # as it does not make sense in the context of count_periods
         for p in ('5D', '4W', '3M', '2A', '2Q'):
-            with pytest.raises(UnsupportedPeriodError):
+            with pytest.raises(UnacceptablePeriodError):
                 ivl.count_periods(p)
         # Neither we support offsets bound to 'start', 'end' or 'business'
         for p in ('MS', 'BM', 'BMS', 'CBM', 'CBMS', 'BQ', 'QS', 'BQS',
                   'BA', 'BS', 'BAS', 'BH'):
-            with pytest.raises(UnsupportedPeriodError):
+            with pytest.raises(UnacceptablePeriodError):
                 ivl.count_periods(p)
 
 
@@ -432,40 +432,40 @@ class TestIntervalCountPeriodsCornerCases(object):
 
     def test_ivl_count_periods_shorter_than_ws_at_start(self):
         clnd = clnd_variable_mins()
-        ivl = clnd(('01 Oct 2017 00:00', '01 Oct 2017 04:59'))
+        ivl = Interval(clnd, (0,3))
         # 3H long ws #0 is first in ivl
-        with pytest.raises(UnsupportedPeriodError):
+        with pytest.raises(UnacceptablePeriodError):
             ivl.count_periods('H')
-        with pytest.raises(UnsupportedPeriodError):
+        with pytest.raises(UnacceptablePeriodError):
             ivl.count_periods('H', duty='off')
-        with pytest.raises(UnsupportedPeriodError):
+        with pytest.raises(UnacceptablePeriodError):
             ivl.count_periods('H', duty='any')
 
     def test_ivl_count_periods_shorter_than_ws_at_mid(self):
         clnd = clnd_variable_mins()
-        ivl = clnd(('01 Oct 2017 05:00', '01 Oct 2017 09:59'))
+        ivl = Interval(clnd, (5, 9))
         # 3H long ws #7 is in the middle of ivl
-        with pytest.raises(UnsupportedPeriodError):
+        with pytest.raises(UnacceptablePeriodError):
             ivl.count_periods('H')
-        with pytest.raises(UnsupportedPeriodError):
+        with pytest.raises(UnacceptablePeriodError):
             ivl.count_periods('H', duty='off')
-        with pytest.raises(UnsupportedPeriodError):
+        with pytest.raises(UnacceptablePeriodError):
             ivl.count_periods('H', duty='any')
 
     def test_ivl_count_periods_shorter_than_ws_at_end(self):
         clnd = clnd_variable_mins()
-        ivl = clnd(('01 Oct 2017 11:00', '01 Oct 2017 14:59'))
+        ivl = Interval(clnd, (12, 14))
         # 3H long ws #14 is the last in ivl
-        with pytest.raises(UnsupportedPeriodError):
+        with pytest.raises(UnacceptablePeriodError):
             ivl.count_periods('H')
-        with pytest.raises(UnsupportedPeriodError):
+        with pytest.raises(UnacceptablePeriodError):
             ivl.count_periods('H', duty='off')
-        with pytest.raises(UnsupportedPeriodError):
+        with pytest.raises(UnacceptablePeriodError):
             ivl.count_periods('H', duty='any')
 
     def test_ivl_count_periods_avoiding_long_ws(self):
         clnd = clnd_variable_mins()
-        ivl = clnd(('01 Oct 2017 03:05', '01 Oct 2017 04:34'))
+        ivl = Interval(clnd, (1, 3))
         # ivl contains ws 1, 2, 3
         # ws 1, 2 fall into hour of 03:00; ws 3, 4 fall into hour of 04:00
         assert ivl.count_periods('H') == 1.0 # (1/1 + 0/1)
@@ -474,7 +474,7 @@ class TestIntervalCountPeriodsCornerCases(object):
 
     def test_ivl_count_periods_long_ws_caught_by_period(self):
         clnd = clnd_variable_mins('end')
-        ivl = clnd(('01 Oct 2017 03:05', '01 Oct 2017 04:34'))
+        ivl = Interval(clnd, (1, 3))
         # ivl contains ws 1, 2, 3
         # hour of 03:00 catches ws 0 as ws ref time is end time
         # ws 0 is 3 hours long but it is NOT in the interval so we don't raise

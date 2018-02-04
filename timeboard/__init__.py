@@ -9,8 +9,9 @@ from .core import Organizer, Marker, RememberingPattern
 from .interval import Interval
 from .workshift import Workshift
 from .exceptions import (OutOfBoundsError,
+                         PartialOutOfBoundsError,
                          VoidIntervalError,
-                         UnsupportedPeriodError)
+                         UnacceptablePeriodError)
 
 import os
 

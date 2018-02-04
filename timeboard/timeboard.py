@@ -3,7 +3,9 @@ from .core import (_Frame, _Timeline, _Schedule,
                    Organizer, get_period, get_timestamp, _is_iterable)
 from .workshift import Workshift
 from .interval import Interval
-from .exceptions import OutOfBoundsError, VoidIntervalError
+from .exceptions import (OutOfBoundsError,
+                         PartialOutOfBoundsError,
+                         VoidIntervalError)
 from collections import namedtuple
 from math import copysign
 import warnings
@@ -86,7 +88,7 @@ class Timeboard(object):
     
     Raises
     ------
-    UnsupportedPeriodError
+    UnacceptablePeriodError
         If `base_unit_freq` is not supported or an `Organizer` attempted 
         to partition the reference frame  by a period which is not a multiple 
         of `base_unit_freq`.
@@ -600,9 +602,10 @@ class Timeboard(object):
             
             - when value of `length` is zero;
             
-            - in a corner case when trying to obtain an interval from period
-            which is smaller than a workshift and located in such a position 
-            that it does not contain any workshift's reference time.
+            - in a corner case when trying to obtain an interval from a period
+            which is shorter than a workshift and located within the timeline
+            in such a position that this period does not contain any 
+            workshift's reference time.
             
         TypeError
             If the combination of parameters passed to the method is not 
@@ -729,16 +732,21 @@ class Timeboard(object):
                                                       self.compact_str))
 
         if locs[0].position is None and locs[1].position is None:
-            raise OutOfBoundsError("Interval referenced by `{}` is "
-                                   "completely outside {}".
-                                   format(interval_ref, self.compact_str))
+            if locs[0].where == locs[1].where:
+                raise OutOfBoundsError("Interval referenced by `{}` is "
+                                       "completely outside {}".
+                                       format(interval_ref, self.compact_str))
+            else:
+                raise PartialOutOfBoundsError("Interval referenced by `{}` "
+                                       "overlaps {}".
+                                       format(interval_ref, self.compact_str))
         if locs[0].position is None:
-            raise OutOfBoundsError("The left bound of interval or "
+            raise PartialOutOfBoundsError("The left bound of interval or "
                                    "period referenced by `{}` "
                                    "is outside {}".format(interval_ref,
                                                           self.compact_str))
         if locs[1].position is None:
-            raise OutOfBoundsError("The right bound of interval or "
+            raise PartialOutOfBoundsError("The right bound of interval or "
                                    "period referenced by `{}` "
                                    "is outside {}".format(interval_ref,
                                                           self.compact_str))
@@ -781,15 +789,19 @@ class Timeboard(object):
                             'as a tuple'.format(length, type(length)))
         if length == 0:
             return self._handle_void_interval('Interval length cannot be zero')
-        loc0 = self._locate(start_ref)
-        if loc0.position is None:
-            return [loc0, loc0]
-        indices = sorted([loc0.position,
-                         loc0.position + length - int(copysign(1, length))])
-        return self._strip_interval_locs(
-                    [_Location(indices[0], LOC_WITHIN),
-                     _Location(indices[1], LOC_WITHIN)],
-                    drop_head, drop_tail)
+        this_loc = self._locate(start_ref)
+        if this_loc.position is None:
+            return [this_loc, this_loc]
+        other_position = this_loc.position + length - int(copysign(1, length))
+        if other_position < 0:
+            locs = [_Location(None, OOB_LEFT), this_loc]
+        elif other_position >= len(self._timeline):
+            locs = [this_loc, _Location(None, OOB_RIGHT)]
+        elif other_position < this_loc.position:
+            locs = [_Location(other_position, LOC_WITHIN), this_loc]
+        else:
+            locs = [this_loc, _Location(other_position, LOC_WITHIN)]
+        return self._strip_interval_locs(locs, drop_head, drop_tail)
 
     def _get_interval_locs_by_period(self, period_ref, period_freq,
                                      clip_period, drop_head, drop_tail):

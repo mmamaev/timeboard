@@ -2,7 +2,7 @@
 from timeboard.core import _Frame, _Span
 from timeboard.exceptions import (OutOfBoundsError,
                                   VoidIntervalError,
-                                  UnsupportedPeriodError)
+                                  UnacceptablePeriodError)
 import pandas as pd
 import datetime
 import pytest

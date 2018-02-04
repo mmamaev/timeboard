@@ -1,5 +1,5 @@
 from timeboard.core import _Frame, _Span, Marker, get_timestamp
-from timeboard.exceptions import UnsupportedPeriodError
+from timeboard.exceptions import UnacceptablePeriodError
 import pytest
 from pandas import Period
 
@@ -639,12 +639,12 @@ class TestWeeksSplitBy(object):
 
     def test_weeks_splitby_months(self):
         f = _Frame(base_unit_freq='W', start='01 Jan 2017', end='01 Mar 2017')
-        with pytest.raises(UnsupportedPeriodError):
+        with pytest.raises(UnacceptablePeriodError):
             f.partition_with_marker(_Span(0, len(f) - 1), Marker('M'))
 
     def test_weeks_splitby_years(self):
         f = _Frame(base_unit_freq='W', start='31 Dec 2016', end='01 Mar 2017')
-        with pytest.raises(UnsupportedPeriodError):
+        with pytest.raises(UnacceptablePeriodError):
             f.partition_with_marker(_Span(0, len(f) - 1), Marker('A'))
 
 
@@ -686,12 +686,12 @@ class TestMultipliedFreqSplitBy(object):
 
     def test_4D_splitby_weeks(self):
         f = _Frame(base_unit_freq='4D', start='01 Jan 2017', end='19 Jan 2017')
-        with pytest.raises(UnsupportedPeriodError):
+        with pytest.raises(UnacceptablePeriodError):
             f.partition_with_marker(_Span(0, len(f) - 1), Marker('W'))
 
     def test_4D_splitby_months(self):
         f = _Frame(base_unit_freq='4D', start='01 Jan 2017', end='19 Jan 2017')
-        with pytest.raises(UnsupportedPeriodError):
+        with pytest.raises(UnacceptablePeriodError):
             f.partition_with_marker(_Span(0, len(f) - 1), Marker('M'))
 
     def test_4D_splitby_8D(self):
@@ -753,7 +753,7 @@ class TestMultipliedFreqSplitBy(object):
         f = _Frame(base_unit_freq='12H', start='02 Jan 2017 13:05',
                    end='04 Jan 2017 10:00')
         # these 12H periods are not aligned with boundaries of days
-        with pytest.raises(UnsupportedPeriodError):
+        with pytest.raises(UnacceptablePeriodError):
             f.partition_with_marker(_Span(0, len(f) - 1), Marker('D'))
 
     @pytest.mark.xfail(reason='Case not covered by _check_groupby_freq')
@@ -771,21 +771,21 @@ class TestMultipliedFreqSplitBy(object):
                    end='30 Jan 2017')
         # these 12H periods are not aligned with boundaries of days, and,
         # consequently. of weeks
-        with pytest.raises(UnsupportedPeriodError):
+        with pytest.raises(UnacceptablePeriodError):
             f.partition_with_marker(_Span(0, len(f) - 1), Marker('2W'))
 
     def test_splitby_different_multiple_freqs4(self):
         f = _Frame(base_unit_freq='9H', start='02 Jan 2017',
                    end='30 Jan 2017')
-        with pytest.raises(UnsupportedPeriodError):
+        with pytest.raises(UnacceptablePeriodError):
             f.partition_with_marker(_Span(0, len(f) - 1), Marker('D'))
-        with pytest.raises(UnsupportedPeriodError):
+        with pytest.raises(UnacceptablePeriodError):
             f.partition_with_marker(_Span(0, len(f) - 1), Marker('2W'))
 
     def test_splitby_different_multiple_freqs5(self):
         f = _Frame(base_unit_freq='48H', start='02 Jan 2017',
                    end='30 Jan 2017')
-        with pytest.raises(UnsupportedPeriodError):
+        with pytest.raises(UnacceptablePeriodError):
             f.partition_with_marker(_Span(0, len(f) - 1), Marker('D'))
 
     @pytest.mark.xfail(reason='Case not covered by _check_groupby_freq')
@@ -798,7 +798,7 @@ class TestMultipliedFreqSplitBy(object):
         f = _Frame(base_unit_freq='48H', start='02 Jan 2017 01:00',
                    end='30 Jan 2017')
         # these 48H periods are not aligned with boundaries of days
-        with pytest.raises(UnsupportedPeriodError):
+        with pytest.raises(UnacceptablePeriodError):
             f.partition_with_marker(_Span(0, len(f) - 1), Marker('4D'))
 
     @pytest.mark.xfail(reason='Case not covered by _check_groupby_freq')
@@ -812,7 +812,7 @@ class TestMultipliedFreqSplitBy(object):
         f = _Frame(base_unit_freq='7H', start='03 Jan 2017 00:00',
                    end='30 Jan 2017')
         # these 7H periods are not aligned with boundaries of weeks
-        with pytest.raises(UnsupportedPeriodError):
+        with pytest.raises(UnacceptablePeriodError):
             f.partition_with_marker(_Span(0, len(f) - 1), Marker('W'))
 
     # CORNER CASES
@@ -830,12 +830,12 @@ class TestSplitByWeird(object):
 
     def test_splitby_higher_freq_aligned(self):
         f = _Frame(base_unit_freq='D', start='01 Jan 2017', end='03 Jan 2017')
-        with pytest.raises(UnsupportedPeriodError):
+        with pytest.raises(UnacceptablePeriodError):
             f.partition_with_marker(_Span(0, len(f) - 1), Marker('H'))
 
     def test_splitby_higher_freq_not_aligned(self):
         f = _Frame(base_unit_freq='M', start='01 Jan 2017', end='01 Feb 2017')
-        with pytest.raises(UnsupportedPeriodError):
+        with pytest.raises(UnacceptablePeriodError):
             f.partition_with_marker(_Span(0, len(f) - 1), Marker('W'))
 
     # TODO: test other pandas freqs injected as offset methods  \

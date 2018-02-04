@@ -1,7 +1,7 @@
 from __future__ import division
 from .exceptions import (OutOfBoundsError,
                          VoidIntervalError,
-                         UnsupportedPeriodError)
+                         UnacceptablePeriodError)
 from .workshift import Workshift
 from .core import _Frame, _check_groupby_freq, _Schedule
 
@@ -428,9 +428,9 @@ class Interval(object):
             If the calendar period containing the first or the last 
             workshift of the interval (subject to duty) extends outside 
             the timeboard.
-        UnsupportedPeriodError
-            If `period` is not valid for this method or is not a multiple
-            of timeboard's base unit.
+        UnacceptablePeriodError
+            If `period` is not valid for this method or is shorter than (some)
+            workshifts in the interval.
         
         Examples
         --------
@@ -484,12 +484,8 @@ class Interval(object):
         SUPPORTED_PERIODS = ('S', 'T', 'min', 'H', 'D', 'W', 'M', 'Q', 'A', 'Y')
         #TODO: support shifted periods (i.e. W-TUE, A-MAR)
         if period not in SUPPORTED_PERIODS:
-            raise UnsupportedPeriodError('Period {!r} is not supported'.
-                                         format(period))
-        if not _check_groupby_freq(self._tb.base_unit_freq, period):
-            raise UnsupportedPeriodError('Period {!r} is not a superperiod '
-                                         'of timeboard\'s base unit {!r}'.
-                                         format(period, self._tb.base_unit_freq))
+            raise UnacceptablePeriodError('Period {!r} is not supported'.
+                                          format(period))
         if schedule is None:
             schedule = self.schedule
         try:
@@ -498,18 +494,40 @@ class Interval(object):
         except OutOfBoundsError:
             return 0.0
 
-        period_index = _Frame(start=ivl_duty_start_ts, end=ivl_duty_end_ts,
+        period_index = _Frame(start=self.start_time,
+                              end=self.end_time,
                               base_unit_freq=period)
-        first_period_ivl = self._tb.get_interval(
-            period_index[0],
-            clip_period=False, schedule=schedule)
-        len_of_1st_period = first_period_ivl.count(duty=duty, schedule=schedule)
-        last_period_ivl = self._tb.get_interval(
-            period_index[-1],
-            clip_period=False, schedule=schedule)
-        len_of_last_period = last_period_ivl.count(duty=duty, schedule=schedule)
+        period_duty_count = []
+        period_intervals = []
+        for p in period_index:
+            try:
+                period_ivl = self._tb.get_interval(
+                                p,
+                                clip_period=False,
+                                schedule=schedule
+                             )
+            except OutOfBoundsError:
+                period_intervals.append(None)
+                period_duty_count.append(None)
+            except VoidIntervalError:
+                raise UnacceptablePeriodError("Attempted to count periods {} "
+                                             "that are shorter than workshifts "
+                                             "in interval {!r}".format(
+                                              period, self))
+            else:
+                period_intervals.append(period_ivl)
+                period_duty_count.append(period_ivl.count(duty=duty,
+                                                          schedule=schedule))
 
-        if ivl_duty_end_ts <= period_index[0].end_time:
+        first_period_with_duty_loc = period_index.get_loc(ivl_duty_start_ts)
+        first_period_ivl = period_intervals[first_period_with_duty_loc]
+        len_of_1st_period = period_duty_count[first_period_with_duty_loc]
+
+        last_period_with_duty_loc = period_index.get_loc(ivl_duty_end_ts)
+        last_period_ivl = period_intervals[last_period_with_duty_loc]
+        len_of_last_period = period_duty_count[last_period_with_duty_loc]
+
+        if ivl_duty_end_ts <= period_index[first_period_with_duty_loc].end_time:
             ivl_units_in_only_period = self.count(duty=duty, schedule=schedule)
             return ivl_units_in_only_period / len_of_1st_period
 
@@ -528,17 +546,14 @@ class Interval(object):
         ).count(duty=duty, schedule=schedule)
         result += ivl_units_in_last_period / len_of_last_period
 
-        full_periods_in_ivl = len(period_index) - 2
+        full_periods_in_ivl = last_period_with_duty_loc - \
+                              first_period_with_duty_loc - 1
+                              #len(period_index) - 2
         if full_periods_in_ivl > 0:
-
-            def duty_is_present(p):
-                return self._tb.get_interval(
-                           p,
-                           clip_period=False,
-                           schedule=schedule
-                       ).count(duty=duty, schedule=schedule) > 0
-
-            result += sum(map(duty_is_present, period_index[1:-1]))
+            result += sum(map(lambda x: x > 0,
+                              period_duty_count[first_period_with_duty_loc+1:
+                                                last_period_with_duty_loc])
+                          )
 
         return result
 

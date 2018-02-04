@@ -1,7 +1,6 @@
 import timeboard as tb
 from timeboard.interval import Interval
-from timeboard.exceptions import OutOfBoundsError, VoidIntervalError
-from timeboard.timeboard import _Location, OOB_LEFT, OOB_RIGHT, LOC_WITHIN
+from timeboard.exceptions import OutOfBoundsError, PartialOutOfBoundsError
 
 import datetime
 import pandas as pd
@@ -149,6 +148,8 @@ class TestIntervalCompoundConstructor:
 
     def test_interval_constructor_compound_with_period_partial(self):
         clnd = tb_10_8_6_hours()
+        # this period is completely outside the tb because the last workshift's
+        # ref time is in the previous day Oct 5
         with pytest.raises(OutOfBoundsError):
             clnd.get_interval('06 Oct 2017 00:15', period='D')
 
@@ -164,7 +165,7 @@ class TestIntervalCompoundConstructor:
 
         ivl = clnd.get_interval('06 Oct 2017 20:15', period='D')
         assert ivl._loc == (15, 15)
-        with pytest.raises(OutOfBoundsError):
+        with pytest.raises(PartialOutOfBoundsError):
             ivl = clnd.get_interval('06 Oct 2017 00:15', period='D',
                                     clip_period=False)
 
@@ -180,7 +181,7 @@ class TestIntervalCompoundConstructor:
 
         ivl = clnd.get_interval('30 Sep 2017 12:00', period='W')
         assert ivl._loc == (0, 3)
-        with pytest.raises(OutOfBoundsError):
+        with pytest.raises(PartialOutOfBoundsError):
             ivl = clnd.get_interval('01 Oct 2017 00:15', period='W',
                                     clip_period=False)
 
@@ -196,7 +197,7 @@ class TestIntervalCompoundConstructor:
 
         ivl = clnd.get_interval('30 Sep 2017 12:00', period='W')
         assert ivl._loc == (0, 2)
-        with pytest.raises(OutOfBoundsError):
+        with pytest.raises(PartialOutOfBoundsError):
             ivl = clnd.get_interval('01 Oct 2017 00:15', period='W',
                                     clip_period=False)
 
@@ -350,7 +351,7 @@ class TestIntervalCompoundCountPeriodsOOB(object):
     def test_ivl_compound_count_periods_OOB(self):
         clnd = tb_10_8_6_hours()
         ivl = Interval(clnd, (0, 2))
-        with pytest.raises(OutOfBoundsError):
+        with pytest.raises(PartialOutOfBoundsError):
             ivl.count_periods('W')
 
     def test_ivl_compound_count_periods_OOB_floating(self):
@@ -359,6 +360,6 @@ class TestIntervalCompoundCountPeriodsOOB(object):
         assert ivl.count_periods('D', duty='off') == 1.0 / 2.0
         clnd = tb_10_8_6_hours(workshift_ref='end')
         ivl = Interval(clnd, (14, 15))
-        with pytest.raises(OutOfBoundsError):
+        with pytest.raises(PartialOutOfBoundsError):
             ivl.count_periods('D', duty='off')
 
