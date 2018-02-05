@@ -25,7 +25,7 @@ def from_start_of_each(pi, normalize_by=None, **kwargs):
     
     """
     offset = pd.DateOffset(**kwargs)
-    testtime = pd.Timestamp('01 Jan 2004') #longest month of longest year
+    testtime = pd.Timestamp('01 Jan 2004')  # longest month of longest year
     if testtime + offset < testtime:
         # with negative offset all results will fall out of their periods
         return pd.DatetimeIndex([])
@@ -77,11 +77,11 @@ def nth_weekday_of_month(pi, month, week, weekday, shift=None, **kwargs):
         points to the start of a year, then 1 is January, 12 is December 
         of this year.
     week : int -5..5 
-        Use week=1 to find the first weekday in the month, week=-1 to find 
-        the last. week=0 is not allowed.
+        Use ``week=1`` to find the first weekday in the month, ``week=-1`` 
+        to find the last. ``week=0`` is not allowed.
     weekday : int 1..7 
-        Monday is 1, Sunday is 7
-    shift: int, optional
+        Monday is 1, Sunday is 7.
+    shift : int, optional
         Number of days to add to the calculated dates, may be negative.
     **kwargs 
         not used; it is here for parameter compatibility with other functions 
@@ -145,8 +145,11 @@ def from_easter(pi, easter_type='western', normalize_by=None, **kwargs):
     Parameters
     ----------
     pi : pandas.PeriodIndex
-    easter_type: {'western', 'orthodox'}, optional (default 'western')
-    kwargs 
+    easter_type : {``'western'``, ``'orthodox'``}, optional (default ``'western'``)
+    normalize_by : str (pandas time frequency), optional
+        If given, snap results to the start time of the `normalize_by` 
+        periods.
+    kwargs :
         keyword arguments for pandas.DateOffset
 
     Returns

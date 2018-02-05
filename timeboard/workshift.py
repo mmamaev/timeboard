@@ -61,7 +61,7 @@ class Workshift(object):
     
     >>> print(ws)
     Workshift(1) of 'D' at 2017-10-01
-    .
+    <BLANKLINE>
          workshift      start  duration        end  label  on_duty
     loc                                                           
     1   2017-10-01 2017-10-01         1 2017-10-01    1.0     True
@@ -88,11 +88,11 @@ class Workshift(object):
         self._schedule = schedule
 
     def _repr_schedule_label(self):
-        schedule_label=self.schedule.name
+        schedule_label = self.schedule.name
         if schedule_label == self._tb.default_schedule.name:
-            schedule_label=""
+            schedule_label = ""
         else:
-            schedule_label=", " + schedule_label
+            schedule_label = ", " + schedule_label
         return schedule_label
 
     def __repr__(self):
@@ -105,11 +105,10 @@ class Workshift(object):
         duration_str = ''
         if self.duration != 1:
             duration_str = str(self.duration) + 'x'
-        return "{}'{}' at {}".\
-                format(duration_str,
-                       self._tb.base_unit_freq,
-                       get_period(self.start_time,
-                                  freq=self._tb.base_unit_freq))
+        return "{}'{}' at {}".format(duration_str,
+                                     self._tb.base_unit_freq,
+                                     get_period(self.start_time,
+                                                freq=self._tb.base_unit_freq))
 
     def __str__(self):
         return "Workshift({}{}) of ".format(
@@ -207,18 +206,20 @@ class Workshift(object):
 
     def rollforward(self, steps=0, duty='on', schedule=None):
         """
-        Find a workshift which is in specified number of steps in the future. 
+        Find a workshift by taking the specified number of steps to the future. 
         
         `duty` parameter selects which workshifts are counted as steps.
         
         Parameters
         ----------
         steps : int, optional (default 0)
-        duty : {``'on'``, ``'off'``, ``'same'``, ``'alt'``, ``'any'``} , optional
+        duty : {``'on'``, ``'off'``, ``'same'``, ``'alt'``, ``'any'``}, optional
             - ``'on'`` : (default) step on on-duty workshifts only
             - ``'off'`` : step on off-duty workshifts only
-            - ``'same'`` : step only on workshifts with the same duty status as self
-            - ``'alt'`` : step only on workshifts with the duty status other than that of self
+            - ``'same'`` : step only on workshifts with the same duty status 
+              as self
+            - ``'alt'`` : step only on workshifts with the duty status other 
+              than that of self
             - ``'any'`` : step on all workshifts
         schedule : _Schedule, optional
             If `schedule` is not given, the workshift's schedule is used.
@@ -235,16 +236,17 @@ class Workshift(object):
         Notes
         -----
         The method is executed in two stages. The first stage finds the 
-        workshift corresponding to step 0. The second stage fulfils the 
-        required number of steps (if any) starting from the zero step workshift.
+        workshift corresponding to step 0. The second stage fulfills the 
+        required number of steps (if any) starting from the zero step 
+        workshift.
         
         If self has the same duty as specified by `duty` parameter, then 
-        the zero step workshift is self, otherwise it is the first workshift 
+        the zero step workshift is self, otherwise, it is the first workshift 
         toward the future which conforms to `duty` parameter. If `steps`=0,
         the method terminates here and returns the zero step workshift.
          
-        If `steps` is positive, the methods counts workshifts toward the future
-        stepping only on workshifts with the specified duty, and returns the 
+        If `steps` is positive, the method counts workshifts toward the future
+        stepping only on workshifts with the specified duty and returns the 
         last workshift on which it has stepped. For example, with `steps`=1 the 
         method returns the workshift following the zero step workshift, 
         subject to duty.
@@ -324,7 +326,7 @@ class Workshift(object):
         to the past and arrives at October 5 which is the result.
         
         On the contrary, ``ws0 - 1`` calls ``ws0.rollback(1, duty='on')`` 
-        which seeks the zero step "on duty" workshift by moving backwards from
+        which seeks the zero step "on duty" workshift by moving backward from
         self. Thus the zero step workshift will be October 5, and one "on duty" 
         step to the past from that will be the result, October 3. 
         """
@@ -335,29 +337,28 @@ class Workshift(object):
         len_idx = len(idx)
         i = searchsorted(idx, self._loc)
         if i == len_idx or i + steps < 0 or i + steps >= len_idx:
-            return self._tb._handle_out_of_bounds("Rollforward of ws {} with "
-                       "steps={}, duty={}, schedule={}"
-                       ".".format(self.compact_str, steps, duty,
-                                  schedule.name))
+            return self._tb._handle_out_of_bounds(
+                "Rollforward of ws {} with steps={}, duty={}, schedule={}.".
+                format(self.compact_str, steps, duty, schedule.name))
 
         return Workshift(self._tb, idx[i + steps], schedule)
 
     def rollback(self, steps=0, duty='on', schedule=None):
         """
-        Find a workshift which is in specified number of steps in the past. 
+        Find a workshift by taking the specified number of steps to the past. 
 
         `duty` parameter selects which workshifts are counted as steps.
 
         Parameters
         ----------
         steps : int, optional (default 0)
-        duty : {``'on'``, ``'off'``, ``'same'``, ``'alt'``, ``'any'``} , optional
+        duty : {``'on'``, ``'off'``, ``'same'``, ``'alt'``, ``'any'``}, optional
             - ``'on'`` : (default) step on on-duty workshifts only
             - ``'off'`` : step on off-duty workshifts only
             - ``'same'`` : step only on workshifts with the same duty status 
-               as self
-            - ``'alt'`` : step only on workshifts with the duty status other than 
-               that of self
+              as self
+            - ``'alt'`` : step only on workshifts with the duty status other 
+              than that of self
             - ``'any'`` : step on all workshifts
         schedule : _Schedule, optional
             If `schedule` is not given, the workshift's schedule is used.
@@ -374,16 +375,16 @@ class Workshift(object):
         Notes
         -----
         The method is executed in two stages. The first stage finds the 
-        workshift at step 0. The second stage fulfils the required number of 
+        workshift at step 0. The second stage fulfills the required number of 
         steps (if any) starting from the zero step workshift.
         
         If self has the same duty as specified by `duty` parameter, then 
-        the zero step workshift is self, otherwise it is the first workshift 
+        the zero step workshift is self, otherwise, it is the first workshift 
         toward the past which conforms to `duty` parameter. If `steps`=0,
         the method terminates here and returns the zero step workshift.
         
-        If `steps` is positive, the methods counts workshifts toward the past
-        stepping only on workshifts with the specified duty, and returns the 
+        If `steps` is positive, the method counts workshifts toward the past
+        stepping only on workshifts with the specified duty and returns the 
         last workshift on which it has stepped. For example, with `steps`=1 the 
         method returns the workshift preceding the zero step workshift, 
         subject to duty.
@@ -393,7 +394,7 @@ class Workshift(object):
         `steps`=-1 the method returns the workshift following the zero step 
         workshift, subject to duty.
         
-        Note that the zero step workshift is sought toward the past 
+        Note that the zero step workshift is sought in the past 
         even if `steps` is negative.
 
         See also
@@ -468,7 +469,7 @@ class Workshift(object):
         self. Thus the zero step workshift will be October 7, and one "on duty" 
         step to the future from that will be the result, October 9. 
         """
-        # TODO: Optimize rollback and rolloforward to compy with DRY?
+        # TODO: Optimize rollback and rollforward to comply with DRY?
         if schedule is None:
             schedule = self.schedule
         idx = self._get_duty_index(duty, schedule)
@@ -480,10 +481,9 @@ class Workshift(object):
             i -= 1
 
         if i == -1 or i - steps < 0 or i - steps >= len_idx:
-            return self._tb._handle_out_of_bounds("Rollback of ws {} with "
-                       "steps={}, duty={}, schedule={}"
-                       ".".format(self.compact_str, steps, duty,
-                                  schedule.name))
+            return self._tb._handle_out_of_bounds(
+                "Rollback of ws {} with steps={}, duty={}, schedule={}.".
+                format(self.compact_str, steps, duty, schedule.name))
 
         return Workshift(self._tb, idx[i - steps], schedule)
 

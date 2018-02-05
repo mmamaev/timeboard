@@ -8,9 +8,9 @@ Examples of problems solved by :py:mod:`timeboard`:
 
 - If we have 20 business days to complete the project, when will be the deadline? 
 
-- If a person was employed from November 15 do December 22, how many month's salaries the company owes them?
+- If a person was employed from November 15 to December 22, how many month's salaries the company owes them?
 
-- A 24x7 call center operates in shifts of varying length. An operator comes in on every forth shift. How many hours has the operator worked in a specific month?
+- A 24x7 call center operates in shifts of varying length. An operator comes in on every fourth shift. How many hours has the operator worked in a specific month?
 
 Based on pandas timeseries library, :py:mod:`timeboard` gives more flexibility than pandas's built-in business calendars limited to a weekly pattern of days. The key features of :py:mod:`timeboard` are:
 

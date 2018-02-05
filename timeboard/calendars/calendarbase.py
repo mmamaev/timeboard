@@ -107,7 +107,7 @@ def extend_weekends(amendments, how='nearest', label=None, weekend=None):
         Updated `amendments` dictionary with new days off, if any. The keys 
         are timestamps (both for the old and the new elements.) The values 
         of the newly added days are set to the value of `label` if given;
-        otherwise the label of the corresponding holiday is used.
+        otherwise, the label of the corresponding holiday is used.
     
     Notes
     -----
@@ -210,12 +210,12 @@ class CalendarBase(object):
     custom_start : `Timestamp`-like, optional
         Change the first date of the calendar. This date must be within 
         the default calendar range returned by `parameters()` class method. 
-        By default the calendar starts on the date defined by 'start' 
+        By default, the calendar starts on the date defined by 'start' 
         element of `parameters()`.
     custom_end : `Timestamp`-like, optional
         Change the last date of the calendar. This date must be within 
         the default calendar range returned by `parameters()` class method. 
-        By default the calendar ends on the date defined by 'end' 
+        By default, the calendar ends on the date defined by 'end' 
         element of `parameters()`.
     do_not_amend : bool, optional (default False)
         If set to True, the calendar is created without any amendments, 
@@ -226,7 +226,7 @@ class CalendarBase(object):
     custom_amendments : dict-like
         Additional or alternative amendments (depends on 
         `only_custom_amendments` flag).
-    **additional_kwargs, optional 
+    **additional_kwargs : optional 
         Additional parameters which are passed to your `amendments` 
         method.
     

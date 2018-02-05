@@ -3,14 +3,15 @@ from .exceptions import (OutOfBoundsError,
                          VoidIntervalError,
                          UnacceptablePeriodError)
 from .workshift import Workshift
-from .core import _Frame, _check_groupby_freq, _Schedule
+from .core import _Frame, _Schedule
+
 
 class Interval(object):
     """A sequence of workshifts within the timeboard.
     
     Interval is defined by two positions on the timeline which are
     the zero-based sequence numbers of the first and the last workshifts 
-    of the interval. An interval can contain one or more workshifts; 
+    of the interval. An interval can contain one or more workshifts; the
     empty interval is not allowed.
     
     Duty status of the workshifts within the interval is interpreted by the 
@@ -24,7 +25,7 @@ class Interval(object):
     timeboard : :py:class:`.Timeboard`
     bounds : tuple(int, int) or tuple(Workshift, Workshift)
         The two elements of `bounds` provide the positions of the first and 
-        the last workshifts of the interval within the timelime. The element's 
+        the last workshifts of the interval within the timeline. The element's 
         type is either non-negative integer or :py:class:`.Workshift`.
     schedule : _Schedule, optional
         If not given, the timeboard's default schedule is used. 
@@ -62,7 +63,7 @@ class Interval(object):
     >>> len(ivl)
     8
     >>> for ws in ivl: 
-            print (ws.start_time, "\t", ws.label)
+    ...     print (ws.start_time, "\t", ws.label)
     2017-10-02 00:00:00 	 0.0
     2017-10-03 00:00:00 	 1.0
     2017-10-04 00:00:00 	 0.0
@@ -90,7 +91,7 @@ class Interval(object):
     
     >>> print(ivl)
     Interval((2, 9)): 'D' at 2017-10-02 -> 'D' at 2017-10-09 [8]
-    .
+    <BLANKLINE>
          workshift      start  duration        end  label  on_duty
     loc                                                           
     2   2017-10-02 2017-10-02         1 2017-10-02    0.0    False
@@ -106,7 +107,7 @@ class Interval(object):
     --------
     .Timeboard.get_interval :
         provides convenient ways to instantiate an interval instead of 
-        calling `Interval()` constructor directly. Moreover, in many cases 
+        calling `Interval()` constructor directly. Moreover, in many cases, 
         you can shortcut a :py:meth:`get_interval` call by calling 
         the instance of :py:class:`Timeboard` itself.
     """
@@ -123,18 +124,19 @@ class Interval(object):
                                 'Workshift, received {}'.
                                 format(bound, type(bound)))
             if not 0 <= loc < len(timeboard._timeline):
-                raise OutOfBoundsError("Interval bound {} is outside timeboard "
-                                       "{}".format(bound, timeboard.compact_str))
+                raise OutOfBoundsError(
+                    "Interval bound {} is outside timeboard {}".
+                    format(bound, timeboard.compact_str))
             return loc
 
         if not hasattr(bounds, '__getitem__'):
-            raise TypeError("'bounds' paramater must be list-like")
+            raise TypeError("`bounds` parameter must be list-like")
 
         try:
             bound0 = bounds[0]
             bound1 = bounds[1]
         except IndexError:
-            raise IndexError("'bounds' value must contain two items")
+            raise IndexError("`bounds` value must contain two items")
 
         locs = (handle_bound(bound0), handle_bound(bound1))
         if locs[0] > locs[1]:
@@ -151,13 +153,12 @@ class Interval(object):
             raise TypeError('Wrong type of schedule. Expected _Schedule,'
                             ' received {}'.format(type(schedule)))
 
-
     def _repr_schedule_label(self):
-        schedule_label=self.schedule.name
+        schedule_label = self.schedule.name
         if schedule_label == self._tb.default_schedule.name:
-            schedule_label=""
+            schedule_label = ""
         else:
-            schedule_label=", " + schedule_label
+            schedule_label = ", " + schedule_label
         return schedule_label
 
     @property
@@ -174,8 +175,7 @@ class Interval(object):
         return self.compact_str
 
     def __str__(self):
-        return self.compact_str + "\n\n{}".format(
-            self._tb.to_dataframe(self._loc[0], self._loc[1]))
+        return self.compact_str + "\n\n{}".format(self.to_dataframe())
 
     @property
     def start_time(self):
@@ -194,15 +194,38 @@ class Interval(object):
 
     @property
     def labels(self):
-        return list(self._tb._timeline[self._loc[0] : self._loc[1]+1])
+        return list(self._tb._timeline[self._loc[0]: self._loc[1]+1])
 
     @property
     def schedule(self):
         return self._schedule
 
+    def to_dataframe(self):
+        """Convert interval into `pandas.Dataframe`.
+
+        Each workshift is represented as a row. The dataframe has the 
+        following columns:
+
+        ================ =====================================================
+        Column           Explanation
+        ================ =====================================================
+        'loc'            zero-based position of the workshift on the timeline
+        'workshift'      the reference time of the workshift
+        'start'          the start time of the workshift
+        'end'            the start time of the workshift
+        'duration'       the number of base units in the workshift
+        'label'          workshift's label
+        ================ =====================================================                 
+
+        Returns
+        -------
+        pandas.DataFrame
+        """
+        return self._tb.to_dataframe(self._loc[0], self._loc[1])
+
     def _ws_generator(self):
         for i in range(self._loc[0], self._loc[1]+1):
-            yield Workshift(self._tb, i)
+            yield Workshift(self._tb, i, schedule=self.schedule)
 
     def __next__(self):
         return next(self._ws_generator_activated)
@@ -218,7 +241,7 @@ class Interval(object):
         return self._length
 
     def _find_my_bounds_in_idx(self, idx):
-        #TODO: optimize this search
+        # TODO: optimize this search
         left_bound = 0
         len_idx = len(idx)
         while left_bound < len_idx and idx[left_bound] < self._loc[0]:
@@ -303,8 +326,8 @@ class Interval(object):
         if (loc_in_duty_idx < duty_idx_bounds[0] or
                     loc_in_duty_idx > duty_idx_bounds[1]):
             return self._tb._handle_out_of_bounds(
-                'No {} {!r} workshifts in the interval {}'.
-                    format(n, duty, self.compact_str))
+                "No {} {!r} workshifts in the interval {}".
+                format(n, duty, self.compact_str))
 
         return Workshift(self._tb, duty_idx[loc_in_duty_idx], schedule)
 
@@ -390,6 +413,7 @@ class Interval(object):
         else:
             return duty_idx_bounds[1] - duty_idx_bounds[0] + 1
 
+    # noinspection PyPep8Naming
     def count_periods(self, period, duty='on', schedule=None):
         """Return how many calendar periods fit into the interval.
         
@@ -411,8 +435,9 @@ class Interval(object):
         ----------
         period : str
             `pandas`-compatible frequency of calendar periods to be counted 
-            (i.e. ``'M'`` for month). `pandas`-native business periods (i.e. 'BM')  
-            as well as  periods with multipliers (i.e. '3M') are not applicable.
+            (i.e. ``'M'`` for month). `pandas`-native business periods 
+            (i.e. 'BM'), as well as  periods with multipliers (i.e. '3M'), 
+            are not applicable.
         duty : {``'on'``, ``'off'``, ``'any'``} , optional (default ``'on'``)
             Specify the duty of workshifts to be accounted for. 
         schedule : _Schedule, optional
@@ -435,11 +460,11 @@ class Interval(object):
         Examples
         --------
         >>> clnd = tb.Timeboard('H', '01 Oct 2017', '08 Oct 2017 23:59', 
-                                layout=[0,1])
+        ...                     layout=[0,1])
         >>> ivl = clnd(('01 Oct 2017 11:00', '02 Oct 2017 23:59'))
         
         Interval `ivl` spans two days: it contains 13 of 24 workshifts of 
-        October 1, and all 24 workshifts of October 2. 
+        October 1 and all 24 workshifts of October 2. 
         
         >>> ivl.count_periods('D', duty='any')
         1.5416666666666665
@@ -471,18 +496,18 @@ class Interval(object):
         We may not guess what layout *could* be applied to the workshifts of
         Sep 25 - Sep 30 if the week were included in the timeboard entirely.
         We are not authorized to extrapolate the existing layout outside the 
-        timeboard. Moreover, for some complex layouts any attempt of 
+        timeboard. Moreover, for some complex layouts, any attempt at 
         extrapolation would be ambiguous.
         
         >>> ivl.count_periods('W')
         OutOfBoundsError                     Traceback (most recent call last)
-        ...
+          ...
         OutOfBoundsError: The 1st bound of interval or period referenced by 
-        `2017-09-25/2017-10-01` is outside Timeboard of 'H': 2017-10-01 00:00 -> 
-        2017-10-03 23:00
+        `2017-09-25/2017-10-01` is outside Timeboard of 'H': 2017-10-01 00:00 
+        -> 2017-10-03 23:00
         """
         SUPPORTED_PERIODS = ('S', 'T', 'min', 'H', 'D', 'W', 'M', 'Q', 'A', 'Y')
-        #TODO: support shifted periods (i.e. W-TUE, A-MAR)
+        # TODO: support shifted periods (i.e. W-TUE, A-MAR)
         if period not in SUPPORTED_PERIODS:
             raise UnacceptablePeriodError('Period {!r} is not supported'.
                                           format(period))
@@ -510,10 +535,9 @@ class Interval(object):
                 period_intervals.append(None)
                 period_duty_count.append(None)
             except VoidIntervalError:
-                raise UnacceptablePeriodError("Attempted to count periods {} "
-                                             "that are shorter than workshifts "
-                                             "in interval {!r}".format(
-                                              period, self))
+                raise UnacceptablePeriodError(
+                    "Attempted to count periods {} that are shorter than "
+                    "workshifts in interval {!r}".format(period, self))
             else:
                 period_intervals.append(period_ivl)
                 period_duty_count.append(period_ivl.count(duty=duty,
@@ -547,8 +571,7 @@ class Interval(object):
         result += ivl_units_in_last_period / len_of_last_period
 
         full_periods_in_ivl = last_period_with_duty_loc - \
-                              first_period_with_duty_loc - 1
-                              #len(period_index) - 2
+            first_period_with_duty_loc - 1
         if full_periods_in_ivl > 0:
             result += sum(map(lambda x: x > 0,
                               period_duty_count[first_period_with_duty_loc+1:
@@ -584,8 +607,8 @@ class Interval(object):
         Examples
         --------
         >>> clnd = tb.Timeboard('D', '01 Oct 2017', '10 Oct 2017',
-                                layout=[1, 2],
-                                default_selector=lambda label: label > 1)
+        ...                     layout=[1, 2],
+        ...                     default_selector=lambda label: label > 1)
         >>> ivl = clnd()
         
         In this interval there are ten workshifts: five with label `1` that are 
@@ -609,12 +632,10 @@ class Interval(object):
             return self._tb._timeline[duty_idx[duty_idx_bounds[0]:
                                                duty_idx_bounds[1]+1]].sum()
 
-        #return sum(self.labels)
-
     def where(self, ws, duty='same'):
-        #TODO: Interval.where
+        # TODO: Interval.where
         raise NotImplementedError
 
     def where_period(self, reference, period, duty='same'):
-        #TODO: Interval.where_period
+        # TODO: Interval.where_period
         raise NotImplementedError

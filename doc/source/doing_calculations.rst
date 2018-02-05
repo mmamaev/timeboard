@@ -10,7 +10,7 @@ Doing Calculations
 
 Calendar calculations are performed either with an individual workshift or with an interval of workshifts. 
 
-Also each calculation is based on a specific schedule as one needs to reason about duty statuses of workshifts involved.
+Also, each calculation is based on a specific schedule in order to reason about duty statuses of workshifts involved.
 
 Therefore, to carry out a calculation you need to obtain either a workshift or an interval and indicate which schedule you will be using.
 
@@ -24,7 +24,7 @@ Obtaining a Workshift
 Most likely you will want to identify a workshift by a timestamp which represents a point in time somewhere within the workshift. This is done by calling :py:meth:`.Timeboard.get_workshift` . The result returned will be an instance of :py:class:`.Workshift`. ::
 
     >>> clnd = tb.Timeboard('D', '30 Sep 2017', '11 Oct 2017', 
-                            layout=[0, 1, 0, 2])
+    ...                     layout=[0, 1, 0, 2])
     >>> clnd.get_workshift('01 Oct 2017')
     Workshift(1) of 'D' at 2017-10-01
 
@@ -39,12 +39,12 @@ Alternatively, you can call :py:meth:`~timeboard.Workshift` constructor directly
     Workshift(1) of 'D' at 2017-10-01
 
 All the above examples do not specify which schedule to use in calculations.
-In this case the default schedule of the timeboard will be used. 
+In this case, the default schedule of the timeboard will be used. 
 
 If you intend to base your calculation on another schedule you may pass it in `schedule` parameter of :py:meth:`~.Timeboard.get_workshift` method or :py:meth:`~timeboard.Workshift` constructor::
 
     >>> sdl = clnd.add_schedule(name='my_schedule', 
-                                selector=lambda label: label>1)
+    ...                         selector=lambda label: label>1)
     >>> clnd.get_workshift('01 Oct 2017', schedule=sdl)
     Workshift(1, my_schedule) of 'D' at 2017-10-01
     >>> tb.Workshift(clnd, 1, sdl)
@@ -66,11 +66,11 @@ Method          Result
 
 |is_off_duty|   Find out if the workshift is off duty
 
-|rollforward|   Return a workshift which is in the specified number of steps in
-                the future.
+|rollforward|   Return a workshift by taking the specified number of steps
+                toward the future.
 
-|rollback|      Return a workshift which is in the specified number of steps in
-                the past.
+|rollback|      Return a workshift by taking the specified number of steps 
+                toward the past.
 =============== ===============================================================
 
 .. |is_on_duty| replace:: :py:meth:`~timeboard.Workshift.is_on_duty`
@@ -97,7 +97,7 @@ Determining duty
 Examples::
 
     >>> clnd = tb.Timeboard('D', '30 Sep 2017', '11 Oct 2017', 
-                            layout=[0, 1, 0, 2])
+    ...                     layout=[0, 1, 0, 2])
     >>> my_schedule = clnd.add_schedule(name='my_schedule', 
                                         selector=lambda label: label>1)
 
@@ -124,17 +124,17 @@ Rolling forward and back
 
 The methods :py:meth:`~timeboard.Workshift.rollforward` and :py:meth:`~timeboard.Workshift.rollback` allow to identify the workshift which is located in a specified distance from the current workshift.
 
-Actually the methods do not roll, they step. The distance is measured in number of steps with regard to a certain duty. It means that, when taking steps, the methods tread only on the workshifts with this duty, ignoring all others.
+Actually, the methods do not roll, they step. The distance is measured in a number of steps with regard to a certain duty. It means that, when taking steps, the methods tread only on the workshifts with this duty, ignoring all others.
 
 `rollforward` and `rollback` operate in the same manner except for the direction of time. You specify the number of steps and the duty to tread on. The default values are ``steps=0, duty='on'``. The algorithm has two stages. 
 
 **Stage 1.** If you call a method omitting the number of steps (same as ``steps=0``) it finds the closest workshift with the required duty. ::
 
     >>> clnd = tb.Timeboard('D', '30 Sep 2017', '11 Oct 2017', 
-                            layout=[0, 1, 0, 2])
+    ...                     layout=[0, 1, 0, 2])
     >>> print(clnd)
     Timeboard of 'D': 2017-09-30 -> 2017-10-11
-
+    <BLANKLINE>
          workshift      start  duration        end  label  on_duty
     loc                                                           
     0   2017-09-30 2017-09-30         1 2017-09-30    0.0    False
@@ -197,7 +197,7 @@ The result of stage 1 is called the "zero step workshift".
 As with the other methods, you can override the workshift's schedule in method's parameter. Take note that the returned workshift will have the schedule used by the method::
 
     >>> my_schedule = clnd.add_schedule(name='my_schedule', 
-                                        selector=lambda label: label>1)
+    ...                                 selector=lambda label: label>1)
     >>> ws = clnd('05 Oct 2017').rollforward(schedule=my_schedule)
     >>> ws
     Workshift(7, my_schedule) of 'D' at 2017-10-07
@@ -225,7 +225,7 @@ You can add or subtract an integer number to/from a workshift. This is the same 
 Caveats
 ^^^^^^^
 
-`steps` can take a negative value. The method will step in the opposite direction, however the algorithm of seeking zero step workshift does not change. Therefore, the results of `rollforward` with negative `steps` and `rollback` with the same but positive value of `steps` may differ::
+`steps` can take a negative value. The method will step in the opposite direction, however, the algorithm of seeking the zero step workshift does not change. Therefore, the results of `rollforward` with negative `steps` and `rollback` with the same but positive value of `steps` may differ::
 
     >>> clnd('06 Oct 2017').rollforward(-1)
     Workshift(5) of 'D' at 2017-10-05
@@ -247,12 +247,12 @@ There is no such discrepancy if method's duty is the same as workshift's duty.
 Obtaining an Interval
 =====================
 
-To instantiate an interval which is defined by points in time or by a calendar period call :py:meth:`.Timeboard.get_interval`. This method takes several combinations of parameters. In most cases you can also use a shortcut by calling the instance of :py:class:`~.Timeboard` which will invoke :py:meth:`get_interval` for you. 
+To instantiate an interval which is defined by points in time or by a calendar period call :py:meth:`.Timeboard.get_interval`. This method takes several combinations of parameters. In most cases, you can also use a shortcut by calling the instance of :py:class:`~.Timeboard` which will invoke :py:meth:`get_interval` for you. 
 
 Obtaining an interval from two points in time::
     
     >>> clnd = tb.Timeboard('D', '30 Sep 2017', '15 Oct 2017', 
-                            layout=[0, 1, 0, 2])
+    ...                     layout=[0, 1, 0, 2])
     >>> clnd.get_interval(('02 Oct 2017', '08 Oct 2017'))
     Interval((2, 8)): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]
     
@@ -312,12 +312,12 @@ Alternatively, you can call :py:meth:`~timeboard.Interval` constructor directly 
     Interval((2, 8)): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]
 
 All the above examples do not specify which schedule to use in calculations.
-In this case the default schedule of the timeboard will be used. 
+In this case, the default schedule of the timeboard will be used. 
 
 If you intend to base your calculation on another schedule you may pass it in `schedule` parameter of any method you use to instantiate an interval::
 
     >>> my_schedule = clnd.add_schedule(name='my_schedule', 
-                                      selector=lambda label: label>1)
+    ...                                 selector=lambda label: label>1)
     >>> clnd(('02 Oct 2017', '08 Oct 2017'), schedule=my_schedule)
     Interval((2, 8), my_schedule): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]
     >>> tb.Interval(clnd, (2,8), schedule=my_schedule)
@@ -341,7 +341,7 @@ There is a parameter called `clip_period` which determines how this situation is
     >>> clnd('Oct 2017', period='M', clip_period=False)
     -----------------------------------------------------------------------
     PartialOutOfBoundsError               Traceback (most recent call last)
-    ...
+      ...
     PartialOutOfBoundsError: The right bound of interval referenced by `Oct 2017` is outside Timeboard of 'D': 2017-09-30 -> 2017-10-15
 
 .. _workshift-straddling-1:
@@ -352,9 +352,9 @@ Workshift straddles period boundary
 Consider the following timeboard::
 
     >>> clnd = tb.Timeboard('12H', '01 Oct 2017 21:00', '03 Oct 2017',
-                            layout=[1])
+    ...                     layout=[1])
     >>> print(clnd)
-
+    <BLANKLINE>
                   workshift               start  duration                 end
     loc                                                                      
     0   2017-10-01 21:00:00 2017-10-01 21:00:00         1 2017-10-02 08:59:59
@@ -374,11 +374,11 @@ This ambiguity is solved with :py:class:`.Timeboard`\ .\ :py:attr:`workshift_ref
 If ``workshift_ref='end'``, then the end time of workshift is used as the indicator of period membership. In this way, workshift 0 becomes a member of  October 2 while workshift 2 goes with with October 3::
 
     >>> clnd = tb.Timeboard('12H', '01 Oct 2017 21:00', '03 Oct 2017',
-                            layout=[1], 
-                            workshift_ref='end')
+    ...                     layout=[1], 
+    ...                     workshift_ref='end')
     >>> print(clnd)
     Timeboard of '12H': 2017-10-01 21:00 -> 2017-10-02 21:00
-
+    <BLANKLINE>
                   workshift               start  duration                 end
     loc                                                                      
     0   2017-10-02 08:59:59 2017-10-01 21:00:00         1 2017-10-02 08:59:59
@@ -395,16 +395,16 @@ If ``workshift_ref='end'``, then the end time of workshift is used as the indica
 Period too short for workshifts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In a corner case you can try to obtain an interval from a period which is shorter than the workshifts in this area of the timeline. For example, in a timeboard with daily workshifts you seek an interval defined by an hour::
+In a corner case, you can try to obtain an interval from a period which is shorter than the workshifts in this area of the timeline. For example, in a timeboard with daily workshifts you seek an interval defined by an hour::
 
     >>> clnd = tb.Timeboard('D', '30 Sep 2017', '05 Oct 2017', layout=[1])
     >>> ivl = clnd.get_interval('02 Oct 2017 00:00', period='H')
 
-However meaningless, this operation is handled according to the same logic of attributing a workshift to the period as discussed in the previous section. In this timeboard the workshift reference time is its start time (the default setting). The hour starting at 02 Oct 2017 00:00 contains the reference time of the daily workshift of October 2. Hence, technically this one day workshift is the member of that one hour period and, therefore, becomes the only element of the sought interval::
+However meaningless, this operation is handled according to the same logic of attributing a workshift to the period as discussed in the previous section. In this timeboard, the workshift reference time is its start time (the default setting). The hour starting at 02 Oct 2017 00:00 contains the reference time of the daily workshift of October 2. Hence, technically this one-day workshift is the member of that one-hour period and, therefore, becomes the only element of the sought interval::
 
     >>> print(ivl)
     Interval((2, 2)): 'D' at 2017-10-02 -> 'D' at 2017-10-02 [1]
-
+    <BLANKLINE>
          workshift      start  duration        end  label  on_duty
     loc                                                           
     2   2017-10-02 2017-10-02         1 2017-10-02    1.0     True
@@ -414,7 +414,7 @@ On the other hand, if you try to obtain an interval from another hour of the sam
     >>> clnd.get_interval('02 Oct 2017 01:00', period='H')
     ---------------------------------------------------------------------------
     VoidIntervalError                         Traceback (most recent call last)
-    ...
+      ...
     VoidIntervalError: Attempted to create reversed or void interval 
     referenced by `02 Oct 2017 01:00` within Timeboard of 'D': 2017-09-30 -> 
     2017-10-05
@@ -436,9 +436,9 @@ Method          Result
 
 |count|         Count workshifts with the specified duty in the interval.
 
-|count_periods| How many calendar periods fit into the interval (duty-aware).
-
 |sum|           The sum of labels of workshifts with the specified duty.
+
+|count_periods| How many calendar periods fit into the interval (duty-aware).
 =============== ===============================================================
 
 .. |nth| replace:: :py:meth:`~timeboard.Interval.nth`
@@ -449,9 +449,10 @@ Method          Result
 
 .. |count| replace:: :py:meth:`~timeboard.Interval.count`
 
+.. |sum| replace:: :py:meth:`~timeboard.Interval.sum`
+
 .. |count_periods| replace:: :py:meth:`~timeboard.Interval.count_periods`
 
-.. |sum| replace:: :py:meth:`~timeboard.Interval.sum`
 
 All methods are duty-aware meaning that they "see" only workshifts with the specified duty ignoring the others.
 
@@ -465,17 +466,17 @@ Consequently, each of the above methods must use some schedule to identify works
 
 .. note:: If you don't care about the duty and want to take into account all workshifts in the interval, use ``duty='any'``. 
 
-Counting workshifts
--------------------
+Seeking and counting workshifts
+-------------------------------
 
 Examples::
 
     >>> clnd = tb.Timeboard('D', '30 Sep 2017', '15 Oct 2017', 
-                            layout=[0, 1, 0, 2])
+    ...                     layout=[0, 1, 0, 2])
     >>> ivl = clnd(('02 Oct 2017', '08 Oct 2017'))
     >>> print(ivl)
     Interval((2, 8)): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]
-
+    <BLANKLINE>
          workshift      start  duration        end  label  on_duty
     loc                                                           
     2   2017-10-02 2017-10-02         1 2017-10-02    0.0    False
@@ -511,7 +512,7 @@ With ``duty='off'``::
 With ``duty='on'`` under another schedule::
 
     >>> my_schedule = clnd.add_schedule(name='my_schedule', 
-                                        selector=lambda label: label>1)
+    ...                                 selector=lambda label: label>1)
     >>> ivl.nth(1, schedule=my_schedule)
     Workshift(7, my_schedule) of 'D' at 2017-10-07
     >>> ivl.count(duty='on', schedule=my_schedule)
@@ -535,8 +536,8 @@ Summing up labels
 If labels are numbers, their arithmetic sum is returned. ::
 
     >>> clnd = tb.Timeboard('D', '01 Oct 2017', '10 Oct 2017',
-                            layout=[1, 2],
-                            default_selector=lambda label: label > 1)
+    ...                     layout=[1, 2],
+    ...                     default_selector=lambda label: label > 1)
     >>> ivl = clnd()
 
 In this interval there are ten workshifts: five with label `1` that are off duty and five with label `2` that are on duty. ::
@@ -551,8 +552,8 @@ In this interval there are ten workshifts: five with label `1` that are off duty
 If labels are strings, they are getting concatenated::
 
     >>> clnd = tb. Timeboard('D', '01 Oct 2017', '10 Oct 2017',
-                             layout=['a', 'b'],
-                             default_selector=lambda label: label=='b')
+    ...                      layout=['a', 'b'],
+    ...                      default_selector=lambda label: label=='b')
     >>> ivl = clnd()
     >>> ivl.sum()
     'bbbbb'
@@ -567,9 +568,9 @@ If the type of labels does not define `sum`, `TypeError` is raised.
 Counting periods
 ----------------
 
-Call :py:meth:`~timeboard.Interval.count_periods` to find out how many calendar periods of the specific frequency fit into the interval. As with the other methods, duty of workshifts is taken into account. The method returns a float number.
+Call :py:meth:`~timeboard.Interval.count_periods` to find out how many calendar periods of the specific frequency fit into the interval. As with the other methods, the duty of workshifts is taken into account. The method returns a float number.
 
-To obain the result, the interval is sliced into calendar periods of the given frequency and then each slice of the interval is compared to its corresponding period duty-wise. That is to say, the count of workshifts in the interval's slice is divided by the total count of workshifts in the  period containing this slice but only workshifts with the specified duty are counted. The quotients for each period are summed to produce the return value of the method.
+To obtain the result, the interval is sliced into calendar periods of the given frequency and then each slice of the interval is compared to its corresponding period duty-wise. That is to say, the count of workshifts in the interval's slice is divided by the total count of workshifts in the  period containing this slice but only workshifts with the specified duty are counted. The quotients for each period are summed to produce the return value of the method.
         
 If some period does not contain workshifts of the required duty, it contributes zero to the returned value.
         
@@ -578,7 +579,7 @@ Regardless of the period frequency, the method returns 0.0 if there are no works
 Examples::
 
     >>> clnd = tb.Timeboard('H', '01 Oct 2017', '08 Oct 2017 23:59', 
-                            layout=[0, 1, 0, 2])
+    ...                     layout=[0, 1, 0, 2])
     >>> ivl = clnd(('01 Oct 2017 13:00', '02 Oct 2017 23:59'))
 
 Interval `ivl` spans two days: it contains 11 of 24 workshifts of 
@@ -596,7 +597,7 @@ The timeboard's `layout` defines that all workshifts taking place on even hours 
     >>> 6.0/12 + 12.0/12
     1.5
 
-The interval contains 5 of 12 off duty workshifts of October 1, and all 12 off duty workshifts of October 2. 
+The interval contains 5 of 12 off duty workshifts of October 1, and all 12 off duty workshifts of October 2::
 
     >>> ivl.count_periods('D', duty='off')
     1.4166666666666667
@@ -606,7 +607,7 @@ The interval contains 5 of 12 off duty workshifts of October 1, and all 12 off d
 If we change the schedule to `my_schedule`, on duty workshifts will start only at 3, 7, 11, 15, 19, and 23 o'clock yielding 6 on duty workshifts per day. Interval `ivl` will contain 3/6 + 6/6 on duty days and 8/18 + 18/18 off duty days::
 
     >>> my_schedule = clnd.add_schedule(name='my_schedule', 
-                                        selector=lambda label: label>1)
+    ...                                 selector=lambda label: label>1)
     >>> ivl.count_periods('D', schedule=my_schedule)
     1.5
     >>> 3.0/6 + 6.0/6
@@ -642,33 +643,33 @@ Period extends beyond timeline
 Consider the timeboard and two intervals::
 
     >>> clnd = tb.Timeboard('H', '01 Oct 2017', '08 Oct 2017 23:59', 
-                            layout=[0, 1, 0, 2])
+    ...                     layout=[0, 1, 0, 2])
     >>> ivl1 = clnd(('02 Oct 2017 00:00', '02 Oct 2017 23:59'))
     >>> ivl2 = clnd(('01 Oct 2017 13:00', '02 Oct 2017 23:59'))
 
 We can count how many weeks are in interval `ivl1` but not in `ivl2`. 
 
-All workshifts of `ivl1` belong to the week of October 2 - 8 which is situated entirely within the timeboard. On the other hand, in `ivl2` there are the workshifts belonging to the week of September 25 - October 1. This week extends beyond the timeboard. We may not guess what layout *could* be applied to the workshifts of Sep 25 - Sep 30 if the week were included in the timeboard entirely. We are not authorized to extrapolate the existing layout outside the timeboard. Moreover, for some complex layouts any attempt of extrapolation would be ambiguous. ::
+All workshifts of `ivl1` belong to the week of October 2 - 8 which is situated entirely within the timeboard. On the other hand, in `ivl2` there are the workshifts belonging to the week of September 25 - October 1. This week extends beyond the timeboard. We may not guess what layout *could* be applied to the workshifts of Sep 25 - Sep 30 if the week were included in the timeboard entirely. We are not authorized to extrapolate the existing layout outside the timeboard. Moreover, for some complex layouts, any attempt at extrapolation would be ambiguous. ::
 
-        >>> ivl1.count_periods('W')
-        0.14285714285714285
-        >>> ivl2.count_periods('W')
-        ----------------------------------------------------------------------
-        PartialOutOfBoundsError              Traceback (most recent call last)
-        ...
-        PartialOutOfBoundsError: The left bound of interval or period referenced by `2017-09-25/2017-10-01` is outside Timeboard of 'H': 2017-10-01 00:00 -> 2017-10-08 23:00
+    >>> ivl1.count_periods('W')
+    0.14285714285714285
+    >>> ivl2.count_periods('W')
+    -----------------------------------------------------------------------
+    PartialOutOfBoundsError               Traceback (most recent call last)
+      ...
+    PartialOutOfBoundsError: The left bound of interval or period referenced by `2017-09-25/2017-10-01` is outside Timeboard of 'H': 2017-10-01 00:00 -> 2017-10-08 23:00
 
 
 Workshift straddles period boundary
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This case is analogous to already reviewed  
-:ref:`issue <workshift-straddling-1>` of contructing an interval from a calendar period. :py:class:`.Timeboard`\ .\ :py:attr:`workshift_ref` attribute  is used to identify workshift's membership in a period. 
+This case is analogous to the already reviewed  
+:ref:`issue <workshift-straddling-1>` of constructing an interval from a calendar period. :py:class:`.Timeboard`\ .\ :py:attr:`workshift_ref` attribute  is used to identify workshift's membership in a period. 
 
 Period too short for workshifts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you try to count periods which are shorter than (some) of the workshifts in the interval, you are likely to encounter a period which does not contain *any* workshift's reference whatever the duty. This makes any result meaningless and, concequently, `UnacceptablePeriodError` is raised. 
+If you try to count periods which are shorter than (some) of the workshifts in the interval, you are likely to encounter a period which does not contain *any* workshift's reference whatever the duty. This makes any result meaningless and, consequently, `UnacceptablePeriodError` is raised. 
 
 You may accidentally run into this issue in two situations:
 

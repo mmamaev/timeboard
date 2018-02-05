@@ -11,15 +11,17 @@ from itertools import cycle, dropwhile
 from collections import Iterable, OrderedDict
 import re
 import six
-#import timeit
+# import timeit
 
 SMALLEST_TIMEDELTA = pd.Timedelta(1, unit='s')
+
 
 def get_timestamp(arg):
     try:
         return arg.to_timestamp()
     except AttributeError:
         return pd.Timestamp(arg)
+
 
 def get_period(period_ref, freq=None, honor_period=True):
     if isinstance(period_ref, pd.Period) and honor_period:
@@ -29,15 +31,18 @@ def get_period(period_ref, freq=None, honor_period=True):
     else:
         return pd.Period(get_timestamp(period_ref), freq=freq)
 
+
 def get_freq_delta(freq):
     # Starting on 01 Jul 2016 gives the longest timedeltas for freq  based
     # on 'M', 'Q', 'A'
     pi = pd.PeriodIndex(start='01 Jul 2016', freq=freq, periods=2)
     return pi[1].start_time - pi[0].start_time
 
+
 def _is_iterable(obj):
     return (isinstance(obj, Iterable) and
             not isinstance(obj, six.string_types))
+
 
 def _to_iterable(x):
     if x is None:
@@ -46,6 +51,7 @@ def _to_iterable(x):
         return x
     else:
         return [x]
+
 
 def _skiperator(values, skip=0):
     """Build a skip-and-cycle generator
@@ -83,6 +89,7 @@ def _skiperator(values, skip=0):
     counter = make_counter()
     return dropwhile(counter, cycle(pattern))
 
+
 def _check_groupby_freq(base_unit_freq, group_by_freq):
     """Check if frame's base unit may be grouped in periods of given frequency.
     
@@ -108,10 +115,10 @@ def _check_groupby_freq(base_unit_freq, group_by_freq):
     True if `group_by_freq` can be used for grouping, False otherwise.
     """
     if bool(
-        pd.tseries.frequencies.is_subperiod(base_unit_freq, group_by_freq)
-        # Some combinations of arguments result in is_subperiod function
-        # returning nothing (NoneType)
-        ):
+            pd.tseries.frequencies.is_subperiod(base_unit_freq, group_by_freq)
+            # Some combinations of arguments result in is_subperiod function
+            # returning nothing (NoneType)
+            ):
         return True
     else:
         # is_subperiod does not support frequency multiplicators,
@@ -194,7 +201,7 @@ class _Frame(pd.PeriodIndex):
     Frame must contain at least one element. Empty frames are not allowed. 
     """
     def __new__(cls, base_unit_freq=None, start=None, end=None, **kwargs):
-        if base_unit_freq is not None :
+        if base_unit_freq is not None:
             _freq = base_unit_freq
         else:
             _freq = kwargs['freq']
@@ -203,7 +210,8 @@ class _Frame(pd.PeriodIndex):
                                            freq=_freq)
         if len(frame) == 0:
             raise VoidIntervalError("Empty frame not allowed "
-                "(make sure the start time precedes the end time)")
+                                    "(make sure the start time precedes "
+                                    "the end time)")
         if frame[0].start_time > frame[-1].start_time:
             raise RuntimeError("Frame is invalid: starts on {}, ends on {}. "
                                "Make sure that your time range is "
@@ -233,6 +241,7 @@ class _Frame(pd.PeriodIndex):
                 raise KeyError("Timestamp {} is out of bounds")
             else:
                 return not_in_range
+        # noinspection PyTypeChecker
         return int(np.searchsorted(self.start_times, timestamp, side='right')
                    - 1)
 
@@ -249,7 +258,7 @@ class _Frame(pd.PeriodIndex):
                               side='right')-1
         # result = np.where((arr>span_first) & (arr<=span_last),
         #                   arr, [not_in_range])
-        result = arr[np.nonzero((arr>span_first) & (arr<=span_last))[0]]
+        result = arr[np.nonzero((arr > span_first) & (arr <= span_last))[0]]
         return result
 
     def check_span(self, span):
@@ -302,26 +311,26 @@ class _Frame(pd.PeriodIndex):
         If no usable points are found or `points_in_time` is empty,
         `[(span.start, span.end)]` is returned. 
         """
-        #timer0 = timeit.default_timer()
+        # timer0 = timeit.default_timer()
         self.check_span(span)
         # TODO: SPEED UP.
         # This computation takes 0.3s for 100 Years Standard Week 8x5
-        #loc_list = [self.get_loc(t, 0) for t in points_in_time]
+        # loc_list = [self.get_loc(t, 0) for t in points_in_time]
         split_positions = self.get_loc_vectorized(points_in_time,
                                                   span_first=span.first,
                                                   span_last=span.last)
-        #timer1 = timeit.default_timer()
+        # timer1 = timeit.default_timer()
         # split_positions = [int(x)
         #                    for x in loc_list if span_first < x <= span_last]
-        #timer2 = timeit.default_timer()
+        # timer2 = timeit.default_timer()
         split_positions = sorted(list(set(split_positions)))
-        #timer3 = timeit.default_timer()
+        # timer3 = timeit.default_timer()
 
         start_positions = split_positions[:]
         start_positions.insert(0, span.first)
         end_positions = [x-1 for x in split_positions]
         end_positions.append(span.last)
-        #timer4 = timeit.default_timer()
+        # timer4 = timeit.default_timer()
         # print "_locate_span timers:\n\t1: {:.5f}\n\t2: {:.5f}\n\t3: {:.5f}"\
         #       "\n\t4: {:.5f}".format(timer1-timer0, timer2-timer1,
         #                              timer3-timer2, timer4-timer3)
@@ -351,7 +360,7 @@ class _Frame(pd.PeriodIndex):
         """
         span_boundaries = self._locate_subspans(span, points_in_time)
         spans = [_Span(first, last, 0, 0)
-                     for first, last in span_boundaries]
+                 for first, last in span_boundaries]
         if not spans:
             spans = [span]
         return spans
@@ -399,9 +408,9 @@ class _Frame(pd.PeriodIndex):
         """
         if not _check_groupby_freq(self._base_unit_freq, marker.each):
             raise UnacceptablePeriodError('Ambiguous organizing: '
-                                         '{} is not a subperiod of {}'
+                                          '{} is not a subperiod of {}'
                                           .format(self._base_unit_freq,
-                                                 marker.each))
+                                                  marker.each))
         self.check_span(span)
         span_start_ts = self[span.first].start_time
         span_end_ts = self[span.last].end_time
@@ -412,9 +421,9 @@ class _Frame(pd.PeriodIndex):
         if marker.at:
             envelope_margin = 1
             envelope_start_ts = span_start_ts - \
-                                envelope_margin * get_freq_delta(marker.each)
+                envelope_margin * get_freq_delta(marker.each)
             envelope_end_ts = span_end_ts + \
-                              envelope_margin * get_freq_delta(marker.each)
+                envelope_margin * get_freq_delta(marker.each)
             stencil = _Frame(base_unit_freq=marker.each,
                              start=envelope_start_ts,
                              end=envelope_end_ts)
@@ -427,9 +436,9 @@ class _Frame(pd.PeriodIndex):
                             )
             at_points = pd.DatetimeIndex(np.sort(at_points))
             at_points = at_points[
-                max([0,np.searchsorted(at_points,
-                                       span_start_ts,
-                                       side='right') - 1]):
+                max([0, np.searchsorted(at_points,
+                                        span_start_ts,
+                                        side='right') - 1]):
                 min([len(at_points),
                     np.searchsorted(at_points, span_end_ts) + 1])]
 
@@ -502,7 +511,7 @@ class _Frame(pd.PeriodIndex):
         a subspan within the span are ignored.
         These are:
           - points referring to a base unit already designated as the 
-          first element of a subsoan,
+          first element of a subspan,
           - points referring to the first base unit of `span`,
           - points outside `span`.
         If no usable points are found or `points_in_time` is empty,
@@ -665,7 +674,7 @@ class _Timeline(object):
         -------
         Timestamp
         """
-        if self._workshift_ref == 'end' :
+        if self._workshift_ref == 'end':
             return self.get_ws_end_time(n)
         else:
             return self.get_ws_start_time(n)
@@ -683,7 +692,7 @@ class _Timeline(object):
         int >0
         """
         return self._get_ws_last_baseunit(n) - \
-               self._get_ws_first_baseunit(n) + 1
+            self._get_ws_first_baseunit(n) + 1
 
     def get_ws_position(self, point_in_time):
         """Get position of the workshift which contains the given point in time.
@@ -779,13 +788,12 @@ class _Timeline(object):
                                        "before {}".format(point_in_time))
             if ref_time <= point_in_time:
                 break
-            if candidate <=0:
+            if candidate <= 0:
                 raise OutOfBoundsError("No workshift with reference time "
                                        "before {}".format(point_in_time))
             candidate -= 1
 
         return candidate
-
 
     @property
     def labels(self):
@@ -820,11 +828,7 @@ class _Timeline(object):
             used to identify workshifts (the point in time may be located 
             anywhere within the workshift). The values of `amendments` are 
             labels to be set for the corresponding workshifts. 
-
-                            
-        Other parameters
-        ----------------
-        not_in_range : optional (default 'ignore')
+        not_in_range : optional (default ``'ignore'``)
             See `Raises` section.
         
         Returns
@@ -889,8 +893,8 @@ class _Timeline(object):
         labels or NaN if no default label has been set.
         """
         # TODO: support both directions (set direction in Organizer?)
-        if span.skip_left<0:
-            raise OutOfBoundsError("Attemted to apply forward pattern to {}, "
+        if span.skip_left < 0:
+            raise OutOfBoundsError("Attempted to apply forward pattern to {}, "
                                    "where left dangle could not be "
                                    "calculated".format(span))
         pattern_iterator = _skiperator(pattern,
@@ -908,7 +912,8 @@ class _Timeline(object):
         #     try:
         #         self.iloc[i] = next(pattern_iterator)
         #     except StopIteration:
-        #         raise IndexError('Timeline pattern exhausted since {}'.format(i))
+        #         raise IndexError('Timeline pattern exhausted since '
+        #                          '{}'.format(i))
 
     def _organize(self, organizer, span=None):
         """Mark up the frame to create workshifts.
@@ -932,7 +937,7 @@ class _Timeline(object):
         if span is None:
             span = _Span(0, len(self.frame) - 1)
         span_seq = []
-        #timer0 = timeit.default_timer()
+        # timer0 = timeit.default_timer()
         if organizer.marker is not None:
             span_seq = self.frame.partition_with_marker(span, organizer.marker)
         if organizer.marks is not None:
@@ -940,12 +945,12 @@ class _Timeline(object):
         # structure_iterator = _skiperator(organizer.structure,
         #                                  skip=span.skip_left)
         structure_iterator = cycle(organizer.structure)
-        #timer1 = timeit.default_timer()
-        #timer2 = None
+        # timer1 = timeit.default_timer()
+        # timer2 = None
         # TODO: SPEED UP.
         # This loop takes 0.7s for 100 Years Standard Week 8x5
         for span, layout in zip(span_seq, structure_iterator):
-            #if timer2 is None: timer2 = timeit.default_timer()
+            # if timer2 is None: timer2 = timeit.default_timer()
 
             if isinstance(layout, Organizer):
                 self._organize(layout, span)
@@ -955,7 +960,7 @@ class _Timeline(object):
                 # make compound workshift from the span, use layout as label
                 self._wsband.loc[span.first] = layout
                 self._wsband.drop(index=np.arange(span.first+1,
-                                               span.last+1), inplace=True)
+                                                  span.last+1), inplace=True)
                 self._frameband.iloc[span.first:
                                      span.last+1] = span.first
         # timer3 = timeit.default_timer()
@@ -996,13 +1001,13 @@ class _Timeline(object):
         pandas.DataFrame
         """
         if first_ws is None:
-            first_ws=0
+            first_ws = 0
         if last_ws is None:
             last_ws = len(self._wsband)-1
-        assert (first_ws >=0 and last_ws >=0 and first_ws <= last_ws)
-        if last_ws == len(self._wsband)-1 :
+        assert (0 <= first_ws <= last_ws)
+        if last_ws == len(self._wsband)-1:
             ws_bounds = np.concatenate((np.array(self._wsband.index[first_ws:]),
-                                      [len(self.frame)]))
+                                       [len(self.frame)]))
         else:
             ws_bounds = np.array(self._wsband.index[first_ws: last_ws+2])
         durations = [ws_bounds[i+1] - ws_bounds[i]
@@ -1013,15 +1018,15 @@ class _Timeline(object):
             ref_times = end_times
         else:
             ref_times = start_times
-        data = {'loc' : range(first_ws, last_ws+1),
-                'workshift' : ref_times,
-                'start' : start_times,
-                'end' : end_times,
-                'duration' : durations,
-                'label' : np.array(self.labels.iloc[first_ws:last_ws+1]),
+        data = {'loc': range(first_ws, last_ws+1),
+                'workshift': ref_times,
+                'start': start_times,
+                'end': end_times,
+                'duration': durations,
+                'label': np.array(self.labels.iloc[first_ws:last_ws+1]),
                 }
         return pd.DataFrame(data=data,
-                            columns=['loc','workshift', 'start',
+                            columns=['loc', 'workshift', 'start',
                                      'duration', 'end', 'label']
                             ).set_index('loc')
 
@@ -1106,6 +1111,7 @@ class _Schedule(object):
         return self._timeline[n]
 
     def is_on_duty(self, n):
+        # noinspection PyCallingNonCallable
         return self._selector(self._timeline[n])
 
     def is_off_duty(self, n):
@@ -1129,7 +1135,7 @@ class Organizer(object):
     the rules set by a :py:class:`.Marker` passed as the value of 
     `marker`. 
     
-    If, instead, `marks` parameter is provided, it is interpreted as a list 
+    If `marks` parameter is provided instead, it is interpreted as a list 
     of explicitly specified points in time which will serve as marks. 
     
     One and only one of `marker` or `marks` parameters must be supplied.
@@ -1157,12 +1163,12 @@ class Organizer(object):
     of the timeline.
     
     If an element of `structure` is some other single value, it is considered 
-    a label. In this case the whole span becomes a single workshift which 
+    a label. In this case, the whole span becomes a single workshift which 
     receives this label. Such a compound workshift comprises several base units 
     (unless the span itself consists of a single base unit).
     
     Once `structure` is exhausted but there are untreated spans remaining, 
-    `structure` is re-enacted in cycles. The same approach applies for patterns 
+    `structure` is re-enacted in cycles. The same approach applies to patterns 
     producing workshift labels.
     
     If `structure` is empty, no organizing occurs. The timeline retains the 
@@ -1173,7 +1179,7 @@ class Organizer(object):
     ----------
     marker : :py:class:`.Marker` or str
         If a string is given, it must be a `pandas`-compatible calendar 
-        frequency (accepts same kind of values as `base_unit_freq` of 
+        frequency (accepts the same kind of values as `base_unit_freq` of 
         timeboard). Under the hood ``marker=freq`` is silently converted  
         to ``marker=Marker(each=freq)``.
     marks : Iterable of `Timestamp`-like
@@ -1182,7 +1188,7 @@ class Organizer(object):
         An element of `structure` may be one of the following:
         
             - an `Organizer`,
-            - a pattern (iterable or iteraror of labels), 
+            - a pattern (iterable or iterator of labels), 
             - a single label.
         
         A :py:class:`.RememberingPattern` may be used both as an element 
@@ -1225,7 +1231,7 @@ class Organizer(object):
     >>> winter = tb.Organizer(marker='W', structure=[[0,0,1,1,0,0,0]])
     >>> summer = tb.Organizer(marker='W', structure=[[0,1,1,1,1,1,1]])
     >>> seasons =  tb.Marker(each='A', 
-                             at=[{'months':4}, {'months':8, 'days':15}])
+    ...                      at=[{'months':4}, {'months':8, 'days':15}])
     >>> seasonal = tb.Organizer(marker=seasons, structure=[winter, summer])
     
     Workshifts of varying length will start at 02:00, 08:00 and 18:00 every day.
@@ -1233,7 +1239,7 @@ class Organizer(object):
     'D'` starting from the first workshift of the timeline:
     
     >>> day_parts = tb.Marker(each='D', 
-                           at=[{'hours':2}, {'hours':8}, {'hours':18}])
+    ...                       at=[{'hours':2}, {'hours':8}, {'hours':18}])
     >>> shifts = tb.Organizer(marker=day_parts, structure=['A', 'B', 'C', 'D'])
 
     See more examples and explanations in 
@@ -1292,7 +1298,7 @@ class Organizer(object):
         OrderedDict
         """
         if repr_objects is None:
-            repr_objects =  OrderedDict()
+            repr_objects = OrderedDict()
         my_name = "org_{}".format(id(self))
         if my_name in repr_objects:
             return repr_objects
@@ -1301,7 +1307,7 @@ class Organizer(object):
             if self.marker.at:
                 marker_name = "mrk_{}".format(id(self.marker))
                 if marker_name not in repr_objects:
-                   repr_objects[marker_name] = "{!r}".format(self.marker)
+                    repr_objects[marker_name] = "{!r}".format(self.marker)
                 arg_m = "marker={}".format(marker_name)
             else:
                 arg_m = "marker={!r}".format(self.marker)
@@ -1309,6 +1315,7 @@ class Organizer(object):
             arg_m = "marks={!r}".format(self.marks)
 
         try:
+            # noinspection PyTypeChecker
             len_structure = len(self.structure)
         except TypeError:
             if isinstance(self.structure, RememberingPattern):
@@ -1329,13 +1336,13 @@ class Organizer(object):
                 elif isinstance(elem, RememberingPattern):
                     rp_name = "rp_{}".format(id(elem))
                     if rp_name not in repr_objects:
-                       repr_objects[rp_name] = "{!r}".format(elem)
+                        repr_objects[rp_name] = "{!r}".format(elem)
                     elem_reprs.append(rp_name)
                 else:
                     elem_reprs.append("{!r}".format(elem))
             arg_s = "[" + ", ".join(elem_reprs) + "]"
         repr_objects[my_name] = "Organizer({}, structure={})".format(arg_m,
-                                                                    arg_s)
+                                                                     arg_s)
         return repr_objects
 
     def __repr__(self):
@@ -1401,7 +1408,7 @@ class Marker(object):
                            
                            - ``'week'`` : -5..-1,1..5 
                               -1 is for the last and 1 is for the first 
-                              occurence of the weekday in the month. Zero is not
+                              occurrence of the weekday in the month. Zero is not
                               allowed.
                               
                            - ``'shift'`` : int, optional, default 0 
@@ -1413,7 +1420,7 @@ class Marker(object):
     
     The location of every point in time which has been calculated by the above 
     procedure is inspected. If it is within the `each` period in which it was 
-    being sought and within the span, the point becomes a mark. Otherwise 
+    being sought and within the span, the point becomes a mark. Otherwise, 
     it is ignored.
     
     If `at` parameter is not provided or `at` list is empty, the marks are 
@@ -1429,7 +1436,7 @@ class Marker(object):
     Parameters
     ----------
     each : str
-        `pandas`-compatible calendar frequency; accepts same values as 
+        `pandas`-compatible calendar frequency; accepts the same values as 
         `base_unit_freq` of timeboard.
     at : list of dict, optional
         Each dictionary is a collection of keyword arguments interpreted 
@@ -1456,7 +1463,7 @@ class Marker(object):
     Notes
     -----
     A string passed as the value of `how` is effectively substituted by its
-    name-sake function from module :py:mod:`timeboard.when`.
+    namesake function from module :py:mod:`timeboard.when`.
     
     Alternatively, a user-defined function may be supplied as the value of 
     `how`. The function must conform to the signature::
@@ -1464,9 +1471,9 @@ class Marker(object):
         function(periods: pandas.PeriodIndex, 
                  normalize_by: str, **kwargs) -> pandas.DatetimeIndex
              
-    This function is called once for each element of `at` list. It will receive
-    the series of all `each` periods of the span in `periods` parameter, 
-    `base_unit_freq` in `normalize_by` and a collection of keyword 
+    This function is called once for each element of `at` list. It will 
+    receive the series of all `each` periods of the span in `periods` 
+    parameter, `base_unit_freq` in `normalize_by` and a collection of keyword 
     arguments constituting the currently processed element of `at`. 
     The function is expected to return a series of points in time.
         
@@ -1515,9 +1522,9 @@ class Marker(object):
     of each year:
     
     >>> tb.Marker(each='A', 
-                  at=[{'month': 5, 'week': -1, 'weekday': 1},
-                      {'month': 9, 'week': 1, 'weekday': 1}],
-                  how='nth_weekday_of_month')
+    ...           at=[{'month': 5, 'week': -1, 'weekday': 1},
+    ...               {'month': 9, 'week': 1, 'weekday': 1}],
+    ...           how='nth_weekday_of_month')
                
     See more examples and explanations in 
     :doc:`Making a Timeboard <making_a_timeboard>` section of 

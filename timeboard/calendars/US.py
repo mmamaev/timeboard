@@ -44,27 +44,28 @@ def fed_holidays(start_year, end_year, do_not_observe=None, long_weekends=True,
 
     return amendments
 
+
 class Weekly8x5(CalendarBase):
-    """United States business calendar for 5 days x 8 hours working week.
+    """US business calendar for 5 days x 8 hours working week.
 
     The calendar takes into account the federal holidays. The Black 
     Friday is also considered a holiday. Selected holidays can
     be ignored by adding them to `exclusions`.
     
-    Workshifts are calendar days. Workshift labels are number of working 
+    Workshifts are calendar days. Workshift labels are the number of working 
     hours per day: 0 for days off, 8 for  business days.
 
     Parameters
     ----------
     custom_start : `Timestamp`-like, optional
-        Change the first date of the calendar. This date must be within 
-        the default calendar range returned by :py:meth:`Weekly8x5.parameters()`. 
-        By default the calendar starts on the date defined by 'start' 
+        Change the first date of the calendar. This date must be within the 
+        default calendar range returned by :py:meth:`Weekly8x5.parameters()`. 
+        By default, the calendar starts on the date defined by 'start' 
         element of :py:meth:`Weekly8x5.parameters()`.
     custom_end : `Timestamp`-like, optional
-        Change the last date of the calendar. This date must be within 
-        the default calendar range returned by :py:meth:`Weekly8x5.parameters()`. 
-        By default the calendar ends on the date defined by 'end' 
+        Change the last date of the calendar. This date must be within the 
+        default calendar range returned by :py:meth:`Weekly8x5.parameters()`. 
+        By default, the calendar ends on the date defined by 'end' 
         element of :py:meth:`Weekly8x5.parameters()`.
     do_not_amend : bool, optional (default False)
         If set to True, the calendar is created without any amendments, 
@@ -74,7 +75,7 @@ class Weekly8x5(CalendarBase):
         to the calendar.
     custom_amendments : dict-like
         The alternative amendments if `only_custom_amendments` is true. 
-        Otherwise `custom_amendments` are used to update pre-configured 
+        Otherwise, `custom_amendments` are used to update pre-configured 
         amendments (add missing or override existing amendments). 
     do_not_observe : set, optional 
         Holidays to be ignored. The following values are accepted into 
@@ -113,8 +114,8 @@ class Weekly8x5(CalendarBase):
     Create a 2010-2017 business calendar with Black Friday a working day:
     
     >>> clnd = US.Weekly8x5(custom_start='01 Jan 2010', 
-                            custom_end='31 Dec 2017', 
-                            do_not_observe = {'black_friday'})
+    ...                     custom_end='31 Dec 2017', 
+    ...                     do_not_observe = {'black_friday'})
 
 
     Inspect the default calendar range:

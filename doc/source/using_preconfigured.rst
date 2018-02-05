@@ -8,7 +8,7 @@ To access calendars of a country you have to import the country module from  :py
 
     >>> import timeboard.calendars.US as US
 
-Then, to obtain a Timeboard implementing a required calendar, call the class for this calendar from the chosen module. Usually the class takes some country-specific parameters that allow to tune the calendar. For example::
+Then, to obtain a Timeboard implementing a required calendar, call the class for this calendar from the chosen module. Usually, the class takes some country-specific parameters that allow tuning the calendar. For example::
 
     >>> clnd = US.Weekly8x5(do_not_observe = {'black_friday'})
 

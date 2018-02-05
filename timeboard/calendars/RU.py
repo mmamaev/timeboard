@@ -59,7 +59,7 @@ def changes(eve_hours):
         '08 Jan 2018': 0, '22 Feb 2018': x, '07 Mar 2018': x, '09 Mar 2018': 0,
         '28 Apr 2018': x, '30 Apr 2018': 0, '02 May 2018': 0, '08 May 2018': x,
         '09 Jun 2018': x, '11 Jun 2018': 0, '05 Nov 2018': 0, '29 Dec 2018': x,
-        '31 Dec 2018': 0 }
+        '31 Dec 2018': 0}
 
     return {get_timestamp(k): v for k, v in dates.items()}
 
@@ -67,21 +67,21 @@ def changes(eve_hours):
 class Weekly8x5(CalendarBase):
     """Russian official calendar for 5 days x 8 hours working week.
     
-    Workshifts are calendar days. Workshift labels are numbers of working hours
-    per day: 0 for days off, 8 for regular business days, 7 for some pre- or 
-    post-holiday business days (see also `short_eves` parameter).
+    Workshifts are calendar days. Workshift labels are the number of working 
+    hours per day: 0 for days off, 8 for regular business days, 7 for some 
+    pre- or post-holiday business days (see also `short_eves` parameter).
     
     Parameters
     ----------
     custom_start : `Timestamp`-like, optional
-        Change the first date of the calendar. This date must be within 
-        the default calendar range returned by :py:meth:`Weekly8x5.parameters()`. 
-        By default the calendar starts on the date defined by 'start' 
+        Change the first date of the calendar. This date must be within the 
+        default calendar range returned by :py:meth:`Weekly8x5.parameters()`. 
+        By default, the calendar starts on the date defined by 'start' 
         element of :py:meth:`Weekly8x5.parameters()`.
     custom_end : `Timestamp`-like, optional
-        Change the last date of the calendar. This date must be within 
-        the default calendar range returned by :py:meth:`Weekly8x5.parameters()`. 
-        By default the calendar ends on the date defined by 'end' 
+        Change the last date of the calendar. This date must be within the 
+        default calendar range returned by :py:meth:`Weekly8x5.parameters()`. 
+        By default, the calendar ends on the date defined by 'end' 
         element of :py:meth:`Weekly8x5.parameters()`.
     do_not_amend : bool, optional (default False)
         If set to True, the calendar is created without any amendments, 
@@ -91,7 +91,7 @@ class Weekly8x5(CalendarBase):
         to the calendar.
     custom_amendments : dict-like
         The alternative amendments if `only_custom_amendments` is true. 
-        Otherwise `custom_amendments` are used to update pre-configured 
+        Otherwise, `custom_amendments` are used to update pre-configured 
         amendments (add missing or override existing amendments). 
     work_on_dec31 : bool, optional (default True) 
         If False, the December 31 is always considered a holiday. Otherwise 
@@ -99,7 +99,7 @@ class Weekly8x5(CalendarBase):
         behavior.
     short_eves : bool, optional (default True)
         If False, consider all business days having 8 working hours. 
-        Otherwise assume the official reduction of working day to 7 
+        Otherwise assume the official reduction of the working day to 7 
         hours on some pre- or post-holiday business days, which is the 
         default behavior.
         
@@ -131,9 +131,9 @@ class Weekly8x5(CalendarBase):
     and making December 31 always a day off:
     
     >>> clnd = RU.Weekly8x5(custom_start='01 Jan 2010', 
-                            custom_end='31 Dec 2017', 
-                            work_on_dec31 = False,
-                            short_eves = False)
+    ...                     custom_end='31 Dec 2017', 
+    ...                     work_on_dec31 = False,
+    ...                     short_eves = False)
     
     Inspect the default calendar range:
     

@@ -4,6 +4,7 @@ from ..core import get_timestamp, get_period
 from ..timeboard import Organizer
 from itertools import product
 
+
 def bank_holidays(start_year, end_year, country='england', do_not_observe=None,
                   long_weekends=True, label=0):
 
@@ -22,7 +23,7 @@ def bank_holidays(start_year, end_year, country='england', do_not_observe=None,
     }
 
     bank_holidays_easter = {
-        'good_friday' : -2,
+        'good_friday': -2,
         'easter_monday': 1
     }
 
@@ -31,7 +32,8 @@ def bank_holidays(start_year, end_year, country='england', do_not_observe=None,
     else:
         do_not_observe = set(do_not_observe)
     if country == 'england':
-        do_not_observe |= {'new_year2', 'st_parricks', 'orangemens', 'st_andrews'}
+        do_not_observe |= {'new_year2', 'st_patricks', 'orangemens',
+                           'st_andrews'}
     if country == 'scotland':
         bank_holidays_floating['summer'] = (8, 1, 1)
         do_not_observe |= {'st_patricks', 'orangemens', 'easter_monday'}
@@ -82,26 +84,26 @@ def bank_holidays(start_year, end_year, country='england', do_not_observe=None,
 
 
 class Weekly8x5(CalendarBase):
-    """United Kingdom business calendar for 5 days x 8 hours working week.
+    """British business calendar for 5 days x 8 hours working week.
 
     The calendar takes into account the bank holidays 
     (https://www.gov.uk/bank-holidays) with regard to the country within 
     the UK. Selected holidays can be ignored by adding them to `exclusions`.
 
-    Workshifts are calendar days. Workshift labels are number of working 
+    Workshifts are calendar days. Workshift labels are the number of working 
     hours per day: 0 for days off, 8 for  business days.
 
     Parameters
     ----------
     custom_start : `Timestamp`-like, optional
-        Change the first date of the calendar. This date must be within 
-        the default calendar range returned by :py:meth:`Weekly8x5.parameters()`. 
-        By default the calendar starts on the date defined by 'start' 
+        Change the first date of the calendar. This date must be within the 
+        default calendar range returned by :py:meth:`Weekly8x5.parameters()`. 
+        By default, the calendar starts on the date defined by 'start' 
         element of :py:meth:`Weekly8x5.parameters()`.
     custom_end : `Timestamp`-like, optional
-        Change the last date of the calendar. This date must be within 
-        the default calendar range returned by :py:meth:`Weekly8x5.parameters()`. 
-        By default the calendar ends on the date defined by 'end' 
+        Change the last date of the calendar. This date must be within the 
+        default calendar range returned by :py:meth:`Weekly8x5.parameters()`. 
+        By default, the calendar ends on the date defined by 'end' 
         element of :py:meth:`Weekly8x5.parameters()`.
     do_not_amend : bool, optional (default False)
         If set to True, the calendar is created without any amendments, 
@@ -114,10 +116,10 @@ class Weekly8x5(CalendarBase):
         to the calendar.
     custom_amendments : dict-like
         The alternative amendments if `only_custom_amendments` is true. 
-        Otherwise `custom_amendments` are used to update pre-configured 
+        Otherwise, `custom_amendments` are used to update pre-configured 
         amendments (add missing or override existing amendments). 
-    country : {``'england'``, ``'northern_ireland'``, ``'scotland'``} , optional
-        Default is ``'england'`` for England and Wales.
+    country : {``'england'``, ``'northern_ireland'``, ``'scotland'``}, optional
+        The default is ``'england'`` for England and Wales.
     do_not_observe : set, optional 
         Holidays to be ignored. The following values are accepted into 
         the set: ``'new_year'``, ``'new_year2'`` (for the 2nd of January), 
@@ -158,9 +160,9 @@ class Weekly8x5(CalendarBase):
     St Andrew's Day:
     
     >>> clnd = UK.Weekly8x5(custom_start='01 Jan 2010', 
-                            custom_end='31 Dec 2017', 
-                            country = 'scotland',
-                            do_not_observe = {'st_andrews'})
+    ...                     custom_end='31 Dec 2017', 
+    ...                     country = 'scotland',
+    ...                     do_not_observe = {'st_andrews'})
 
     Inspect the default calendar range:
     

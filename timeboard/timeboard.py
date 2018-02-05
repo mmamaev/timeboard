@@ -39,7 +39,7 @@ class Timeboard(object):
         timeboard's reference frame. Every workshift consists 
         of an integer number of base units. Base unit is defined by 
         `base_unit_freq` - a `pandas`-compatible calendar frequency 
-        (i.e. ``'D'`` for day  or ``'8H'`` for 8 hours regarded as one unit). 
+        (i.e. ``'D'`` for day or ``'8H'`` for 8 hours regarded as one unit). 
         `pandas`-native business  periods (i.e. 'BM') are not supported. 
     start : `Timestamp`-like
         A point in time referring to the first base unit of the timeboard. 
@@ -77,14 +77,15 @@ class Timeboard(object):
         is used.
     default_selector : function, optional
         The selector function for the default schedule. This is 
-        the function which takes one argument - label of a workshift, and 
+        the function which takes one argument - label of a workshift and 
         returns True if this is an on duty workshift, False otherwise. 
         If not supplied, the function that returns ``bool(label)`` is used.
     default_label : optional
         Label to initialize the timeline with. Normally, this value will be 
         overridden by `layout` unless `layout` is empty or an `Organizer` has 
         empty `structure` or empty patterns in `structure`. If 
-        `default_label` is not specified, the timeline is initialized with `NaN`.
+        `default_label` is not specified, the timeline is initialized 
+        with `NaN`.
     
     Raises
     ------
@@ -118,8 +119,8 @@ class Timeboard(object):
     --------
     >>> clnd = tb.Timeboard('D', '30 Sep 2017', '09 Oct 2017', layout=[0,1])
     >>> print(clnd)
-        Timeboard of 'D': 2017-09-30 -> 2017-10-09
-    .    
+    Timeboard of 'D': 2017-09-30 -> 2017-10-09
+    <BLANKLINE>    
          workshift      start  duration        end  label  on_duty
     loc                                                           
     0   2017-09-30 2017-09-30         1 2017-09-30    0.0    False
@@ -136,8 +137,8 @@ class Timeboard(object):
     >>> org = tb.Organizer(marker='W', structure=[[1, 1, 1, 1, 1, 0, 0]])
     >>> clnd = tb.Timeboard('D', '30 Sep 2017', '09 Oct 2017', layout=org)
     >>> print(clnd)
-        Timeboard of 'D': 2017-09-30 -> 2017-10-09
-    .    
+    Timeboard of 'D': 2017-09-30 -> 2017-10-09
+    <BLANKLINE>    
          workshift      start  duration        end  label  on_duty
     loc                                                           
     0   2017-09-30 2017-09-30         1 2017-09-30    0.0    False
@@ -190,7 +191,7 @@ class Timeboard(object):
         self._default_name = str(default_name)
         self._default_schedule = _Schedule(self._timeline, self._default_name,
                                            self.default_selector)
-        self._schedules = {self._default_name : self._default_schedule}
+        self._schedules = {self._default_name: self._default_schedule}
 
         if _is_iterable(layout):
             org_repr = ""
@@ -203,7 +204,6 @@ class Timeboard(object):
             org_arg = org_name
         self._repr = "{}Timeboard({!r}, start={!r}, end={!r}, layout={})"\
                      .format(org_repr, base_unit_freq, start, end, org_arg)
-
 
     def __repr__(self):
         return self._repr
@@ -318,11 +318,11 @@ class Timeboard(object):
         ----------
         first_ws : int >=0, optional
             The zero-based timeline position of the first workshift to be 
-            included into the dataframe. By default the dataframe starts 
+            included into the dataframe. By default, the dataframe starts 
             with the first workshift of the timeboard.
         last_ws :  int >=0, optional
             The zero-based timeline position of the last workshift to be 
-            included into the dataframe. By default the dataframe ends
+            included into the dataframe. By default, the dataframe ends
             with the last workshift of the timeboard.
 
         Returns
@@ -333,7 +333,7 @@ class Timeboard(object):
             first_ws = 0
         if last_ws is None:
             last_ws = len(self._timeline) - 1
-        assert (first_ws >= 0 and last_ws >= 0 and first_ws <= last_ws)
+        assert (0 <= first_ws <= last_ws)
         df = self._timeline.to_dataframe(first_ws, last_ws)
         for activity, schedule in self._schedules.items():
             # TODO: refactor to use already computed duty indexes from _Schedule
@@ -420,12 +420,12 @@ class Timeboard(object):
         ----------
         point_in_time : `Timestamp`-like
             An object convertible to `Timestamp` such as a string, or a 
-            `pandas.Timestamp`, or a `datetime` object. Also it may be 
+            `pandas.Timestamp`, or a `datetime` object. Also, it may be 
             any object with `to_timestamp()` method returning `Timestamp`. 
         schedule : _Schedule, optional
             Schedule to be used in calculations with the workshift unless a 
             schedule is explicitly redefined for a specific calculation. 
-            By default the timeboard's default schedule is used.
+            By default, the timeboard's default schedule is used.
         
         Returns
         -------
@@ -508,7 +508,7 @@ class Timeboard(object):
             The interval will contain all workshifts belonging to the 
             specified calendar period. Workshift reference time is used to 
             identify the period where the workshift belongs. Hence the 
-            situation when a workshift extends over a boundary between  
+            situation when a workshift straddles a boundary between  
             calendar periods is handled by finding out which of the periods 
             contain the workshift reference time. 
             
@@ -582,6 +582,11 @@ class Timeboard(object):
             If the interval was created by clipping a calendar period, `closed`
             is not honored for the clipped end(s). The element of `closed` 
             representing the clipped end is reset to '1'.
+
+        schedule : _Schedule, optional
+            Schedule to be used in calculations with the interval unless a 
+            schedule is explicitly redefined for a specific calculation. 
+            By default, the timeboard's default schedule is used.
                   
         Returns
         -------
@@ -591,16 +596,16 @@ class Timeboard(object):
         Raises
         ------
         OutOfBoundsError
-            If the interval would extend outside the timeline.
+            If the interval would extend beyond the timeline.
             
         VoidIntervalError
-            If creation of an empty interval is attempted. This includes the 
-            following cases:
+            If the creation of an empty interval is attempted. This includes 
+            the following cases:
             
             - when the points in time specifying the interval bounds are 
             passed in reverse order;
             
-            - when value of `length` is zero;
+            - when the value of `length` is zero;
             
             - in a corner case when trying to obtain an interval from a period
             which is shorter than a workshift and located within the timeline
@@ -630,10 +635,10 @@ class Timeboard(object):
         See also
         --------
         .Interval
-            The alternative approach to instantiating an interval is to directly
-            call `Interval()` constructor. You will 
-            need to know the positions of the first and the last 
-            workshifts of the interval within the timeline.
+            The alternative approach to instantiating an interval is to 
+            directly call `Interval()` constructor. You will need to know 
+            the positions of the first and the last workshifts of the interval 
+            within the timeline.
         
         Examples
         --------
@@ -737,19 +742,17 @@ class Timeboard(object):
                                        "completely outside {}".
                                        format(interval_ref, self.compact_str))
             else:
-                raise PartialOutOfBoundsError("Interval referenced by `{}` "
-                                       "overlaps {}".
-                                       format(interval_ref, self.compact_str))
+                raise PartialOutOfBoundsError(
+                    "Interval referenced by `{}` overlaps {}".
+                    format(interval_ref, self.compact_str))
         if locs[0].position is None:
-            raise PartialOutOfBoundsError("The left bound of interval or "
-                                   "period referenced by `{}` "
-                                   "is outside {}".format(interval_ref,
-                                                          self.compact_str))
+            raise PartialOutOfBoundsError(
+                "The left bound of interval or period referenced by `{}` "
+                "is outside {}".format(interval_ref, self.compact_str))
         if locs[1].position is None:
-            raise PartialOutOfBoundsError("The right bound of interval or "
-                                   "period referenced by `{}` "
-                                   "is outside {}".format(interval_ref,
-                                                          self.compact_str))
+            raise PartialOutOfBoundsError(
+                "The right bound of interval or period referenced by `{}` "
+                "is outside {}".format(interval_ref, self.compact_str))
 
         return Interval(self, (locs[0].position, locs[1].position), schedule)
 
@@ -762,7 +765,6 @@ class Timeboard(object):
             return locs[0].position <= locs[1].position
         else:
             return locs[0].where <= locs[1].where
-
 
     def _get_interval_locs_from_reference(self, interval_ref,
                                           drop_head, drop_tail):
