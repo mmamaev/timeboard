@@ -730,6 +730,7 @@ class TestIntervalConstructorBadArgs:
         with pytest.raises(TypeError):
             clnd(length=1, period='W')
 
+
 class TestIntervalConstructorDirect:
 
     def test_interval_direct_with_locs(self):
@@ -800,3 +801,27 @@ class TestIntervalConstructorDirect:
         with pytest.raises(TypeError):
             Interval(clnd, 'not a tuple', clnd.default_schedule)
 
+class TestIntervalIteration(object):
+
+    def test_ivl_as_generator(self):
+        clnd = tb_12_days()
+        ivl = Interval(clnd, (2, 4))
+        ws_locs=[]
+        ws_sdl_is_ok=[]
+        for ws in ivl:
+            ws_locs.append(ws._loc)
+            ws_sdl_is_ok.append(ws.schedule.name == clnd.default_schedule.name)
+        assert ws_locs == [2, 3, 4]
+        assert all(ws_sdl_is_ok)
+
+    def test_ivl_as_generator_change_schedule(self):
+        clnd = tb_12_days()
+        my_schedule = clnd.add_schedule('my_schedule', selector=lambda x:x>1)
+        ivl = Interval(clnd, (2, 4), schedule=my_schedule)
+        ws_locs=[]
+        ws_sdl_is_ok=[]
+        for ws in ivl:
+            ws_locs.append(ws._loc)
+            ws_sdl_is_ok.append(ws.schedule.name == my_schedule.name)
+        assert ws_locs == [2, 3, 4]
+        assert all(ws_sdl_is_ok)
