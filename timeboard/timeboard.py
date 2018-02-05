@@ -105,14 +105,14 @@ class Timeboard(object):
         When the first workshift / base unit of the timeboard starts.
     end_time : Timestamp
         When the last workshift / base unit of the timeboard ends.
-    schedules : dict of {str : _Schedule}
+    schedules : dict of {str: _Schedule}
         The keys are names of schedules.
     default_schedule : _Schedule
     default_selector : function
         
     See also
     --------
-    Organizer :
+    .Organizer :
         Define rules for marking up the reference frame into workshifts.
         
     Examples

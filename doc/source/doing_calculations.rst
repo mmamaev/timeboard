@@ -111,7 +111,7 @@ Workshift of '01 Oct 2017' has label ``1``. Its duty under the default schedule:
     >>> ws2.is_on_duty(schedule=clnd.default_schedule)
     True
 
-and under "my_schedule"::
+and under `my_schedule`::
 
     >>> ws1.is_on_duty(schedule=my_schedule)
     False
@@ -342,7 +342,8 @@ There is a parameter called `clip_period` which determines how this situation is
     -----------------------------------------------------------------------
     PartialOutOfBoundsError               Traceback (most recent call last)
       ...
-    PartialOutOfBoundsError: The right bound of interval referenced by `Oct 2017` is outside Timeboard of 'D': 2017-09-30 -> 2017-10-15
+    PartialOutOfBoundsError: The right bound of interval referenced by `Oct
+    2017` is outside Timeboard of 'D': 2017-09-30 -> 2017-10-15
 
 .. _workshift-straddling-1:
 
