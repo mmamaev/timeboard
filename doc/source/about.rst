@@ -6,17 +6,19 @@ About timeboard
 
 Examples of problems solved by :py:mod:`timeboard`: 
 
-- If we have 20 business days to complete the project, when will be the deadline? 
+    - If we have 20 business days to complete the project, when will be the deadline? 
 
-- If a person was employed from November 15 to December 22, how many month's salaries the company owes them?
+    - If a person was employed from November 15 to December 22, how many month's salaries the company owes them?
 
-- A 24x7 call center operates in shifts of varying length. An operator comes in on every fourth shift. How many hours has the operator worked in a specific month?
+    - A 24x7 call center operates in shifts of varying length starting at 02:00, 08:00, and 18:00. An operator comes in on every fourth shift. How many hours has the operator worked in a specific month?
 
-Based on pandas timeseries library, :py:mod:`timeboard` gives more flexibility than pandas's built-in business calendars limited to a weekly pattern of days. The key features of :py:mod:`timeboard` are:
+Based on pandas timeseries library, :py:mod:`timeboard` gives more flexibility than pandas's built-in business calendars. The key features of :py:mod:`timeboard` are:
 
-    - Workshifts of any duration from seconds to years.
-    - Tools to build sophisticated schedules which can combine periodical patterns, seasonal variations, stop-and-resume behavior, etc.
-    - Built-in standard business day calendars for USA, UK, and Russia.
+- Support of any time periods as elements of a calendar such as days, hours, multiple-hour shifts, etc.
+
+- Tools to build sophisticated schedules which can combine periodical patterns, seasonal variations, stop-and-resume behavior, etc.
+
+- Built-in standard business day calendars (in this version: for USA, UK, and Russia).
 
 
 Developer

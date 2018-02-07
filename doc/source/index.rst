@@ -20,6 +20,11 @@ Welcome to timeboard's documentation!
    release_notes
 
 * :ref:`genindex`
-
 .. * :ref:`modindex`
 .. * :ref:`search`
+
+Links:
+
+* Github: https://github.com/mmamaev/timeboard
+* PyPI: https://pypi.python.org/pypi/timeboard
+* Documentation (this page): https://timeboard.readthedocs.io/

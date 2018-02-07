@@ -45,24 +45,28 @@ It tells us that this calendar's unit (workshift) has the sequence number of 635
 
 **How many business days were in a certain month?** 
 ::
+
     >>> clnd('May 2017', period='M').count()
     22
 
 
 **How many days off?** 
 ::
+
     >>> clnd('May 2017', period='M').count(duty='off')
     9
 
 
 **How many working hours?**
 ::
+
     >>> clnd('May 2017', period='M').sum()
     176.0
 
 
 **If an employee was on staff from the 3rd to the 28th of April, 2017, how many business months did this person work in the company?** 
 ::
+
     >>> clnd(('03 Apr 2017','28 Apr 2017')).count_periods('M')
     1.0
 
@@ -71,6 +75,7 @@ Indeed, the 1st, the 2nd, as well as the 29th and the 30th of April in 2017 fell
 
 **And if it were the same dates in May?** 
 ::
+
     >>> clnd(('03 May 2017','28 May 2017')).count_periods('M')
     0.8181818181818182
 

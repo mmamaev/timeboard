@@ -3,7 +3,6 @@
 stuff/
 test.bat
 test-cov.bat
-.coverage
 coverage.html/
 
 ## IDEA
