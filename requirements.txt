@@ -1,0 +1,4 @@
+pandas>=0.22
+numpy>=1.13
+python-dateutil>=2.6.1
+six
