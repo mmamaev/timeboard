@@ -11,16 +11,10 @@ _, rest = readme.split('.. pypi-start')
 text, _ = rest.split('.. pypi-end')
 long_description = text.replace('`', '').replace('**', '').replace('::', '')
 
-class PyTest(TestCommand):
-    def finalize_options(self):
-        TestCommand.finalize_options(self)
-        self.test_args = []
-        self.test_suite = True
-
-    def run_tests(self):
-        import pytest
-        errcode = pytest.main(self.test_args)
-        sys.exit(errcode)
+class Unsupported(TestCommand):
+    def run(self):
+        print("Running 'test' with setup.py is not supported. "
+              "Use 'pytest' or 'tox' to run the tests.")
 
 PACKAGES = find_packages(where='.', exclude=['timeboard.tests'])
 
@@ -43,15 +37,9 @@ setup(name='timeboard',
       license='BSD 3-Clause',
       packages=PACKAGES,
       include_package_data=True,
-      install_requires=[
-          'pandas>=0.22',
-          'numpy>=1.13',
-          'python-dateutil>=2.6.1',
-          'six',
-      ],
-      tests_require=['pytest'],
+      install_requires=read_file('requirements.txt').strip().split('\n'),
       test_suite='timeboard.tests',
-      extras_require={
-          'testing': ['pytest']
+      cmdclass={
+          "test": Unsupported
       },
       zip_safe=False)
