@@ -198,6 +198,30 @@ class TestTimeboardSchedules(object):
                 clnd.add_schedule(name='sdl', selector=lambda x,y: x+y)
 
 
+class TestTimeboardWorktime(object):
+
+    def test_tb_default_worktime_source(self):
+        clnd = tb.Timeboard(base_unit_freq='D',
+                            start='31 Dec 2016', end='12 Jan 2017',
+                            layout=[0, 1, 0, 0, 2, 0])
+        assert clnd.worktime_source == 'duration'
+
+    def test_tb_set_worktime_source(self):
+        clnd = tb.Timeboard(base_unit_freq='D',
+                            start='31 Dec 2016', end='12 Jan 2017',
+                            layout=[0, 1, 0, 0, 2, 0],
+                            worktime_source='labels')
+        assert clnd.worktime_source == 'labels'
+
+    def test_tb_bad_worktime_source(self):
+        with pytest.raises(ValueError):
+            tb.Timeboard(base_unit_freq='D',
+                         start='31 Dec 2016', end='12 Jan 2017',
+                         layout=[0, 1, 0, 0, 2, 0],
+                         worktime_source='bad_source')
+
+
+
 
 
 

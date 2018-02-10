@@ -30,9 +30,11 @@ Workshift
 
 No assumptions are made about what "business" is and who its "agents" may be. It could be regular office workers, or operators in a 24x7 call center, or trains calling at a station on specific days. 
 
-The activity state of a workshift is called **duty**; therefore for a given business agent the workshift is either "on duty" or "off duty". It is not relevant whether the agent is continuously active through the workshift, or takes breaks, or works only for a part of the workshift. The duty is assigned to a workshift as a whole. 
+The activity state of a workshift is called **duty**; therefore for a given business agent the workshift is either "on duty" or "off duty". It is not relevant for determining the duty whether the agent is continuously active through the workshift, or takes breaks, or works only for a part of the workshift. The duty is assigned to a workshift as a whole. 
 
-It is up to the user to define and interpret periods of time as workshifts in a way which is suitable for user's application. For example, when making plans on the regular calendar of 8-hour business days, you do not care about exact working hours. Hence, it is sufficient to designate whole days as workshifts with business days being "on duty" workshifts, and weekends and holidays being "off duty". On the other hand, to build working schedules for operators in a 24x7 call center who work in 8-hour shifts you have to designate each 8-hour period as a separate workshift.
+It is up to the user to define and interpret periods of time as workshifts in a way which is suitable for user's application. For example, when making plans on the regular calendar of 8-hour business days, you do not care about exact working hours. Hence, it is sufficient to designate whole days as workshifts with business days being "on duty" workshifts, and weekends and holidays being "off duty". On the other hand, to build working schedules for operators in a 24x7 call center who work in 8-hour shifts you have to designate each 8-hour period as a separate workshift. 
+
+See also *Work time* section below which discusses counting the actual work time.
 
 Note that both "on duty" and "off duty" periods are called "workshifts" although *work*, whatever it might be, is not carried out by the business agent when the duty is off.  Generally speaking, though not necessarily, some other business agent may operate a reversed schedule, doing *work* when the first agent is idle. For example, this is the case for a 24x7 call center.
 
@@ -47,7 +49,7 @@ Timeline
 
 **Timeline** is a continuous sequence of workshifts laid upon the frame. 
 
-Each workshift covers one or more base units of the frame. The number of base units constituting a workshift is called the **duration** of the workshift. Different workshifts do not necessarily have the same duration.
+Each workshift consists of one or more base units of the frame. The number of base units constituting a workshift is called the **duration** of the workshift. Different workshifts do not necessarily have the same duration.
 
 Each base unit of the frame belongs to one and only one workshift. This means that workshifts do not overlap and there are no gaps between workshifts.
 
@@ -67,7 +69,7 @@ Schedule defines duty status of each workshift on the timeline according to a ru
 
 Timeboard contains at least one ("default") schedule and may contain many. Each schedule employs its specific selector. The default selector for the default schedule returns ``bool(label)``.
 
-The same workshift may have different duty statuses under different schedules.
+The duty of a workshift may vary depending on the schedule.
 
 For example, let the timeline consist of calendar days where weekdays from Monday through Friday are labeled with 2, Saturdays are labeled with 1, and Sundays and holidays are labeled with 0. The schedule of regular business days is obtained by applying selector ``label>1``, and under this schedule, Saturdays are off duty. However, if children attend schools on Saturdays, the school schedule can be obtained from the same timeline with selector `label>0`. Under the latter schedule, Saturdays are on duty.
 
@@ -76,7 +78,7 @@ For example, let the timeline consist of calendar days where weekdays from Monda
 Compound Workshifts
 ===================
 
-It is important to emphasize that, when working with a timeboard, you reason about workshifts rather than base units. Duty is a property of workshift, not of a base unit. All calendar calculations are performed either on workshifts or on intervals. 
+It is important to emphasize that, when working with a timeboard, you reason about workshifts rather than base units. Duty is associated with a workshift, not with a base unit. All calendar calculations are performed either on workshifts or on intervals. 
 
 In many cases, workshift coincides with a base unit. The only reason to be otherwise is when you need workshifts of varying duration. Let's illustrate this point with examples.
 
@@ -97,3 +99,16 @@ Having said that, while in many cases a workshift will coincide with a base unit
 A workshift comprising more than one base unit is called **compound workshift**.
 
 .. image:: compound_timeboard.png
+
+.. _work-time-section:
+
+Work time
+=========
+
+Work time (also spelled 'worktime' in names of functions and parameters) is the amount of time within workshift which the agent spends actually doing work. In many use cases, you will want to find out the work time of a specific workshift or the total work time of an interval.
+
+Depending on the model of a timeboard, the duration of workshift may or may not represent the work time. Typically, in the models based on continuous succession of shifts, the work time takes the entire workshift. On the other hand, in calendars of business days, the actual work time takes only a part of a workshift (that is, of a day). 
+
+In the latter case, you may use workshift labels to indicate the work time as it has been shown in the previous section. Obviously, such labels must be numbers. Their interpretation is up to the user.
+
+When creating your timeboard you will have to specify the source of information for counting the work time: either it is workshift's duration or workshift's label. Accordingly, the functions counting the work time will return either the number of base units in the workshift/interval or the sum of the labels.

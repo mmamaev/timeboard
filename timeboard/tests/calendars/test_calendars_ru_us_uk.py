@@ -28,7 +28,7 @@ class TestCalendarsRU(object):
                                      period='A').count() == bdays
 
         # a regular week
-        for day in range(21, 25):
+        for day in range(20, 25):
             ws = clnd("{} Nov 2017".format(day))
             assert ws.is_on_duty()
             assert ws.label == 8
@@ -36,6 +36,7 @@ class TestCalendarsRU(object):
             ws = clnd("{} Nov 2017".format(day))
             assert ws.is_off_duty()
             assert ws.label == 0
+        assert clnd(('20 Nov 2017', '26 Nov 2017')).worktime() == 40
 
         # standard holidays
         assert clnd('01 Jan 2008').is_off_duty()
@@ -134,7 +135,11 @@ class TestCalendarsUS(object):
         ]
         clnd0 = US.Weekly8x5(do_not_amend=True)
         assert all([clnd0(d).is_on_duty() for d in holidays_2011])
+
         clnd1 = US.Weekly8x5()
+        #regular week
+        assert clnd1(('04 Dec 2017', '10 Dec 2017')).worktime() == 40
+
         assert all([clnd1(d).is_off_duty() for d in holidays_2011])
         assert clnd0.get_interval('2011', period='A').count() == (
                clnd1.get_interval('2011', period='A').count() +
@@ -204,7 +209,11 @@ class TestCalendarsUK(object):
         ]
         clnd0 = UK.Weekly8x5(country='northern_ireland', do_not_amend=True)
         assert all([clnd0(d).is_on_duty() for d in holidays_nirl_2016])
+
         clnd1 = UK.Weekly8x5(country='northern_ireland')
+        #regular week
+        assert clnd1(('04 Dec 2017', '10 Dec 2017')).worktime() == 40
+
         assert all([clnd1(d).is_off_duty() for d in holidays_nirl_2016])
         assert clnd0.get_interval('2016', period='A').count() == (
                clnd1.get_interval('2016', period='A').count() +

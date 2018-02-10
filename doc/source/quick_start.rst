@@ -60,7 +60,7 @@ It tells us that this calendar's unit (workshift) has the sequence number of 635
 **How many working hours?**
 ::
 
-    >>> clnd('May 2017', period='M').sum()
+    >>> clnd('May 2017', period='M').worktime()
     176.0
 
 

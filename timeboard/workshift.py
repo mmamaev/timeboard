@@ -201,7 +201,7 @@ class Workshift(object):
         elif duty == 'any':
             idx = schedule.index
         else:
-            raise ValueError("Unrecognized duty {!r}".format(duty))
+            raise ValueError("Invalid duty {!r}".format(duty))
         return idx
 
     def rollforward(self, steps=0, duty='on', schedule=None):
@@ -486,6 +486,105 @@ class Workshift(object):
                 format(self.compact_str, steps, duty, schedule.name))
 
         return Workshift(self._tb, idx[i - steps], schedule)
+
+    def worktime(self, duty='on', schedule=None):
+        """Return the work time for the worker with the specified duty.
+        
+        The source for the work time value is determined by 
+        :py:attr:`.Timeboard.worktime_source`.
+
+        Parameters
+        ----------
+        duty : {``'on'``, ``'off'``, ``'any'``} , optional (default ``'on'``)
+            Specify the duty of the worker.
+        schedule : _Schedule, optional
+            If `schedule` is not given, the interval's schedule is used to 
+            determine the duty.
+
+        Returns
+        -------
+        int or float
+            Either workshift's duration or label, depending on the value
+            of `worktime_source`. However, if the workshift's duty 
+            is not the same as worker's `duty`, zero is returned.
+
+        Raises
+        ------
+        TypeError
+            If `worktime_source`='labels' but the workshift's label is not 
+            a number.
+            
+        Examples
+        --------
+        By default, the work time equals to workshift's duration:
+
+        >>> clnd = tb.Timeboard('D', '30 Sep 2017', '11 Oct 2017', 
+        ...                     layout=[4, 8, 4, 8],
+        ...                     default_selector = lambda label: label>4)
+        >>> ws = tb.Workshift(clnd, 3)
+        >>> ws.label
+        8.0
+        >>> ws.duration
+        1
+        >>> ws.is_on_duty()
+        True
+        >>> ws.worktime()
+        1
+        >>> ws.worktime(duty='off')
+        0
+        >>> ws.worktime(duty='any')
+        1
+
+        In the example below, the work time is taken from the labels:
+    
+        >>> clnd = tb.Timeboard('D', '30 Sep 2017', '11 Oct 2017', 
+        ...                     layout=[4, 8, 4, 8],
+        ...                     default_selector = lambda label: label>4,
+        ...                     worktime_source = 'labels')
+        >>> ws = tb.Workshift(clnd, 3)
+        >>> ws.worktime()
+        8.0
+        >>> ws.worktime(duty='off')
+        0
+        >>> ws.worktime(duty='any')
+        8.0
+        >>> ws = tb.Workshift(clnd, 2)
+        >>> ws.label
+        4.0
+        >>> ws.is_off_duty()
+        True
+        >>> ws.worktime()
+        0
+        >>> ws.worktime(duty='off')
+        4.0
+        >>> ws.worktime(duty='any')
+        4.0
+        """
+        if schedule is None:
+            schedule = self.schedule
+        duty_flags = {'on': self.is_on_duty(schedule=schedule),
+                      'off': self.is_off_duty(schedule=schedule),
+                      'any': True}
+        try:
+            duty_flag = duty_flags[duty]
+        except KeyError:
+            raise ValueError("Invalid duty {!r}.".format(duty))
+        if duty_flag:
+            if self._tb.worktime_source == 'labels':
+                try:
+                    _ = self.label + 0
+                except TypeError:
+                    raise TypeError('Workshift label {!r} is expected to '
+                                    'indicate work time but it is not '
+                                    'a number.')
+                return self.label
+            elif self._tb.worktime_source == 'duration':
+                return self.duration
+            else:
+                raise RuntimeError("Unrecognized worktime_source={!r}".
+                                   format(self._tb.worktime_source))
+        else:
+            return 0
 
     def __add__(self, other):
         """``ws + n`` is the same as ``ws.rollforward(n, duty='on')``"""

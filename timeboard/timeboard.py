@@ -86,6 +86,10 @@ class Timeboard(object):
         empty `structure` or empty patterns in `structure`. If 
         `default_label` is not specified, the timeline is initialized 
         with `NaN`.
+    worktime_source : {``'duration'``, ``'labels'``}, optional
+        Define what number is used as workshift's work time: workshift's 
+        duration (default) or the label. In the latter case, you need to use 
+        numbers as labels and it is up to you to interpret the values.
     
     Raises
     ------
@@ -109,6 +113,7 @@ class Timeboard(object):
         The keys are names of schedules.
     default_schedule : _Schedule
     default_selector : function
+    worktime_source : {``'duration'``, ``'labels'``}
         
     See also
     --------
@@ -160,7 +165,10 @@ class Timeboard(object):
                  default_selector=None,
                  default_name=None,
                  workshift_ref='start',
-                 default_label=None):
+                 default_label=None,
+                 worktime_source='duration'):
+
+        # check and prepare parameters for the timeline
         if isinstance(layout, Organizer):
             org = layout
         elif _is_iterable(layout):
@@ -179,13 +187,23 @@ class Timeboard(object):
             raise TypeError("`amendments` do not look like a dictionary: "
                             "`items` method is needed but not found.")
         self._custom_selector = default_selector
+        self._base_unit_freq = base_unit_freq
+
+        # check parameters for worktime
+        valid_worktime_sources = ['duration', 'labels']
+        if worktime_source not in valid_worktime_sources:
+            raise ValueError("Invalid `worktime_source`={!r}."
+                             .format(worktime_source))
+        self._worktime_source = worktime_source
+
+        # create the frame and the timeline
         self._frame = _Frame(base_unit_freq, start, end)
         self._timeline = _Timeline(frame=self._frame, organizer=org,
                                    workshift_ref=workshift_ref,
                                    data=default_label)
         self._timeline.amend(amendments)
-        self._base_unit_freq = base_unit_freq
 
+        # create default schedule
         if default_name is None:
             default_name = 'on_duty'
         self._default_name = str(default_name)
@@ -193,6 +211,7 @@ class Timeboard(object):
                                            self.default_selector)
         self._schedules = {self._default_name: self._default_schedule}
 
+        # prepare the text for `__repr__`
         if _is_iterable(layout):
             org_repr = ""
             org_arg = "{!r}".format(org)
@@ -248,6 +267,10 @@ class Timeboard(object):
     @property
     def default_schedule(self):
         return self._default_schedule
+
+    @property
+    def worktime_source(self):
+        return self._worktime_source
 
     def __call__(self, *args, **kwargs):
         """A wrapper of `get_workshift()` or `get_interval()`.

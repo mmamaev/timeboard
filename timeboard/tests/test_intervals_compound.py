@@ -7,13 +7,14 @@ import pandas as pd
 import pytest
 
 @pytest.fixture(scope='module')
-def tb_10_8_6_hours(workshift_ref='start'):
+def tb_10_8_6_hours(workshift_ref='start', worktime_source='duration'):
     shifts = tb.Marker(each='D', at=[{'hours': 2}, {'hours': 8}, {'hours': 18}])
     daily = tb.Organizer(marker=shifts, structure=[1, 0])
     return tb.Timeboard(base_unit_freq='H',
                         start='01 Oct 2017', end='06 Oct 2017',
                         layout=daily,
-                        workshift_ref=workshift_ref)
+                        workshift_ref=workshift_ref,
+                        worktime_source=worktime_source)
 
     #               workshift  day  dur                 end  label  on_duty
     # loc
@@ -362,4 +363,57 @@ class TestIntervalCompoundCountPeriodsOOB(object):
         ivl = Interval(clnd, (14, 15))
         with pytest.raises(PartialOutOfBoundsError):
             ivl.count_periods('D', duty='off')
+
+
+class TestIntervalCompoundTotalDuration(object):
+
+    def test_ivl_compound_total_dur(self):
+        clnd = tb_10_8_6_hours()
+        ivl = Interval(clnd, (2, 8))
+        assert ivl.total_duration() == 34
+        assert ivl.total_duration(duty='off') == 24
+        assert ivl.total_duration(duty ='any') == 58
+
+    def test_ivl_compound_total_dur_other_schedule(self):
+        clnd = tb_10_8_6_hours()
+        other_sdl = clnd.add_schedule('other', lambda x: x > 1)
+        ivl = Interval(clnd, (2, 8))
+        assert ivl.total_duration(schedule=other_sdl) == 0
+        assert ivl.total_duration(duty='off', schedule=other_sdl) == 58
+        assert ivl.total_duration(duty ='any', schedule=other_sdl) == 58
+
+    def test_ivl_compound_total_dur_other_schedule2(self):
+        clnd = tb_10_8_6_hours()
+        other_sdl = clnd.add_schedule('other', lambda x: x > -1)
+        ivl = Interval(clnd, (2, 8), schedule=other_sdl)
+        assert ivl.total_duration() == 58
+        assert ivl.total_duration(duty='off') == 0
+        assert ivl.total_duration(duty ='any') == 58
+
+
+class TestIntervalCompoundWorkTime(object):
+
+    def test_ivl_compound_worktime_default(self):
+        clnd = tb_10_8_6_hours()
+        ivl = Interval(clnd, (2, 8))
+        assert ivl.worktime() == 34
+        assert ivl.worktime(duty='off') == 24
+        assert ivl.worktime(duty ='any') == 58
+
+    def test_ivl_compound_worktime_in_labels(self):
+        clnd = tb_10_8_6_hours(worktime_source='labels')
+        ivl = Interval(clnd, (2, 8))
+        assert ivl.worktime() == 4
+        assert ivl.worktime(duty='off') == 0
+        assert ivl.worktime(duty ='any') == 4
+
+
+    def test_ivl_compound_worktime_in_labels_other_schedule(self):
+        clnd = tb_10_8_6_hours(worktime_source='labels')
+        other_sdl = clnd.add_schedule('other', lambda x: x > 1)
+        ivl = Interval(clnd, (2, 8))
+        assert ivl.worktime(schedule=other_sdl) == 0
+        assert ivl.worktime(duty='off', schedule=other_sdl) == 4
+        assert ivl.worktime(duty ='any', schedule=other_sdl) == 4
+
 

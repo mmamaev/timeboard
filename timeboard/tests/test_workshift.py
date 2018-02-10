@@ -577,4 +577,63 @@ class TestWorkshiftSchedules(object):
             ws1 = clnd.get_workshift('03 Jan 2017', schedule='sdl')
 
 
+class TestWorkshiftWorktime(object):
+
+    def test_ws_worktime_default(self):
+        clnd = tb_12_days()
+        ws = Workshift(clnd, 4)
+        assert ws.worktime() == 1
+        assert ws.worktime(duty='off') == 0
+        assert ws.worktime(duty='any') == 1
+
+        ws = Workshift(clnd, 5)
+        assert ws.worktime() == 0
+        assert ws.worktime(duty='off') == 1
+        assert ws.worktime(duty='any') == 1
+
+    def test_ws_worktime_in_label(self):
+        clnd = tb.Timeboard(base_unit_freq='D',
+                        start='31 Dec 2016', end='12 Jan 2017',
+                        layout=[0, 1, 0, 0, 2, 0],
+                        worktime_source='labels')
+        ws = Workshift(clnd, 4)
+        assert ws.worktime() == 2
+        assert ws.worktime(duty='off') == 0
+        assert ws.worktime(duty='any') == 2
+
+    def test_ws_worktime_other_schedule(self):
+        clnd = tb_12_days()
+        other_sdl = clnd.add_schedule('other', lambda label: label < 2)
+        ws = Workshift(clnd, 4)
+        assert ws.worktime(schedule=other_sdl) == 0
+        assert ws.worktime(duty='off', schedule=other_sdl) == 1
+        assert ws.worktime(duty='any', schedule=other_sdl) == 1
+
+        clnd = tb.Timeboard(base_unit_freq='D',
+                        start='31 Dec 2016', end='12 Jan 2017',
+                        layout=[0, 1, 0, 0, 2, 0],
+                        worktime_source='labels')
+        ws = Workshift(clnd, 4)
+        assert ws.worktime(schedule=other_sdl) == 0
+        assert ws.worktime(duty='off', schedule=other_sdl) == 2
+        assert ws.worktime(duty='any', schedule=other_sdl) == 2
+
+    def test_ws_worktime_in_labels_strings(self):
+        clnd = tb.Timeboard(base_unit_freq='D',
+                            start='31 Dec 2016', end='12 Jan 2017',
+                            layout=[0, 1, 0, 0, 'a', 0],
+                            worktime_source='labels')
+        ws = Workshift(clnd, 4)
+        with pytest.raises(TypeError):
+            ws.worktime()
+        with pytest.raises(TypeError):
+            ws.worktime(duty='any')
+        assert ws.worktime(duty='off') == 0
+
+    def test_ws_worktime_bad_duty(self):
+        clnd = tb_12_days()
+        ws = Workshift(clnd, 4)
+        with pytest.raises(ValueError):
+            ws.worktime(duty='bad_duty')
+
 

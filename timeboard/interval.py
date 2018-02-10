@@ -580,7 +580,7 @@ class Interval(object):
 
         return result
 
-    def sum(self, duty='on', schedule=None):
+    def _sum_labels(self, duty='on', schedule=None):
         """Return the sum of labels of workshifts with the specified duty.
         
         Parameters
@@ -602,7 +602,7 @@ class Interval(object):
         Raises
         ------
         TypeError
-            When the type of labels does not define `sum`.
+            When the type of the labels does not define `sum`.
             
         Examples
         --------
@@ -614,11 +614,11 @@ class Interval(object):
         In this interval there are ten workshifts: five with label `1` that are 
         off duty and five with label `2` that are on duty.
         
-        >>> ivl.sum()
+        >>> ivl._sum_labels()
         10.0
-        >>> ivl.sum(duty='off')
+        >>> ivl._sum_labels(duty='off')
         5.0
-        >>> ivl.sum(duty='any')
+        >>> ivl._sum_labels(duty='any')
         15.0
         
         """
@@ -632,10 +632,135 @@ class Interval(object):
             return self._tb._timeline[duty_idx[duty_idx_bounds[0]:
                                                duty_idx_bounds[1]+1]].sum()
 
-    def where(self, ws, duty='same'):
-        # TODO: Interval.where
-        raise NotImplementedError
+    def total_duration(self, duty='on', schedule=None):
+        """Return the total duration of workshifts with the specified duty.
 
-    def where_period(self, reference, period, duty='same'):
-        # TODO: Interval.where_period
-        raise NotImplementedError
+        Parameters
+        ----------
+        duty : {``'on'``, ``'off'``, ``'any'``} , optional (default ``'on'``)
+            Specify the duty of workshifts whose durations are counted. 
+            If ``duty='on'``, off-duty workshifts are ignored, and vice versa. 
+            If ``duty='any'``, durations of all workshifts are counted whatever 
+            the duty.
+        schedule : _Schedule, optional
+            If `schedule` is not given, the interval's schedule is used.
+
+        Returns
+        -------
+        int
+            Total count of base units in the workshifts with the specified duty.
+        
+        Examples
+        --------
+        
+        >>> org = tb.Organizer(marks = ['03 Oct 2017', '07 Oct 2017', 
+        ...                             '09 Oct 2017'], 
+        ...                    structure=[0,1]) 
+        >>> clnd = tb.Timeboard('D', '30 Sep 2017', '11 Oct 2017', 
+        ...                     layout=org)
+        >>> ivl = clnd()
+        >>> print (ivl)
+        Interval((0, 3)): 3x'D' at 2017-09-30 -> 3x'D' at 2017-10-09 [4]
+        <BLANKLINE>
+             workshift      start  duration        end  label  on_duty
+        loc                                                           
+        0   2017-09-30 2017-09-30         3 2017-10-02    0.0    False
+        1   2017-10-03 2017-10-03         4 2017-10-06    1.0     True
+        2   2017-10-07 2017-10-07         2 2017-10-08    0.0    False
+        3   2017-10-09 2017-10-09         3 2017-10-11    1.0     True
+        >>> ivl.total_duration()
+        7
+        >>> ivl.total_duration(duty='off')
+        5
+        >>> ivl.total_duration(duty='any')
+        12
+        """
+        if schedule is None:
+            schedule = self.schedule
+        duty_idx, duty_idx_bounds = self._get_duty_idx(duty, schedule)
+
+        if duty_idx_bounds[0] is None or duty_idx_bounds[1] is None:
+            return 0
+        else:
+            return self._tb._timeline.get_durations_for_ws_array(
+                duty_idx[duty_idx_bounds[0]:duty_idx_bounds[1]+1]).sum()
+
+    def worktime(self, duty='on', schedule=None):
+        """Return the total work time of workshifts with the specified duty.
+        
+        The source for work time values is determined by 
+        :py:attr:`.Timeboard.worktime_source`.
+
+        Parameters
+        ----------
+        duty : {``'on'``, ``'off'``, ``'any'``} , optional (default ``'on'``)
+            Specify the duty of workshifts whose work times are counted. 
+            If ``duty='on'``, off-duty workshifts are ignored, and vice versa. 
+            If ``duty='any'``, work times of all workshifts are counted 
+            whatever the duty.
+        schedule : _Schedule, optional
+            If `schedule` is not given, the interval's schedule is used.
+
+        Returns
+        -------
+        int or float
+            The sum of work times of the workshifts with the specified duty or 
+            zero if the interval does not contain workshifts with this duty.
+            
+        Raises
+        ------
+        TypeError
+            If `worktime_source`='labels' but the labels could be summed up 
+            to a number.
+            
+        Examples
+        --------
+        By default, workshift's work time equals to workshift's duration:
+
+        >>> clnd = tb.Timeboard('D', '30 Sep 2017', '11 Oct 2017', 
+        ...                     layout=[4, 8, 4, 8],
+        ...                     default_selector = lambda label: label>4)
+        >>> ivl = tb.Interval(clnd, (1, 3))
+        >>> print (ivl)
+        Interval((1, 3)): 'D' at 2017-10-01 -> 'D' at 2017-10-03 [3]
+        <BLANKLINE>
+             workshift      start  duration        end  label  on_duty
+        loc                                                           
+        1   2017-10-01 2017-10-01         1 2017-10-01    8.0     True
+        2   2017-10-02 2017-10-02         1 2017-10-02    4.0    False
+        3   2017-10-03 2017-10-03         1 2017-10-03    8.0     True
+        >>> ivl.worktime()
+        2
+        >>> ivl.worktime(duty='off')
+        1
+        >>> ivl.worktime(duty='any')
+        3
+    
+        In the example below, the work time is taken from the labels::
+    
+        >>> clnd = tb.Timeboard('D', '30 Sep 2017', '11 Oct 2017', 
+        ...                     layout=[4, 8, 4, 8],
+        ...                     default_selector = lambda label: label>4,
+        ...                     worktime_source = 'labels')
+        >>> ivl = tb.Interval(clnd, (1, 3))
+        >>> ivl.worktime()
+        16.0
+        >>> ivl.worktime(duty='off')
+        4.0
+        >>> ivl.worktime(duty='any')
+        20.0
+        """
+        if self._tb.worktime_source == 'labels':
+            result = self._sum_labels(duty=duty, schedule=schedule)
+            try:
+                result + 0
+            except TypeError:
+                raise TypeError('Workshift labels are expected to indicate '
+                                'work time but could not be summed up '
+                                'to a number.')
+        elif self._tb.worktime_source == 'duration':
+            result = self.total_duration(duty=duty, schedule=schedule)
+        else:
+            raise RuntimeError("Unrecognized worktime_source={!r}".
+                               format(self._tb.worktime_source))
+        return result

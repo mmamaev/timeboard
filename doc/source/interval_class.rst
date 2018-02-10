@@ -6,4 +6,5 @@
 
 
 .. autoclass:: timeboard.Interval
-   :members: first, last, nth, sum, count, count_periods, to_dataframe
+   :members: first, last, nth, total_duration, worktime, count, 
+             count_periods, to_dataframe

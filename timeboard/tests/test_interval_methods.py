@@ -549,42 +549,44 @@ class TestIntervalSum(object):
                              layout=[1,2],
                              default_selector=lambda label: label>1)
         ivl = tb.Interval(clnd,(2,9))
-        assert ivl.sum() == 8
-        assert ivl.sum(duty='off') == 4
-        assert ivl.sum(duty='any') == 12
+        assert ivl._sum_labels() == 8
+        assert ivl._sum_labels(duty='off') == 4
+        assert ivl._sum_labels(duty='any') == 12
 
         clnd = tb. Timeboard('D', '01 Oct 2017', '10 Oct 2017',
                              layout=[-2, 1.5],
                              default_selector=lambda label: label > 0)
-        assert clnd().sum() == 7.5
-        assert clnd().sum(duty='off') == -10.0
-        assert clnd().sum(duty='any') == -2.5
+        assert clnd()._sum_labels() == 7.5
+        assert clnd()._sum_labels(duty='off') == -10.0
+        assert clnd()._sum_labels(duty='any') == -2.5
 
     def test_ivl_sum_strings(self):
         clnd = tb. Timeboard('D', '01 Oct 2017', '10 Oct 2017',
                              layout=['a', 'b'],
                              default_selector=lambda label: label=='b')
         ivl = tb.Interval(clnd, (2, 9))
-        assert ivl.sum() == 'bbbb'
-        assert ivl.sum(duty='off') == 'aaaa'
-        assert ivl.sum(duty='any') == 'abababab'
+        assert ivl._sum_labels() == 'bbbb'
+        assert ivl._sum_labels(duty='off') == 'aaaa'
+        assert ivl._sum_labels(duty='any') == 'abababab'
 
     def test_ivl_sum_no_such_duty(self):
         clnd = tb.Timeboard('D', '01 Oct 2017', '10 Oct 2017',
                             layout=[1, 2],
                             )
         ivl = tb.Interval(clnd, (2, 9))
-        assert ivl.sum() == 12
-        assert ivl.sum(duty='off') == 0
-        assert ivl.sum(duty='any') == 12
+        assert ivl._sum_labels() == 12
+        assert ivl._sum_labels(duty='off') == 0
+        assert ivl._sum_labels(duty='any') == 12
 
+    def test_ivl_sum_other_schedule(self):
         clnd = tb.Timeboard('D', '01 Oct 2017', '10 Oct 2017',
                             layout=[1, 2],
-                            default_selector=lambda label: label > 2)
+                            )
+        other_sdl = clnd.add_schedule('other', lambda label: label > 2)
         ivl = tb.Interval(clnd, (2, 9))
-        assert ivl.sum() == 0
-        assert ivl.sum(duty='off') == 12
-        assert ivl.sum(duty='any') == 12
+        assert ivl._sum_labels(schedule=other_sdl) == 0
+        assert ivl._sum_labels(duty='off', schedule=other_sdl) == 12
+        assert ivl._sum_labels(duty='any', schedule=other_sdl) == 12
 
     def test_ivl_sum_exotic_fails(self):
 
@@ -592,12 +594,113 @@ class TestIntervalSum(object):
         clnd = tb. Timeboard('D', '01 Oct 2017', '10 Oct 2017',
                              layout=[pd.Period('2017', freq='A')])
         with pytest.raises(TypeError):
-            clnd().sum()
+            clnd()._sum_labels()
         with pytest.raises(TypeError):
-            clnd().sum(duty='any')
-        # however ther is not "off" duty in the interval
-        assert clnd().sum(duty='off') == 0
+            clnd()._sum_labels(duty='any')
+        # however there is not "off" duty in the interval
+        assert clnd()._sum_labels(duty='off') == 0
 
+
+class TestIntervalTotalDuration(object):
+
+    def test_ivl_total_dur_numbers(self):
+        clnd = tb. Timeboard('D', '01 Oct 2017', '10 Oct 2017',
+                             layout=[1,2],
+                             default_selector=lambda label: label>1)
+        ivl = tb.Interval(clnd,(2,9))
+        assert ivl.total_duration() == 4
+        assert ivl.total_duration(duty='off') == 4
+        assert ivl.total_duration(duty='any') == 8
+
+        clnd = tb. Timeboard('D', '01 Oct 2017', '10 Oct 2017',
+                             layout=[-2, 1.5],
+                             default_selector=lambda label: label > 0)
+        assert clnd().total_duration() == 5
+        assert clnd().total_duration(duty='off') == 5
+        assert clnd().total_duration(duty='any') == 10
+
+    def test_ivl_total_dur_no_such_duty(self):
+        clnd = tb.Timeboard('D', '01 Oct 2017', '10 Oct 2017',
+                            layout=[1, 2],
+                            )
+        ivl = tb.Interval(clnd, (2, 9))
+        assert ivl.total_duration() == 8
+        assert ivl.total_duration(duty='off') == 0
+        assert ivl.total_duration(duty='any') == 8
+
+    def test_ivl_total_dur_other_schedule(self):
+        clnd = tb.Timeboard('D', '01 Oct 2017', '10 Oct 2017',
+                            layout=[1, 2],
+                            )
+        other_sdl = clnd.add_schedule('other', lambda label: label > 2)
+        ivl = tb.Interval(clnd, (2, 9))
+        assert ivl.total_duration(schedule=other_sdl) == 0
+        assert ivl.total_duration(duty='off', schedule=other_sdl) == 8
+        assert ivl.total_duration(duty='any', schedule=other_sdl) == 8
+
+
+class TestIntervalWorktime(object):
+
+    def test_ivl_worktime_default(self):
+        clnd = tb. Timeboard('D', '01 Oct 2017', '10 Oct 2017',
+                             layout=[1,2],
+                             default_selector=lambda label: label>1)
+        ivl = tb.Interval(clnd,(2,9))
+        assert ivl.worktime() == 4
+        assert ivl.worktime(duty='off') == 4
+        assert ivl.worktime(duty='any') == 8
+
+        assert clnd().worktime() == 5
+        assert clnd().worktime(duty='off') == 5
+        assert clnd().worktime(duty='any') == 10
+
+
+    def test_ivl_worktime_in_labels(self):
+        clnd = tb. Timeboard('D', '01 Oct 2017', '10 Oct 2017',
+                             layout=[1,2],
+                             default_selector=lambda label: label>1,
+                             worktime_source='labels')
+        ivl = tb.Interval(clnd,(2,9))
+        assert ivl.worktime() == 8
+        assert ivl.worktime(duty='off') == 4
+        assert ivl.worktime(duty='any') == 12
+
+    def test_ivl_worktime_in_labels_other_schedule(self):
+        clnd = tb.Timeboard('D', '01 Oct 2017', '10 Oct 2017',
+                            layout=[1, 2],
+                            worktime_source='labels'
+                            )
+        other_sdl = clnd.add_schedule('other', lambda x: x>2)
+        ivl = tb.Interval(clnd, (2, 9))
+        assert ivl.worktime(schedule=other_sdl) == 0
+        assert ivl.worktime(duty='off', schedule=other_sdl) == 12
+        assert ivl.worktime(duty='any', schedule=other_sdl) == 12
+
+    def test_ivl_worktime_in_labels_strings(self):
+        clnd = tb. Timeboard('D', '01 Oct 2017', '10 Oct 2017',
+                             layout=['a', 'b'],
+                             default_selector=lambda label: label=='b',
+                             worktime_source='labels')
+        ivl = tb.Interval(clnd, (2, 9))
+        with pytest.raises(TypeError):
+            ivl.worktime()
+        with pytest.raises(TypeError):
+            ivl.worktime(duty='off')
+        with pytest.raises(TypeError):
+            ivl.worktime(duty='any')
+
+    def test_ivl_worktime_exotic_fails(self):
+
+        # try some exotic type of labels
+        clnd = tb. Timeboard('D', '01 Oct 2017', '10 Oct 2017',
+                             layout=[pd.Period('2017', freq='A')],
+                             worktime_source='labels')
+        with pytest.raises(TypeError):
+            clnd().worktime()
+        with pytest.raises(TypeError):
+            clnd().worktime(duty='any')
+        # however there is not "off" duty in the interval
+        assert clnd().worktime(duty='off') == 0
 
     
 

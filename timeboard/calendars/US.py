@@ -134,7 +134,8 @@ class Weekly8x5(CalendarBase):
             'base_unit_freq': 'D',
             'start': get_timestamp('01 Jan 2000'),
             'end': get_timestamp('31 Dec 2020 23:59:59'),
-            'layout': Organizer(marker='W', structure=[[8, 8, 8, 8, 8, 0, 0]])
+            'layout': Organizer(marker='W', structure=[[8, 8, 8, 8, 8, 0, 0]]),
+            'worktime_source': 'labels',
         }
 
     @classmethod

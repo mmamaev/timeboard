@@ -694,6 +694,37 @@ class _Timeline(object):
         return self._get_ws_last_baseunit(n) - \
             self._get_ws_first_baseunit(n) + 1
 
+    def get_durations_for_ws_array(self, ws_locs):
+        """
+        Find durations of a (large) number of workshifts.
+        
+        Parameters
+        ----------
+        ws_locs : array-like
+            Sequence numbers of workshifts
+            
+        Returns
+        -------
+        pandas.Series
+            A series indexed by ws_locs containing durations of workshifts.
+            Duration is a number of base units in the workshifts (int >=1). 
+            If an element of ws_locs is not a valid sequence number of a 
+            workshift, zero is returned as the duration for this element.
+            
+        Notes
+        -----
+        This method is much faster than calling get_ws_duration() 
+        iteratively for each workshift.
+        """
+        first_base_units = np.searchsorted(self._frameband,
+                                           self._wsband.index[ws_locs],
+                                           side='left')
+        last_base_units = np.searchsorted(self._frameband,
+                                          self._wsband.index[ws_locs],
+                                          side='right')
+        return pd.Series(index=ws_locs,
+                         data=last_base_units - first_base_units)
+
     def get_ws_position(self, point_in_time):
         """Get position of the workshift which contains the given point in time.
         
@@ -958,11 +989,15 @@ class _Timeline(object):
                 self._apply_pattern(layout, span)
             else:
                 # make compound workshift from the span, use layout as label
+                # self._wsband.iloc[span.first] = layout
+                # self._wsband.iloc[span.first+1: span.last+1] = np.nan
                 self._wsband.loc[span.first] = layout
                 self._wsband.drop(index=np.arange(span.first+1,
                                                   span.last+1), inplace=True)
                 self._frameband.iloc[span.first:
                                      span.last+1] = span.first
+        # post processing
+        # self._wsband.dropna(inplace=True)
         # timer3 = timeit.default_timer()
         # print "_organize ({},{})\n\tsplit: {:.5f}\n\tstructure init: {:.5f}" \
         #     "\n\tstructure run: {:.5f}".format(span_first, span_last,
@@ -1004,7 +1039,7 @@ class _Timeline(object):
             first_ws = 0
         if last_ws is None:
             last_ws = len(self._wsband)-1
-        assert (0 <= first_ws <= last_ws)
+        assert 0 <= first_ws <= last_ws < len(self)
         if last_ws == len(self._wsband)-1:
             ws_bounds = np.concatenate((np.array(self._wsband.index[first_ws:]),
                                        [len(self.frame)]))
@@ -1379,8 +1414,6 @@ class Marker(object):
                            of `each` period. Acceptable keyword arguments
                            are ``'seconds'``, ``'minutes'``, ``'hours'``, 
                            ``'days'``, ``'weeks'``, ``'months'``, ``'years'``. 
-                           Offsets nominated in different time units are added 
-                           up.
                            
                            Example: ``at=[{'days':0}, {'days':1, 'hours':2}]``
                            (the first mark is at the start of the period, 
@@ -1406,7 +1439,7 @@ class Marker(object):
                            - ``'weekday'`` : 1..7 
                               1 is for Monday, 7 is for Sunday.
                            
-                           - ``'week'`` : -5..-1,1..5 
+                           - ``'week'`` : -5..-1, 1..5 
                               -1 is for the last and 1 is for the first 
                               occurrence of the weekday in the month. Zero is not
                               allowed.

@@ -126,72 +126,72 @@ default_selector : function, optional
     returns True if this is an on duty workshift, False otherwise. 
     If not supplied, the function that returns ``bool(label)`` is used.
 
+worktime_source : {``'duration'``, ``'labels'``}, optional
+        Define what number is used as workshift's work time: workshift's 
+        duration (default) or the label. In the latter case, you need to use 
+        numbers as labels and it is up to you to interpret the values. See also :ref:`Work time <work-time-section>` section in *Data Model*.
 
-Example: Call Center Shifts With Equal Duration
+
+Example: Call center shifts with equal duration
 -----------------------------------------------
 
-Operators in a 24x7 call center work in three 8-hour shifts starting at 10:00, 18:00, and 02:00. For each operator one on duty shift is followed by three off duty shifts. The working schedule for operators at shift 'A'::
+Operators in a 24x7 call center work in three 8-hour shifts starting at 10:00, 18:00, and 02:00. For each operator one on duty shift is followed by three off duty shifts. Hence, four teams of operators are needed. They are designated as 'A', 'B', 'C', and 'D'. ::
 
     >>> clnd = tb.Timeboard(base_unit_freq='8H', 
     ...                     start='01 Oct 2017 02:00', end='05 Oct 2017 01:59',
-    ...                     layout=['A', 'B', 'C', 'D'],
-    ...                     default_selector=lambda label: label=='A',
-    ...                     default_name='shift_A')
+    ...                     layout=['A', 'B', 'C', 'D'])
     >>> print(clnd)
     Timeboard of '8H': 2017-10-01 02:00 -> 2017-10-04 18:00
     <BLANKLINE>
-                  workshift ...                  end  label  shift_A
+                  workshift ...                  end  label  on_duty
     loc                     ...                                     
     0   2017-10-01 02:00:00 ...  2017-10-01 09:59:59      A     True
-    1   2017-10-01 10:00:00 ...  2017-10-01 17:59:59      B    False
-    2   2017-10-01 18:00:00 ...  2017-10-02 01:59:59      C    False
-    3   2017-10-02 02:00:00 ...  2017-10-02 09:59:59      D    False
+    1   2017-10-01 10:00:00 ...  2017-10-01 17:59:59      B     True
+    2   2017-10-01 18:00:00 ...  2017-10-02 01:59:59      C     True
+    3   2017-10-02 02:00:00 ...  2017-10-02 09:59:59      D     True
     4   2017-10-02 10:00:00 ...  2017-10-02 17:59:59      A     True
-    5   2017-10-02 18:00:00 ...  2017-10-03 01:59:59      B    False
-    6   2017-10-03 02:00:00 ...  2017-10-03 09:59:59      C    False
-    7   2017-10-03 10:00:00 ...  2017-10-03 17:59:59      D    False
+    5   2017-10-02 18:00:00 ...  2017-10-03 01:59:59      B     True
+    6   2017-10-03 02:00:00 ...  2017-10-03 09:59:59      C     True
+    7   2017-10-03 10:00:00 ...  2017-10-03 17:59:59      D     True
     8   2017-10-03 18:00:00 ...  2017-10-04 01:59:59      A     True
-    9   2017-10-04 02:00:00 ...  2017-10-04 09:59:59      B    False
-    10  2017-10-04 10:00:00 ...  2017-10-04 17:59:59      C    False
-    11  2017-10-04 18:00:00 ...  2017-10-05 01:59:59      D    False
+    9   2017-10-04 02:00:00 ...  2017-10-04 09:59:59      B     True
+    10  2017-10-04 10:00:00 ...  2017-10-04 17:59:59      C     True
+    11  2017-10-04 18:00:00 ...  2017-10-05 01:59:59      D     True
 
     # The "start" and "duration" columns have been omitted to fit the output 
     # to the page
 
 There are two things in this example to point out. 
 
-First, to avoid the compound workshifts we use the 8-hour base unit but we need to align the base units with the workshifts, hence the frame starts at 02:00 o'clock. Note that duration of each workshift equals to one (base unit).
+First, to avoid the compound workshifts we use the 8-hour base unit but we need to align the base units with the workshifts, hence the frame starts at 02:00 o'clock. 
 
-Second, we have overridden the selector function for the default schedule which now sets on duty status for workshifts labeled as 'A'. The name for the default schedule has been changed accordingly to 'shift_A'.
+.. note:: The duration of each workshift equals to one (base unit). Accordingly, work time of a workshift is also equal to one. To express workshift's duration or the work time in units of time, multiply it by the length of the base unit.
 
-Should you need to know which workshifts are on duty for the shift labeled with another symbol, you may add another schedule to the timeboard and supply the appropriate selector function::
+Second, all shifts are on duty because the default selector evaluates each label to True. It can be interpreted as the call center as a whole being always on duty. It is recommended to leave the default schedule as it is. In a later example, we will see how it can be made useful.
 
-    >>> clnd.add_schedule(name='shift_B', selector=lambda label: label=='B')
+To find out which workshifts are on duty for a team labeled with a particular symbol, you may add a schedule to the timeboard and supply the appropriate selector function::
+
+    >>> clnd.add_schedule(name='team_A', selector=lambda label: label=='A')
     >>> print(clnd)
     Timeboard of '8H': 2017-10-01 02:00 -> 2017-10-04 18:00
     <BLANKLINE>
-                  workshift ...                 end  label  shift_A  shift_B  
+                  workshift ...                 end  label  on_duty   team_A
     loc                     ...                                             
-    0   2017-10-01 02:00:00 ... 2017-10-01 09:59:59      A     True    False
-    1   2017-10-01 10:00:00 ... 2017-10-01 17:59:59      B    False     True
-    2   2017-10-01 18:00:00 ... 2017-10-02 01:59:59      C    False    False
-    3   2017-10-02 02:00:00 ... 2017-10-02 09:59:59      D    False    False
-    4   2017-10-02 10:00:00 ... 2017-10-02 17:59:59      A     True    False
-    5   2017-10-02 18:00:00 ... 2017-10-03 01:59:59      B    False     True
-    6   2017-10-03 02:00:00 ... 2017-10-03 09:59:59      C    False    False
-    7   2017-10-03 10:00:00 ... 2017-10-03 17:59:59      D    False    False
-    8   2017-10-03 18:00:00 ... 2017-10-04 01:59:59      A     True    False
-    9   2017-10-04 02:00:00 ... 2017-10-04 09:59:59      B    False     True
-    10  2017-10-04 10:00:00 ... 2017-10-04 17:59:59      C    False    False
-    11  2017-10-04 18:00:00 ... 2017-10-05 01:59:59      D    False    False
+    0   2017-10-01 02:00:00 ... 2017-10-01 09:59:59      A     True     True
+    1   2017-10-01 10:00:00 ... 2017-10-01 17:59:59      B     True    False
+    2   2017-10-01 18:00:00 ... 2017-10-02 01:59:59      C     True    False
+    3   2017-10-02 02:00:00 ... 2017-10-02 09:59:59      D     True    False
+    4   2017-10-02 10:00:00 ... 2017-10-02 17:59:59      A     True     True
+    5   2017-10-02 18:00:00 ... 2017-10-03 01:59:59      B     True    False
+    6   2017-10-03 02:00:00 ... 2017-10-03 09:59:59      C     True    False
+    7   2017-10-03 10:00:00 ... 2017-10-03 17:59:59      D     True    False
+    8   2017-10-03 18:00:00 ... 2017-10-04 01:59:59      A     True     True
+    9   2017-10-04 02:00:00 ... 2017-10-04 09:59:59      B     True    False
+    10  2017-10-04 10:00:00 ... 2017-10-04 17:59:59      C     True    False
+    11  2017-10-04 18:00:00 ... 2017-10-05 01:59:59      D     True    False
 
     # The "start" and "duration" columns have been omitted to fit the output 
     # to the page
-
-The "shift_A" schedule still holds a special role of the default schedule which is used in calculations when no schedule is explicitly given. ::
-
-    >>> clnd.default_schedule.name
-    'shift_A'
 
 
 Using `Organizer`
@@ -199,7 +199,7 @@ Using `Organizer`
 
 For most real-world scenarios a simple pattern of labels uniformly recurring across the whole timeboard is not sufficient for building a usable timeline. This is where :py:class:`.Organizer` comes into play.
 
-:py:class:`.Organizer` tells how to partition the frame into chunks and how to structure each span into workshifts. 
+:py:class:`.Organizer` tells how to partition the frame into chunks called 'spans' and how to structure each span into workshifts. 
 
 There are two mandatory parameters for an organizer. The first one is either `marks` or `marker` (but not both), it defines spans' boundaries. The second one is `structure`, it defines the structure of each span.
 
@@ -234,7 +234,7 @@ marker : str or Marker
 
     Note that the first or the last span, or both may end up containing incomplete calendar periods. For example, the daily frame from 1 Oct 2017 through 12 Oct 2017 when partitioned with ``marker='W'`` produces three spans. The first span contains only 1 Oct 2017 as it was Sunday. The second span contains the full week from the Monday 2nd through the Sunday 8th of October. The last span consists of four days 9-12 of October which obviously do not form a complete week.
 
-    The parts of the "marker" calendar periods which fall outside the first and the last spans are called dangles. In the example above the left dangle is the period from Monday 25 through Saturday 30 of September, and the right dangle is Friday 13 through Sunday 15 of October::
+    The parts of the "marker" calendar periods which fall outside the first and the last spans are called dangles. In our example the left dangle is the period from Monday 25 through Saturday 30 of September, and the right dangle is the period from Friday 13 through Sunday 15 of October::
 
                      Mo  Tu  We  Th  Fr  Sa  Su
       left dangle  : 25  26  27  28  29  30       
@@ -242,6 +242,8 @@ marker : str or Marker
       span 1       :  2   3   4   5   6   7   8
       span 2       :  9  10  11  12               frame end='12 Oct 2017'
       right dangle :                 13  14  15
+
+    The practical significance of dangles will be clarified shortly.
 
 structure : Iterable
     Each element of `structure` matches a span produced by partitioning: the first element of `structure` is applied to the first span, the second - to the second span, and so on. If `structure` gets exhausted, it starts over and iterates in cycles until the last span has been treated.
@@ -256,7 +258,7 @@ structure : Iterable
 
 .. note:: Under the hood, ``layout=[1, 0, 0]`` passed to :py:meth:`~.timeboard.Timeboard` is converted  into ``layout=Organizer(marks=[], structure=[[1, 0, 0]])``.
 
-Example: Business Day Calendar
+Example: Business day calendar
 ------------------------------
 
 .. note::
@@ -277,9 +279,9 @@ In this example, the frame is partitioned into calendar weeks. This process prod
 
 The first element of `structure` is a list of values - a pattern. Therefore in the first span workshifts coincide with base units and receive labels from the pattern. 
 
-However, unlike the use of pattern directly in `layout` parameter of :py:class:`.Timeboard`, the first workshift of the span does not necessarily receive the first label of the pattern. If the span has a left dangle, the pattern starts with a shadow run through the length of the dangle. Only after that, it begins yielding labels for workshifts of the span. This approach can be viewed as if the dangle was attached to the first span to form the complete calendar period (in this example, a complete week) and then the pattern was applied to the whole period but only those results (assigned labels) are retained that fall within the span. In this way, the workshift of October 1 receives the seventh label from the pattern, which is 0, after the first six labels have been shadow-assigned to the base units of the dangle. 
+However, unlike the use of pattern directly in `layout` parameter of :py:class:`.Timeboard`, the first workshift of the span does not necessarily receive the first label of the pattern. If the span has a left dangle, the pattern starts with a shadow run through the length of the dangle. Only after that, it begins yielding labels for workshifts of the span. This approach can be viewed as if the dangle was attached to the first span to form the complete calendar period (in this example, a complete week) and then the pattern was applied from the start of the period but only those results (assigned labels) are retained that fall within the span. In this way, the workshift of October 1 receives the seventh label from the pattern, which is 0, after the first six labels have been shadow-assigned to the base units of the dangle. 
 
-The second span, a full week of October 2-8, should be treated with the second element of `structure`. However, there is no second element and `structure` is consequently reenacted in cycles meaning that each span is treated with the first and the only element of the structure. 
+The second span, a full week of October 2-8, is to be treated with the second element of `structure`. However, there is no second element. Consequently, `structure` is reenacted in cycles meaning that each span is treated with the first and the only element of the structure. 
 
 An interior span, such as the second span of this example, cannot have dangles. Therefore, the seven labels of the pattern are assigned in order to the seven workshifts of the second span.
 
@@ -306,8 +308,8 @@ The resulting calendar is printed below. ::
     11  2017-10-12 2017-10-12         1 2017-10-12    1.0     True
 
 
-Example: Alternating periods
-----------------------------
+Example: Alternating week schedules
+-----------------------------------
 
 Consider a schedule of workshifts in a car dealership. A mechanic works on Monday, Tuesday, Saturday, and Sunday this week, and on Wednesday, Thursday, and Friday next week; then the bi-weekly cycle repeats. ::
 
@@ -394,7 +396,7 @@ A small museum's schedule is seasonal. In winter (November through April) the mu
 
 In this example there are two levels of organizers. 
 
-On the outer level `seasonal` organizer partitions the frame into spans of 6 months each. The spans  represent, alternatively, winter and summer seasons. The `structure` of this organizer, instead of containing patterns of labels, refers to other organizers. These inner level organizers, named `winter` and `summer`, are applied, in turns, to the spans produced by `seasonal` organizer as if they were whole frames. 
+On the outer level `seasonal` organizer partitions the frame into spans of 6 months each. The spans represent, alternatively, winter and summer seasons. The `structure` of this organizer, instead of patterns of labels, contains other organizers. These inner level organizers, named `winter` and `summer`, are applied, in turns, to the spans produced by `seasonal` organizer as if they were whole frames. 
 
 On the inner level, each season is partitioned into weeks by `winter` or `summer` organizer correspondingly. As the result, workshifts within the weeks of each season receive labels from the patterns specific for the seasons. ::
 
@@ -469,14 +471,14 @@ means::
  to get the first mark add 4 months to the start of each year; 
  to get the second mark add 8 months and 15 days to the start of the same year. 
 
-Therefore, the frame is partitioned into spans starting on the 1st of May and on the 16th of September of each year provided that these dates are within the frame bounds.
+As a result, the frame is partitioned into spans starting on the 1st of May and on the 16th of September of each year provided that these dates are within the frame bounds.
 
 An instance of :py:class:`.Marker` is passed to :py:meth:`~timeboard.Organizer` constructor as the value of `marker` parameter instead of a simple calendar frequency.
 
 Example: Seasonal schedule
 --------------------------
 
-A small museum's schedule is seasonal. In winter (September 16 through April 30) the museum is open only on Wednesdays and Thursdays, but in summer (May 1 through September 15) the museum works every day except Monday. ::
+Here comes a more realistic schedule for the small museum. In winter (September 16 through April 30) the museum is open only on Wednesdays and Thursdays, but in summer (May 1 through September 15) the museum works every day except Monday. ::
 
     >>> winter = tb.Organizer(marker='W', structure=[[0,0,1,1,0,0,0]])
     >>> summer = tb.Organizer(marker='W', structure=[[0,1,1,1,1,1,1]])
@@ -488,7 +490,7 @@ A small museum's schedule is seasonal. In winter (September 16 through April 30)
     ...                     start='01 Jan 2015', end='31 Dec 2017',
     ...                     layout=seasonal)
 
-As the timeboard is too long to print it wholly, we will print only intervals around the marks. ::
+As the timeboard is too long, we will print only intervals around the marks. ::
 
     >>> print(clnd(('20 Apr 2017','10 May 2017')))
     Interval((840, 860)): 'D' at 2017-04-20 -> 'D' at 2017-05-10 [21]
@@ -567,8 +569,6 @@ Value of `how`         Interpretation of keyword arguments in `at`
                        of `each` period. Acceptable keyword arguments
                        are ``'seconds'``, ``'minutes'``, ``'hours'``, 
                        ``'days'``, ``'weeks'``, ``'months'``, ``'years'``. 
-                       Offsets nominated in different time units are added 
-                       up.
                        
                        Example: ``at=[{'days':0}, {'days':1, 'hours':2}]``
                        (the first mark is at the start of the period, 
@@ -589,12 +589,12 @@ Value of `how`         Interpretation of keyword arguments in `at`
                        
                        - ``'month'`` : 1..12 
                           1 is for the first month (such as January 
-                          for annual periods). 
+                          for the annual frequency). 
                           
                        - ``'weekday'`` : 1..7 
                           1 is for Monday, 7 is for Sunday.
                        
-                       - ``'week'`` : -5..-1,1..5 
+                       - ``'week'`` : -5..-1, 1..5 
                           -1 is for the last and 1 is for the first 
                           occurrence of the weekday in the month. Zero is not
                           allowed.
@@ -607,14 +607,14 @@ Value of `how`         Interpretation of keyword arguments in `at`
 ====================== ====================================================
 
 
-The options ``'from_easter_western'`` and ``'from_easter_orthodox'`` assume the same format of `at` keywords as with the default option ``'from_start_of_each'`` which has been explored in the previous section. The difference is that the offset now may be negative. For example, ::
+The options ``'from_easter_western'`` and ``'from_easter_orthodox'`` assume the same format of `at` keywords as the default option ``'from_start_of_each'`` which has been explored in the previous section. The difference is that the offset now may be negative. For example, ::
 
     tb.Marker(each='A', at=[{'days': -2}], how='from_easter_western')
 
 sets marks at 00:00 on Good Fridays.
 
 
-Example: Seasons turning on N-th weekday of month
+Example: Seasons turning on n-th weekday of month
 -------------------------------------------------
         
 The museum's summer season starts on a Tuesday after the first Monday in May and ends on the last Sunday in September. During summer the museum is open every day except Monday; during winter it is open on Wednesdays and Thursdays only. ::
@@ -654,7 +654,7 @@ The museum's summer season starts on a Tuesday after the first Monday in May and
     135 2012-05-15 2012-05-15         1 2012-05-15    1.0     True
 
 
-Note that 1 May 2012 was Tuesday, so the Tuesday after the first Monday was 8 May 2012. The last Sunday in Septermber 2012 was the 30th. ::
+Note that 1 May 2012 was Tuesday, so the Tuesday after the first Monday was 8 May 2012. The last Sunday in September 2012 was the 30th. ::
 
     >>> print(clnd(('23 Sep 2012','07 Oct 2012')))
     Interval((266, 280)): 'D' at 2012-09-23 -> 'D' at 2012-10-07 [15]
@@ -678,10 +678,10 @@ Note that 1 May 2012 was Tuesday, so the Tuesday after the first Monday was 8 Ma
     280 2012-10-07 2012-10-07         1 2012-10-07    0.0    False
 
 
-Using Pattern with Memory
+Using pattern with memory
 =========================
 
-A school administrator's work schedule is 2 days on followed by 3 days off, with a recess from 14 Jul to 31 Aug every year::
+A school administrator's work schedule is 2 days working followed by 3 days off, with a recess from 14 Jul to 31 Aug every year::
 
     >>> year = tb.Marker(each='A', 
     ...                  at=[{'months':6, 'days':13}, {'months':8}])
@@ -692,7 +692,7 @@ A school administrator's work schedule is 2 days on followed by 3 days off, with
     ...                     layout=annually, 
     ...                     default_selector=lambda label: label>0)
 
-The days of the recess are labeled with ``-1`` to differentiate them from the regular days off. The schedule selector has been adjusted accordingly.
+The days of the recess are labeled with ``-1`` to differentiate them from the regular days off. The selector for the default schedule has been adjusted accordingly.
 ::
 
     >>> print(clnd(('07 Jul 2016','17 Jul 2016')))
@@ -782,45 +782,132 @@ However, if you wish to retain the flow of administrator's schedule as if it was
 
 The period after the recess started with a shortened cycle consisting of one working day (Sep 1) followed by two days off (Sep 2 and 3). These days were "carried over" from the period before recess to complete the cycle started on the 12th of July. 
 
+Adjusting labels for work time
+==============================
 
-Compound Workshifts
-===================
+In the above examples with daily workshifts, the actual work time takes only a part of the workshift (that is, a part of the 24 hour day). If the amount of the work time varies between on duty workshifts (for example, Friday's working hours in the office are shorter), these variations cannot be inferred from workshift's duration which is always equal to one (day). Therefore, you have to use labels as the source of the information about work time.
 
-Call center's staff operate in shifts of variable length: 08:00 to 18:00 (10 hours), 18:00 to 02:00 (8 hours), and 02:00 to 08:00 (6 hours). An operator's schedule consists of one on duty shift followed by three off duty shifts.
+So far we have used simplistic labeling: ``0`` for an off duty day and ``1`` for an on duty day. To make work time measuring possible, the labeling scheme must be changed. The labels for off duty days remain zero but the labels for on duty days will be equal to the workshift's work time (presumably, measured in hours but this is up to the user). There is no need to change the selector. Yet you must add ``worktime_source='labels'`` to the parameters of timeboard.
 
-.. note:: See :ref:`Compound Workshifts <compound-workshifts-section>` section in "Data Model" for the discussion about why and when you need compound workshifts.
+The adjusted timeboard of the museum accounts for short days in winter and longer days in summer with extended working hours on Sunday and Mondays. The changes are in the first two lines and in the last. ::
 
-Compound workshift is created from a span when a corresponding element of `structure` is neither a pattern nor an organizer. The value of such element is considered the label for the compound workshift. The workshift will cover all base units of the corresponding span. ::
+    >>> winter = tb.Organizer(marker='W', structure=[[0,0,6,6,0,0,0]])
+    >>> summer = tb.Organizer(marker='W', structure=[[0,8,8,8,8,10,10]])
+    >>> seasons =  tb.Marker(each='A', 
+    ...                      at=[{'month':5, 'weekday':1, 'week':1, 'shift':1},
+    ...                          {'month':9, 'weekday':7, 'week':-1}],
+    ...                      how='nth_weekday_of_month')
+    >>> seasonal = tb.Organizer(marker=seasons, 
+    ...                         structure=[winter, summer])
+    >>> clnd = tb.Timeboard(base_unit_freq='D', 
+    ...                     start='01 Jan 2012', end='31 Dec 2015',
+    ...                     layout=seasonal,
+    ...                     worktime_source='labels')
+
+
+Workshifts of varying length
+============================
+
+Let us modify the schedule of the 24x7 call center. Now the call center's staff operate in shifts of varying length: 08:00 to 18:00 (10 hours), 18:00 to 02:00 (8 hours), and 02:00 to 08:00 (6 hours). An operator's schedule consists of one on duty shift followed by three off duty shifts. Hence, four teams of operators are needed. They are designated as 'A', 'B', 'C', and 'D'.
+
+To accommodate periods of varying length you need to use compound workshifts. A compound workshift consists of several base units.
+
+.. note:: See also :ref:`Compound Workshifts <compound-workshifts-section>` section in *Data Model* for the discussion about why and when you need compound workshifts.
+
+Compound workshift is created from a span when a corresponding element of `structure` is neither a pattern nor an organizer. The value of such element is considered the label for the compound workshift. The workshift will consists of all base units of the corresponding span. ::
 
     >>> day_parts = tb.Marker(each='D', 
     ...                    at=[{'hours':2}, {'hours':8}, {'hours':18}])
     >>> shifts = tb.Organizer(marker=day_parts, structure=['A', 'B', 'C', 'D'])
     >>> clnd = tb.Timeboard(base_unit_freq='H', 
     ...                     start='02 Oct 2017 08:00', end='07 Oct 2017 01:59',
-    ...                     layout=shifts, 
-    ...                     default_selector=lambda label: label=='A')
+    ...                     layout=shifts)
+    >>> clnd.add_schedule(name='team_A', selector=lambda label: label=='A')
 
     >>>print(clnd)
     Timeboard of 'H': 2017-10-02 08:00 -> 2017-10-07 01:00
     <BLANKLINE>
-                  workshift ...  duration                 end  label  on_duty
-    loc                     ...                                              
-    0   2017-10-02 08:00:00 ...        10 2017-10-02 17:59:59      A     True
-    1   2017-10-02 18:00:00 ...         8 2017-10-03 01:59:59      B    False
-    2   2017-10-03 02:00:00 ...         6 2017-10-03 07:59:59      C    False
-    3   2017-10-03 08:00:00 ...        10 2017-10-03 17:59:59      D    False
-    4   2017-10-03 18:00:00 ...         8 2017-10-04 01:59:59      A     True
-    5   2017-10-04 02:00:00 ...         6 2017-10-04 07:59:59      B    False
-    6   2017-10-04 08:00:00 ...        10 2017-10-04 17:59:59      C    False
-    7   2017-10-04 18:00:00 ...         8 2017-10-05 01:59:59      D    False
-    8   2017-10-05 02:00:00 ...         6 2017-10-05 07:59:59      A     True
-    9   2017-10-05 08:00:00 ...        10 2017-10-05 17:59:59      B    False
-    10  2017-10-05 18:00:00 ...         8 2017-10-06 01:59:59      C    False
-    11  2017-10-06 02:00:00 ...         6 2017-10-06 07:59:59      D    False
-    12  2017-10-06 08:00:00 ...        10 2017-10-06 17:59:59      A     True
-    13  2017-10-06 18:00:00 ...         8 2017-10-07 01:59:59      B    False
+                  workshift ... dur.                 end  label on_duty  team_A
+    loc                     ...                                                
+    0   2017-10-02 08:00:00 ...   10 2017-10-02 17:59:59      A    True    True
+    1   2017-10-02 18:00:00 ...    8 2017-10-03 01:59:59      B    True   False
+    2   2017-10-03 02:00:00 ...    6 2017-10-03 07:59:59      C    True   False
+    3   2017-10-03 08:00:00 ...   10 2017-10-03 17:59:59      D    True   False
+    4   2017-10-03 18:00:00 ...    8 2017-10-04 01:59:59      A    True    True
+    5   2017-10-04 02:00:00 ...    6 2017-10-04 07:59:59      B    True   False
+    6   2017-10-04 08:00:00 ...   10 2017-10-04 17:59:59      C    True   False
+    7   2017-10-04 18:00:00 ...    8 2017-10-05 01:59:59      D    True   False
+    8   2017-10-05 02:00:00 ...    6 2017-10-05 07:59:59      A    True    True
+    9   2017-10-05 08:00:00 ...   10 2017-10-05 17:59:59      B    True   False
+    10  2017-10-05 18:00:00 ...    8 2017-10-06 01:59:59      C    True   False
+    11  2017-10-06 02:00:00 ...    6 2017-10-06 07:59:59      D    True   False
+    12  2017-10-06 08:00:00 ...   10 2017-10-06 17:59:59      A    True    True
+    13  2017-10-06 18:00:00 ...    8 2017-10-07 01:59:59      B    True   False
 
-    # The "start" column has been omitted to fit the output to the page 
+    # The "start" column has been omitted and "duration" squeezed to fit 
+    # the output to the page
+
+
+Example: Call center closing on weekends
+----------------------------------------
+
+We proceed with elaborating upon the schedule of the call center. In this example we employ all the tools we have at hand. 
+
+Suppose that the call center is located in Europe and supports traders doing business on stock exchanges around the world. Since markets are closed on Saturdays and Sundays, there is no need to staff the call center from 2:00 on Saturday (New York closes) to 2:00 on Monday (Tokyo opens). 
+
+To adjust the timeboard to this specific schedule, we need to modify the timeline in such a way that it takes into account days of the week. This job is carried out by marker `week` and organizer `weekly`. 
+
+Moreover, we will need a :py:class:`.RememberingPattern` to ensure that the order of the team rotation is not disrupted by weekends. Without :py:class:`.RememberingPattern` the first shift of each week will be always assigned to team A regardless of what team has staffed the last shift on the previous week. ::
+
+
+    >>> shifts_order = tb.RememberingPattern(['A', 'B', 'C', 'D'])
+    >>> day_parts = tb.Marker(each='D', 
+    ...                       at=[{'hours':2}, {'hours':8}, {'hours':18}])
+    >>> shifts = tb.Organizer(marker=day_parts, structure=shifts_order)
+    >>> week = tb.Marker(each='W',
+    ...                  at=[{'days':0, 'hours':2}, {'days':5, 'hours':2}])
+    >>> weekly = tb.Organizer(marker=week, structure=[0, shifts])
+    >>> clnd = tb.Timeboard(base_unit_freq='H', 
+    ...                     start='02 Oct 2017 00:00', end='10 Oct 2017 01:59',
+    ...                     layout=weekly)
+    >>> clnd.add_schedule(name='team_A', selector=lambda label: label=='A')
+    >>>
+    >>> print(clnd)
+    Timeboard of 'H': 2017-10-02 00:00 -> 2017-10-10 01:00
+    <BLANKLINE>
+                  workshift ... dur.                 end label  on_duty  team_A
+    loc                     ...                                                
+    0   2017-10-02 00:00:00 ...    2 2017-10-02 01:59:59     0    False   False
+    1   2017-10-02 02:00:00 ...    6 2017-10-02 07:59:59     A     True    True
+    2   2017-10-02 08:00:00 ...   10 2017-10-02 17:59:59     B     True   False
+    3   2017-10-02 18:00:00 ...    8 2017-10-03 01:59:59     C     True   False
+    4   2017-10-03 02:00:00 ...    6 2017-10-03 07:59:59     D     True   False
+    5   2017-10-03 08:00:00 ...   10 2017-10-03 17:59:59     A     True    True
+    6   2017-10-03 18:00:00 ...    8 2017-10-04 01:59:59     B     True   False
+    7   2017-10-04 02:00:00 ...    6 2017-10-04 07:59:59     C     True   False
+    8   2017-10-04 08:00:00 ...   10 2017-10-04 17:59:59     D     True   False
+    9   2017-10-04 18:00:00 ...    8 2017-10-05 01:59:59     A     True    True
+    10  2017-10-05 02:00:00 ...    6 2017-10-05 07:59:59     B     True   False
+    11  2017-10-05 08:00:00 ...   10 2017-10-05 17:59:59     C     True   False
+    12  2017-10-05 18:00:00 ...    8 2017-10-06 01:59:59     D     True   False
+    13  2017-10-06 02:00:00 ...    6 2017-10-06 07:59:59     A     True    True
+    14  2017-10-06 08:00:00 ...   10 2017-10-06 17:59:59     B     True   False
+    15  2017-10-06 18:00:00 ...    8 2017-10-07 01:59:59     C     True   False
+    16  2017-10-07 02:00:00 ...   48 2017-10-09 01:59:59     0    False   False
+    17  2017-10-09 02:00:00 ...    6 2017-10-09 07:59:59     D     True   False
+    18  2017-10-09 08:00:00 ...   10 2017-10-09 17:59:59     A     True    True
+    19  2017-10-09 18:00:00 ...    8 2017-10-10 01:59:59     B     True   False
+
+    # The "start" column has been omitted and "duration" squeezed to fit 
+    # the output to the page
+
+Label ``0`` denotes the periods of time when the call center is closed: during first two hours of Monday 2 October, and from 02:00 on Saturday 7 October through 01:59 on Monday 9 October.
+
+The default schedule ('on_duty') now becomes informative as it shows the schedule of the call center as a whole. We also added a schedule for team 'A'. For the practical use you will want to add schedules for the other shifts but this is not the point of this example.
+
+The first week ends on shift 'C', and the next week starts with shift 'D', so the order of shifts is preserved which is an essential requirement for this timeboard.
+
+To enable measurements of work time no adjustments of the timeboard's parameters are necessary. By default, the work time is assumed to be equal to workshift's duration. This is the case in this timeboard.
 
 
 Caveats
@@ -879,28 +966,15 @@ Now change base unit frequency from ``'D'`` to ``'24H'``::
 
 It failed for the following reason. A period of frequency ``'D'`` always starts at 00:00 of a calendar day and thus is guaranteed to be entirely within some week. A period of frequency ``'24H'`` is guaranteed to start at the beginning of some hour but this hour is not necessarily a midnight. For example, a ``'24H'`` period *may* start at 20:00 of a Sunday, therefore its first four hours will fall into one week, and the rest - into another.
 
-Example of a real-life case impacted by this issue: workshifts beginning or ending at half past hour. As shown above, you cannot use ``'30T'`` (30 minutes) as a period for base units. You will have to work around by selecting ``'T'`` as the base unit frequency. The side-effects are the slower performance and the rise in memory consumption.
+Example of a real-life case impacted by this issue: workshifts beginning or ending at half past hour. You cannot use ``'30T'`` (30 minutes) as a period for base units because you will have to organize the base units into shifts (presumably, with ``each='D'``). A workaround is to select ``'T'`` as the base unit frequency. The side-effects are the slower performance and the rise in memory consumption.
 
-While you may ensure that the base units start at midnights, timeboard  is not yet able to identify valid base unit alignments. This is a TODO.
+While you may ensure that the base units start at midnights, :py:mod:`timeboard`  is not yet able to handle base unit alignments. This is a TODO.
 
 
 Alignment of frame may be critical
 ----------------------------------
 
-Let's go back to the example of the call center's timeboard with compound workshifts. This is it::
-
-    >>> day_parts = tb.Marker(each='D', 
-    ...                       at=[{'hours':2}, {'hours':8}, {'hours':18}])
-    >>> shifts = tb.Organizer(marker=day_parts, structure=['A', 'B', 'C', 'D'])
-    >>> clnd = tb.Timeboard(base_unit_freq='H', 
-    ...                     start='02 Oct 2017 00:00', end='10 Oct 2017 01:59',
-    ...                     layout=shifts, 
-    ...                     default_selector=lambda label: label=='A')
-
-Now suppose that this is a call center in Europe which supports traders doing business on stock exchanges around the world. Since markets are closed on Saturdays and Sundays, there is no need to staff the call center from 2:00 on Saturday (New York closes) to 2:00 on Monday (Tokyo opens). 
-
-To adjust the timeboard to this specific schedule, we need to modify the timeline in such a way that it takes into account the days of week. This job is carried out by marker `week` and organizer `weekly`. Moreover, we will need a :py:class:`.RememberingPattern` to ensure that the order of shifts is uninterrupted by weekends. ::
-
+Let's go back to the example of the call center's timeboard with compound workshifts and weekend breaks. This is it::
 
     >>> shifts_order = tb.RememberingPattern(['A', 'B', 'C', 'D'])
     >>> day_parts = tb.Marker(each='D', 
@@ -912,12 +986,12 @@ To adjust the timeboard to this specific schedule, we need to modify the timelin
     >>> clnd = tb.Timeboard(base_unit_freq='H', 
     ...                     start='02 Oct 2017 00:00', end='10 Oct 2017 01:59',
     ...                     layout=weekly)
-    >>> clnd.add_schedule(name='shift_A', selector=lambda label: label=='A')
+    >>> clnd.add_schedule(name='team_A', selector=lambda label: label=='A')
     >>>
     >>> print(clnd)
     Timeboard of 'H': 2017-10-02 00:00 -> 2017-10-10 01:00
     <BLANKLINE>
-                  workshift ... dur.                 end label  on_duty shift_A
+                  workshift ... dur.                 end label  on_duty  team_A
     loc                     ...                                                
     0   2017-10-02 00:00:00 ...    2 2017-10-02 01:59:59     0    False   False
     1   2017-10-02 02:00:00 ...    6 2017-10-02 07:59:59     A     True    True
@@ -942,10 +1016,6 @@ To adjust the timeboard to this specific schedule, we need to modify the timelin
 
     # The "start" column has been omitted and "duration" squeezed to fit 
     # the output to the page
-
-Label ``0`` denotes the periods of time when the call center is closed: during first two hours of Monday 2 October, and from 02:00 on Saturday 7 October through 01:59 on Monday 9 October. We left the default schedule's selector and name unchanged. In this way, the default schedule shows the schedule of the call center as a whole. We also added a schedule for shift `A`. For the practical use you will want to add schedules for the other shifts but this is not the point of this example.
-
-The first week ends on shift 'C', and the next week starts with shift 'D', so the order of shifts is preserved which is an essential requirement for this timeboard.
 
 However, if the start of the timeboard is moved to 02:00 of Monday or any time afterwards, the result will be totally incorrect::
 
@@ -976,14 +1046,14 @@ Workarounds:
 
   For example, if the base unit is an hour and ``'W'`` and ``'D'`` frequencies are used in organizers, start the timeboard at 00:00 Monday. If ``'M'`` frequency is used instead, start the timeboard at 00:00 of the first day of a month. 
 
-There is also another side effect to note. When we rebuilt the timeboard from 02:00 of Monday, you might have noticed that the pattern of labels in this *new* timeboard started on 'C', not on 'A'. This is because we continued to use the same layout that eventually references `RememberingPattern shifts_order` which has remembered where it stopped in the previous timeboard.
+There is also another side effect to note. When we rebuilt the timeboard from 02:00 of Monday, you might have noticed that the pattern of labels in this *new* timeboard started on 'C', not on 'A'. This is because we continued to use the same layout that eventually references :py:class:`RememberingPattern` `shifts_order` which has remembered where it stopped in the previous timeboard.
 
 Specific days of month
 ----------------------
 
 A recurrent meeting gathers on the 10th, 20th and 30th day of the month. 
 
-The full-blown Marker-based approach is somewhat cumbersome and may produce unobvious errors, like this one which breaks after April 30::
+The full-blown Marker-based approach is somewhat cumbersome and may produce obscure errors, like in this timeboard which breaks after April 30::
 
     >>> days_of_month = tb.Marker(each='M', 
     ...                           at=[{'days':9}, {'days':10}, {'days':19},
