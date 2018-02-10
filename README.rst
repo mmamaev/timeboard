@@ -3,10 +3,12 @@
    :alt: timeboard logo
 
 .. image:: https://img.shields.io/travis/mmamaev/timeboard.svg
-   :align: center
    :alt: travis build status
    :target: https://travis-ci.org/mmamaev/timeboard
 
+.. image:: https://img.shields.io/readthedocs/timeboard.svg
+   :alt: readthedocs build status
+   :target: https://timeboard.readthedocs.io/
 
 *********************************************
 timeboard - business calendar calculations
@@ -118,7 +120,7 @@ It tells us that this calendar's unit (workshift) has the sequence number of 635
 **How many working hours?**
 ::
 
-    >>> clnd('May 2017', period='M').sum()
+    >>> clnd('May 2017', period='M').worktime()
     176.0
 
 
