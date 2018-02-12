@@ -23,8 +23,9 @@ def get_timestamp(arg):
         return pd.Timestamp(arg)
 
 
-def get_period(period_ref, freq=None, honor_period=True):
-    if isinstance(period_ref, pd.Period) and honor_period:
+def get_period(period_ref, freq=None, freq_override=False):
+    if (isinstance(period_ref, pd.Period) and
+            (freq is None or not freq_override)):
         return period_ref
     elif freq is None:
         raise TypeError("Expected a frequency for period_ref, got None")

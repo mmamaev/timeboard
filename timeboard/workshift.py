@@ -536,7 +536,7 @@ class Workshift(object):
         1
 
         In the example below, the work time is taken from the labels:
-    
+
         >>> clnd = tb.Timeboard('D', '30 Sep 2017', '11 Oct 2017', 
         ...                     layout=[4, 8, 4, 8],
         ...                     default_selector = lambda label: label>4,

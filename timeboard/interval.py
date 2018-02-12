@@ -3,7 +3,7 @@ from .exceptions import (OutOfBoundsError,
                          VoidIntervalError,
                          UnacceptablePeriodError)
 from .workshift import Workshift
-from .core import _Frame, _Schedule
+from .core import _Frame, _Schedule, get_period
 
 
 class Interval(object):
@@ -414,16 +414,18 @@ class Interval(object):
             return duty_idx_bounds[1] - duty_idx_bounds[0] + 1
 
     # noinspection PyPep8Naming
-    def count_periods(self, period, duty='on', schedule=None):
+    def count_periods(self, freq, duty='on', schedule=None):
         """Return how many calendar periods fit into the interval.
         
         The interval is sliced into calendar periods of the specified frequency
         and then each slice of the interval is compared to its corresponding 
-        period duty-wise. That is to say, the count of workshifts in the 
-        interval's slice is divided by the total count of workshifts in the 
-        period containing this slice but only workshifts with the specified 
-        duty are counted. The quotients for each period are summed to produce 
-        the return value of the method.
+        period duty-wise: the workshift count in the interval's slice is 
+        divided by the total count of workshifts in the 
+        period containing this slice; only workshifts with the specified 
+        duty are counted. 
+        
+        The quotients for each period are summed to produce the return value 
+        of the method.
         
         If a period does not contain workshifts of the required duty,
         it contributes zero to the returned value.
@@ -433,7 +435,7 @@ class Interval(object):
 
         Parameters
         ----------
-        period : str
+        freq : str
             `pandas`-compatible frequency of calendar periods to be counted 
             (i.e. ``'M'`` for month). `pandas`-native business periods 
             (i.e. 'BM'), as well as  periods with multipliers (i.e. '3M'), 
@@ -454,7 +456,7 @@ class Interval(object):
             workshift of the interval (subject to duty) extends outside 
             the timeboard.
         UnacceptablePeriodError
-            If `period` is not valid for this method or is shorter than (some)
+            If `freq` is not valid for this method or is shorter than (some)
             workshifts in the interval.
         
         Examples
@@ -508,9 +510,13 @@ class Interval(object):
         """
         SUPPORTED_PERIODS = ('S', 'T', 'min', 'H', 'D', 'W', 'M', 'Q', 'A', 'Y')
         # TODO: support shifted periods (i.e. W-TUE, A-MAR)
-        if period not in SUPPORTED_PERIODS:
+        if freq not in SUPPORTED_PERIODS:
             raise UnacceptablePeriodError('Period {!r} is not supported'.
-                                          format(period))
+                                          format(freq))
+        period_index = _Frame(start=self.start_time,
+                              end=self.end_time,
+                              base_unit_freq=freq)
+
         if schedule is None:
             schedule = self.schedule
         try:
@@ -519,9 +525,6 @@ class Interval(object):
         except OutOfBoundsError:
             return 0.0
 
-        period_index = _Frame(start=self.start_time,
-                              end=self.end_time,
-                              base_unit_freq=period)
         period_duty_count = []
         period_intervals = []
         for p in period_index:
@@ -537,7 +540,7 @@ class Interval(object):
             except VoidIntervalError:
                 raise UnacceptablePeriodError(
                     "Attempted to count periods {} that are shorter than "
-                    "workshifts in interval {!r}".format(period, self))
+                    "workshifts in interval {!r}".format(freq, self))
             else:
                 period_intervals.append(period_ivl)
                 period_duty_count.append(period_ivl.count(duty=duty,
@@ -579,6 +582,101 @@ class Interval(object):
                           )
 
         return result
+
+    def what_portion_of(self, other, duty='on', schedule=None):
+        """What portion of the other interval this interval takes up.
+
+        The method returns the ratio of the workshift count in the intersection 
+        of the two intervals to the workshift count in the `other` interval.
+        Only workshifts with the specified duty are counted. 
+        
+        If the two intervals do not overlap or their intersection contains no
+        workshifts with the specified duty, zero is returned.
+
+        Parameters
+        ----------
+        other : Interval
+        duty : {``'on'``, ``'off'``, ``'any'``} , optional (default ``'on'``)
+            Specify the duty of workshifts to be accounted for. 
+        schedule : _Schedule, optional
+            If `schedule` is not given, the self's schedule is used. 
+            The schedule attached to `other` is ignored in any case.
+
+        Returns
+        -------
+        float
+
+        Examples
+        --------
+        >>> clnd = tb.Timeboard('D', '02 Oct 2017', '15 Oct 2017',
+        ...                     layout=[1, 1, 1, 1, 1, 0, 0])
+        >>> week1 = clnd('02 Oct 2017', period='W')
+        
+        `week1` contains five working days and two days off.
+        
+        >>> ivl = clnd(('05 Oct 2017', '07 Oct 2017'))
+        
+        `ivl` takes up days Thursday through Saturday of `week1` (two
+        working days and one day off).
+
+        >>> ivl.what_portion_of(week1)
+        0.4
+        >>> 2 / 5 # working days
+        0.4
+        
+        >>> ivl.what_portion_of(week1, duty='off')
+        0.5
+        >>> 1 / 2 # days off
+        0.5
+        
+        >>> ivl.what_portion_of(week1, duty='any')
+        0.42857142857142855
+        >>> 3 / 7 # all days
+        0.42857142857142855
+        
+        `ivl` and `week2` do not overlap:
+        
+        >>> week2 = clnd('09 Oct 2017', period='W')
+        >>> ivl.what_portion_of(week2, duty='any')
+        0.0
+        
+        `decade` includes the entire `week1` and extends beyond.
+        
+        >>> decade = clnd(('02 Oct 2017', '11 Oct 2017'))
+        >>> decade.what_portion_of(week1)
+        1.0
+        
+        >>> weekend = clnd(('07 Oct 2017', '08 Oct 2017'))
+        
+        All days of `weekend` are also the days of `week1` but they are not 
+        working days, so:
+        
+        >>> weekend.what_portion_of(week1)
+        0.0
+        
+        However, `weekend` contains all off duty days of `week1`:
+        
+        >>> weekend.what_portion_of(week1, duty='off')
+        1.0
+        """
+
+        if schedule is None:
+            schedule = self.schedule
+
+        if self._loc[0] > other._loc[1] or self._loc[1] < other._loc[0]:
+            return 0.0
+
+        intersection = Interval(self._tb,
+                                (max(self._loc[0], other._loc[0]),
+                                 min(self._loc[1], other._loc[1])),
+                                schedule=schedule
+                                )
+
+        x_duty_count = intersection.count(duty=duty)
+        if x_duty_count == 0:
+            return 0.0
+        else:
+            return x_duty_count / other.count(duty=duty, schedule=schedule)
 
     def _sum_labels(self, duty='on', schedule=None):
         """Return the sum of labels of workshifts with the specified duty.
@@ -736,7 +834,7 @@ class Interval(object):
         >>> ivl.worktime(duty='any')
         3
     
-        In the example below, the work time is taken from the labels::
+        In the example below, the work time is taken from the labels:
     
         >>> clnd = tb.Timeboard('D', '30 Sep 2017', '11 Oct 2017', 
         ...                     layout=[4, 8, 4, 8],

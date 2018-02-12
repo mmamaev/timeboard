@@ -484,6 +484,101 @@ class TestIntervalCountPeriodsCornerCases(object):
         assert ivl.count_periods('H', duty='any') == 1.5 # (1/2 + 2/2)
 
 
+class TestIntervalWhatPartOf(object):
+
+    def test_ivl_whatpart_other_is_longer(self):
+        clnd = tb_12_days()
+        ivl = Interval(clnd, (2, 6))
+        other = Interval(clnd, (2, 8))
+        assert ivl.what_portion_of(other) == 1.0 / 2
+        assert ivl.what_portion_of(other, duty='off') == 4.0 / 5
+        assert ivl.what_portion_of(other, duty='any') == 5.0 / 7
+
+        ivl = Interval(clnd, (5, 8))
+        assert ivl.what_portion_of(other) == 1.0 / 2
+        assert ivl.what_portion_of(other, duty='off') == 3.0 / 5
+        assert ivl.what_portion_of(other, duty='any') == 4.0 / 7
+
+        ivl = Interval(clnd, (3, 6))
+        assert ivl.what_portion_of(other) == 1.0 / 2
+        assert ivl.what_portion_of(other, duty='off') == 3.0 / 5
+        assert ivl.what_portion_of(other, duty='any') == 4.0 / 7
+
+    def test_ivl_whatpart_other_is_the_same(self):
+        clnd = tb_12_days()
+        other = Interval(clnd, (2, 8))
+        ivl = Interval(clnd, (2, 8))
+        assert ivl.what_portion_of(other) == 1
+        assert ivl.what_portion_of(other, duty='off') == 1
+        assert ivl.what_portion_of(other, duty='any') == 1
+
+    def test_ivl_whatpart_other_is_shorter(self):
+        clnd = tb_12_days()
+        other = Interval(clnd, (2, 8))
+
+        ivl = Interval(clnd, (2, 10))
+        assert ivl.what_portion_of(other) == 1
+        assert ivl.what_portion_of(other, duty='off') == 1
+        assert ivl.what_portion_of(other, duty='any') == 1
+
+        ivl = Interval(clnd, (0, 8))
+        assert ivl.what_portion_of(other) == 1
+        assert ivl.what_portion_of(other, duty='off') == 1
+        assert ivl.what_portion_of(other, duty='any') == 1
+
+        ivl = Interval(clnd, (2, 12))
+        assert ivl.what_portion_of(other) == 1
+        assert ivl.what_portion_of(other, duty='off') == 1
+        assert ivl.what_portion_of(other, duty='any') == 1
+
+    def test_ivl_whatpart_other_is_outside_ivl(self):
+        clnd = tb_12_days()
+        other = Interval(clnd, (2, 8))
+        ivl = Interval(clnd, (9, 10))
+        assert ivl.what_portion_of(other) == 0
+        assert ivl.what_portion_of(other, duty='off') == 0
+        assert ivl.what_portion_of(other, duty='any') == 0
+
+    def test_ivl_whatpart_intersection_lacks_duty(self):
+        clnd = tb_12_days()
+        other = Interval(clnd, (5, 9))
+        ivl = Interval(clnd, (2, 6))
+        assert ivl.what_portion_of(other) == 0
+        assert ivl.what_portion_of(other, duty='off') == 2.0 / 4
+        assert ivl.what_portion_of(other, duty='any') == 2.0 / 5
+
+        ivl = Interval(clnd, (7, 7))
+        assert ivl.what_portion_of(other) == 1 / 1
+        assert ivl.what_portion_of(other, duty='off') == 0
+        assert ivl.what_portion_of(other, duty='any') == 1.0 / 5
+
+        other = Interval(clnd, (7, 7))
+        ivl = Interval(clnd, (5, 9))
+        assert ivl.what_portion_of(other) == 1
+        assert ivl.what_portion_of(other, duty='off') == 0
+        assert ivl.what_portion_of(other, duty='any') == 1
+
+        other = Interval(clnd, (8, 8))
+        ivl = Interval(clnd, (5, 9))
+        assert ivl.what_portion_of(other) == 0
+        assert ivl.what_portion_of(other, duty='off') == 1
+        assert ivl.what_portion_of(other, duty='any') == 1
+
+    def test_ivl_whatpart_change_schedule(self):
+        clnd = tb_12_days()
+        sdl = clnd.add_schedule('sdl', lambda label: label>1)
+        sdl_other = clnd.add_schedule('sdl_other', lambda label: label>2)
+        other = Interval(clnd, (7, 10), schedule=sdl_other)
+        ivl = Interval(clnd, (10, 10))
+        assert ivl.what_portion_of(other) == 1.0 / 2
+        assert ivl.what_portion_of(other, schedule=sdl) == 1
+
+        ivl = Interval(clnd, (10, 10), schedule=sdl)
+        assert ivl.what_portion_of(other) == 1
+        assert ivl.what_portion_of(other,
+                                   schedule=clnd.default_schedule) == 1.0 / 2
+
+
 class TestIntervalSchedules(object):
     
     def test_ivl_count_with_schedules(self):

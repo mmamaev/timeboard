@@ -51,7 +51,7 @@ If you intend to base your calculation on another schedule you may pass it in `s
     Workshift(1, my_schedule) of 'D' at 2017-10-01
 
 
-.. note:: You cannot obtain a workshift by calling the instance of :py:class:`~.Timeboard` if you want to attach the schedule.`
+.. note:: You cannot obtain a workshift by calling the instance of :py:class:`~.Timeboard` if you want to attach the schedule.` Use :py:meth:`~.Timeboard.get_workshift` only.
 
 You may also pass `schedule` parameter to `Workshift` or `Interval` method which you call to perform a calculation. The schedule will be used only for this call overriding the schedule attached to the workshift/interval.
 
@@ -64,28 +64,30 @@ Workshift-based calculations
 =============== ===============================================================
 Method          Result
 =============== ===============================================================
-|is_on_duty|    Find out if the workshift is on duty.
+|is_on_duty|    :ref:`Find out if the workshift is on duty. <find-duty>`
 
-|is_off_duty|   Find out if the workshift is off duty.
+|is_off_duty|   :ref:`Find out if the workshift is off duty. <find-duty>`
 
-|worktime|      Return workshift's work time.
+|w_worktime|    :ref:`Return workshift's work time. <obtaining-work-time>`
 
-|rollforward|   Return a workshift by taking the specified number of steps
-                toward the future.
+|rollforward|   |section-rolling-fwd|
 
-|rollback|      Return a workshift by taking the specified number of steps 
-                toward the past.
+|rollback|      |section-rolling-back|
 =============== ===============================================================
 
 .. |is_on_duty| replace:: :py:meth:`~timeboard.Workshift.is_on_duty`
 
 .. |is_off_duty| replace:: :py:meth:`~timeboard.Workshift.is_off_duty`
 
-.. |worktime| replace:: :py:meth:`~timeboard.Workshift.worktime`
+.. |w_worktime| replace:: :py:meth:`~timeboard.Workshift.worktime`
 
 .. |rollforward| replace:: :py:meth:`~timeboard.Workshift.rollforward`
 
 .. |rollback| replace:: :py:meth:`~timeboard.Workshift.rollback`
+
+.. |section-rolling-fwd| replace:: :ref:`Return a workshift by taking the specified number of steps toward the future. <rolling>`
+
+.. |section-rolling-back| replace:: :ref:`Return a workshift by taking the specified number of steps toward the past. <rolling>`
 
 
 Each of the above methods must use some schedule to identify workshift's duty.
@@ -96,6 +98,8 @@ The schedule is selected as follows:
 - else use the schedule attached to this workshift when it has been instantiated;
 
 - if no `schedule` parameter was given to the workshift constructor, use the default schedule of the timeboard.
+
+.. _find-duty:
 
 Determining duty
 ----------------
@@ -126,11 +130,12 @@ and under `my_schedule`::
     >>> ws2.is_on_duty()
     False
 
+.. _obtaining-work-time:
 
 Obtaining work time
 -------------------
 
-The source of the information about workshift's work time is determined by :py:attr:`.Timeboard.worktime_source` attribute.
+The source of the information about workshift's work time is determined by :py:class:`.Timeboard`\ .\ :py:attr:`worktime_source` attribute.
 
 :py:meth:`.Workshift.worktime` method returns the work time of the workshift if the duty value passed to the method corresponds to that of the workshift. Otherwise, it returns zero. 
 
@@ -179,6 +184,8 @@ In the example below, the work time is taken from the labels::
     4.0
 
 The query with ``duty='off'`` can be interpreted as "What is the work time for a worker who comes in when the main workforce is off duty?"
+
+.. _rolling:
 
 
 Rolling forward and back
@@ -266,6 +273,8 @@ As with the other methods, you can override the workshift's schedule in method's
     >>> ws.rollforward(1)
     Workshift(11, my_schedule) of 'D' at 2017-10-11
 
+
+.. _plus-minus:
 
 Using operators `+` and `-`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -500,37 +509,55 @@ Interval-based calculations
 =============== ===============================================================
 Method          Result
 =============== ===============================================================
-|nth|           Find n-th workshift with the specified duty in the interval.
+|nth|           |section_seek_nth|
 
-|first|         Find the first workshift with the specified duty in 
-                the interval.
+|first|         |section_seek_first|
 
-|last|          Find the last workshift with the specified duty in 
-                the interval.
+|last|          |section_seek_last|
 
-|count|         Count workshifts with the specified duty in the interval.
+|count|         |section_seek_count|
 
-|worktime|      The total work time of workshifts with the specified duty.
+|i_worktime|    |section_i_worktime|
 
-|count_periods| How many calendar periods fit into the interval (duty-aware).
+|what_portion|  |section_relation_portion|
+
+|count_periods| |section_count_periods|
 =============== ===============================================================
 
 .. |nth| replace:: :py:meth:`~timeboard.Interval.nth`
 
+.. |section_seek_nth| replace:: :ref:`Find n-th workshift with the specified duty in the interval. <seek-count-ws>`
+
 .. |first| replace:: :py:meth:`~timeboard.Interval.first`
+
+.. |section_seek_first| replace:: :ref:`Find the first workshift with the specified duty in the interval. <seek-count-ws>`
 
 .. |last| replace:: :py:meth:`~timeboard.Interval.last`
 
+.. |section_seek_last| replace:: :ref:`Find the last workshift with the specified duty in the interval. <seek-count-ws>`
+
 .. |count| replace:: :py:meth:`~timeboard.Interval.count`
 
-.. |worktime| replace:: :py:meth:`~timeboard.Interval.worktime`
+.. |section_seek_count| replace:: :ref:`Count workshifts with the specified duty in the interval. <seek-count-ws>`
+
+.. |i_worktime| replace:: :py:meth:`~timeboard.Interval.worktime`
+
+.. |section_i_worktime| replace:: :ref:`The total work time of workshifts with the specified duty. <measuring-worktime>`
+
+.. |what_portion| replace:: :py:meth:`~timeboard.Interval.what_portion_of`
+
+.. |section_relation_portion| replace:: :ref:`What portion of another interval this interval takes up. <relation-with-other>`
 
 .. |count_periods| replace:: :py:meth:`~timeboard.Interval.count_periods`
+
+.. |section_count_periods| replace:: :ref:`How many calendar periods fit into the interval. <counting-periods>`
+
+
 
 
 All methods are duty-aware meaning that they "see" only workshifts with the specified duty ignoring the others.
 
-Consequently, each of the above methods must use some schedule to identify workshift's duty. The schedule is selected as follows:
+Each of the above methods must use some schedule to identify workshift's duty. The schedule is selected as follows:
 
 - if a schedule is explicitly given as method's parameter, then use this schedule;
 
@@ -539,6 +566,8 @@ Consequently, each of the above methods must use some schedule to identify works
 - if no `schedule` parameter was given to the interval constructor, use the default schedule of the timeboard.
 
 .. note:: If you don't care about the duty and want to take into account all workshifts in the interval, use ``duty='any'``. 
+
+.. _seek-count-ws:
 
 Seeking and counting workshifts
 -------------------------------
@@ -603,11 +632,12 @@ Not taking the duty into account::
     >>> ivl.count(duty='any')
     7
 
+.. _measuring-worktime:
 
 Measuring work time
 -------------------
 
-The source of the information about workshifts' work time is determined by :py:attr:`.Timeboard.worktime_source` attribute.
+The source of the information about workshifts' work time is determined by :py:class:`.Timeboard`\ .\ :py:attr:`worktime_source` attribute.
 
 :py:meth:`.Interval.worktime` method returns the sum of the work times of the workshifts with the specified duty. If the interval does not contain workshifts with this duty, the method returns zero. 
 
@@ -648,6 +678,72 @@ In the example below, the work time is taken from the labels::
 
 .. note:: To count the total duration of the workshifts in the interval (regardless of the work time) call :py:meth:`.Interval.total_duration`.
 
+.. _relation-with-other:
+
+Relation with another interval
+------------------------------
+
+:py:meth:`~timeboard.Interval.what_portion_of` builds the intersection of this interval and another and returns the ratio of the workshift count in the intersection to the workshift count in the other interval.  Only workshifts with the specified duty are counted. 
+        
+If the two intervals do not overlap or their intersection contains no workshifts with the specified duty, zero is returned.
+
+The common use of this method is to answer questions like "what portion of year 2017 has employee X been with the company?". In the examples below, for the purpose of demonstration, the question is scaled down to "what portion of the week?.."::
+
+    >>> clnd = tb.Timeboard('D', '02 Oct 2017', '15 Oct 2017',
+    ...                     layout=[1, 1, 1, 1, 1, 0, 0])
+    >>> week1 = clnd('02 Oct 2017', period='W')
+        
+`week1` contains five working days and two days off. ::
+        
+    >>> X_in_staff = clnd(('05 Oct 2017', '07 Oct 2017'))
+
+X was was with the company Thursday through Saturday of `week1` (two
+working days and one day off). ::
+
+    >>> X_in_staff.what_portion_of(week1)
+    0.4
+    >>> 2 / 5 # working days
+    0.4
+    
+    >>> X_in_staff.what_portion_of(week1, duty='off')
+    0.5
+    >>> 1 / 2 # days off
+    0.5
+    
+    >>> X_in_staff.what_portion_of(week1, duty='any')
+    0.42857142857142855
+    >>> 3 / 7 # all days
+    0.42857142857142855
+
+X had already left before `week2` started::
+
+    >>> week2 = clnd('09 Oct 2017', period='W')
+    >>> X_in_staff.what_portion_of(week2, duty='any')
+    0.0
+
+Y has worked the entire `week1` and stayed afterwards::
+
+        >>> Y_in_staff = clnd(('02 Oct 2017', '11 Oct 2017'))
+        >>> decade.what_portion_of(week1)
+        1.0
+        
+A corner case::
+
+    >>> weekend = clnd(('07 Oct 2017', '08 Oct 2017'))
+        
+All days of `weekend` are also the days of `week1` but they are not 
+working days, so::
+
+    >>> weekend.what_portion_of(week1)
+    0.0
+
+However, `weekend` contains all off duty days of `week1`::
+
+    >>> weekend.what_portion_of(week1, duty='off')
+    1.0
+
+
+.. _counting-periods:
 
 Counting periods
 ----------------
@@ -660,43 +756,45 @@ If some period does not contain workshifts of the required duty, it contributes 
         
 Regardless of the period frequency, the method returns 0.0 if there are no workshifts with the specified duty in the interval.
 
+The common use of this method is to answer questions like "Exactly, how many years has X worked in the company?" In the examples below, for the purpose of demonstration, the question is scaled down to "how many days?.." for a timeboard with hourly shifts.
+
 Examples::
 
     >>> clnd = tb.Timeboard('H', '01 Oct 2017', '08 Oct 2017 23:59', 
     ...                     layout=[0, 1, 0, 2])
-    >>> ivl = clnd(('01 Oct 2017 13:00', '02 Oct 2017 23:59'))
+    >>> X_in_staff = clnd(('01 Oct 2017 13:00', '02 Oct 2017 23:59'))
 
-Interval `ivl` spans two days: it contains 11 of 24 workshifts of 
+X's tenure spans two days: it contains 11 of 24 workshifts of 
 October 1, and all 24 workshifts of October 2::
 
-     >>> ivl.count_periods('D', duty='any')
+     >>> X_in_staff.count_periods('D', duty='any')
      1.4583333333333333
      >>> 11.0/24 + 24.0/24
      1.4583333333333333
 
-The timeboard's `layout` defines that all workshifts taking place on even hours are off duty, and those on odd hours are on duty. The first workshift of the interval (01 October 13:00 - 13:59) is on duty. Hence, the interval contains 6 of 12 on duty workshifts of October 1, and all 12 on duty workshifts of October 2::
+The timeboard's `layout` defines that all workshifts taking place on even hours are off duty, and those on odd hours are on duty. The first workshift of the interval (01 October 13:00 - 13:59) is on duty. Hence, interval `X_in_staff` contains 6 of 12 on duty workshifts of October 1, and all 12 on duty workshifts of October 2::
 
-    >>> ivl.count_periods('D')
+    >>> X_in_staff.count_periods('D')
     1.5
     >>> 6.0/12 + 12.0/12
     1.5
 
 The interval contains 5 of 12 off duty workshifts of October 1, and all 12 off duty workshifts of October 2::
 
-    >>> ivl.count_periods('D', duty='off')
+    >>> X_in_staff.count_periods('D', duty='off')
     1.4166666666666667
     >>> 5.0/12 + 12.0/12
     1.4166666666666667
 
-If we change the schedule to `my_schedule`, on duty workshifts will start only at 3, 7, 11, 15, 19, and 23 o'clock yielding 6 on duty workshifts per day. Interval `ivl` will contain 3/6 + 6/6 on duty days and 8/18 + 18/18 off duty days::
+If we change the schedule to `my_schedule`, on duty workshifts will start only at 3, 7, 11, 15, 19, and 23 o'clock yielding 6 on duty workshifts per day. Interval `X_in_staff` will contain 3/6 + 6/6 on duty days and 8/18 + 18/18 off duty days::
 
     >>> my_schedule = clnd.add_schedule(name='my_schedule', 
     ...                                 selector=lambda label: label>1)
-    >>> ivl.count_periods('D', schedule=my_schedule)
+    >>> X_in_staff.count_periods('D', schedule=my_schedule)
     1.5
     >>> 3.0/6 + 6.0/6
     1.5
-    >>> ivl.count_periods('D', duty='off', schedule=my_schedule)
+    >>> X_in_staff.count_periods('D', duty='off', schedule=my_schedule)
     1.4444444444444444
     >>> 8.0/18 + 18.0/18
     1.4444444444444444
@@ -757,6 +855,6 @@ If you try to count periods which are shorter than (some) of the workshifts in t
 
 You may accidentally run into this issue in two situations:
 
-- You use compound workshifts and while most of the workshifts (usually those covering the working time) are of one size, there are a few workshifts (usually those covering the closed time) which are much larger. Trying to count periods, you have in mind the smaller workshifts. If a larger one gets into the interval and your period is not long enough, you will find yourself with UnacceptablePeriodError.
+- You use compound workshifts and while most of the workshifts (usually those covering the working time) are of one size, there are a few workshifts (usually those covering the closed time) which are much larger. Trying to count periods, you have in mind the smaller workshifts. If a larger one gets into the interval and your period is not long enough, you will find yourself with `UnacceptablePeriodError`.
 
 - You have misinterpreted the purpose of :py:meth:`count_periods` method and try to use it as a general time counter. For example, in a timeboard with workshifts of varying duration measured in hours, you want to find out how many clock hours there are in an interval. In order to do that use `pandas.Timedelta` tools with `start_time` and `end_time` attributes of workshifts and intervals.
