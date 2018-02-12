@@ -54,6 +54,10 @@ def _to_iterable(x):
         return [x]
 
 
+def _is_null(x):
+    return pd.isnull(x)
+
+
 def _skiperator(values, skip=0):
     """Build a skip-and-cycle generator
     

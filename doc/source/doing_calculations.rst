@@ -33,6 +33,8 @@ Even simpler, you get the same result by calling the instance of :py:class:`~.Ti
     >>> clnd('01 Oct 2017')
     Workshift(1) of 'D' at 2017-10-01
 
+The argument passed to :py:meth:`get_workshift` is `Timestamp`-like meaning it may be a timestamp, or a string convertible to timestamp, or an object which implement `to_timestamp()` method.
+
 Alternatively, you can call :py:meth:`~timeboard.Workshift` constructor directly if you know the workshift's position on the timeline. 
 
     >>> tb.Workshift(clnd, 1)
@@ -331,11 +333,20 @@ Obtaining an interval from two points in time::
     
     >>> clnd(('02 Oct 2017', '08 Oct 2017'))
     Interval((2, 8)): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]
-    
+
+The points in time come as a tuple of two values which are timestamps, or strings convertible to timestamps, or objects which implement `to_timestamp()` method.
+
 Note that the points in time are not the boundaries of the interval but  references to the first and the last workshifts of the interval. The points in time may be located anywhere within these workshifts. The following operation produces the same interval as the one above::
 
     >>> clnd.get_interval(('02 Oct 2017 15:15', '08 Oct 2017 23:59'))
     Interval((2, 8)): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]
+
+You may also pass a null value (such as `None`, `NaN`, or `NaT`) in place of a point in time. If the first element of the tuple is null, then the first workshift of the timeboard will be picked as the start of the interval. If the second element is null, then the interval will end on the last workshift of the timeboard. ::
+
+    >>> clnd.get_interval((None, '08 Oct 2017 23:59'))
+    Interval((0, 8)): 'D' at 2017-09-30 -> 'D' at 2017-10-08 [9]
+    >>> clnd(('02 Oct 2017 15:15', None))
+    Interval((2, 15)): 'D' at 2017-10-02 -> 'D' at 2017-10-15 [14]
 
 Building an interval of a specified length::
     

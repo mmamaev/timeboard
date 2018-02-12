@@ -7,6 +7,7 @@ from timeboard.timeboard import _Location, OOB_LEFT, OOB_RIGHT, LOC_WITHIN
 
 import datetime
 import pandas as pd
+import numpy as np
 import pytest
 
 @pytest.fixture(scope='module')
@@ -226,6 +227,31 @@ class TestIntervalConstructorWithTS:
 
         ivlx = clnd(('02 Jan 2017 15:00', '08 Jan 2017 15:00'))
         assert ivlx._loc == ivl._loc
+
+    def test_interval_constructor_with_none_ts(self):
+        clnd = tb_12_days()
+
+        ivl = clnd.get_interval((None, '08 Jan 2017 15:00'))
+        assert ivl._loc == (0,8)
+        ivl = clnd.get_interval((np.nan, '08 Jan 2017 15:00'))
+        assert ivl._loc == (0,8)
+        ivlx = clnd((None, '08 Jan 2017 15:00'))
+        assert ivlx._loc == ivl._loc
+
+        ivl = clnd.get_interval(('02 Jan 2017 15:00', None))
+        assert ivl._loc == (2,12)
+        ivl = clnd.get_interval(('02 Jan 2017 15:00', pd.NaT))
+        assert ivl._loc == (2,12)
+        ivl = clnd(('02 Jan 2017 15:00', pd.NaT))
+        assert ivl._loc == (2,12)
+
+        ivl = clnd.get_interval((None, None))
+        assert ivl._loc == (0,12)
+        ivl = clnd.get_interval((np.nan, None))
+        assert ivl._loc == (0,12)
+        ivl = clnd((pd.NaT, np.nan))
+        assert ivl._loc == (0,12)
+
 
     def test_interval_iterator(self):
         clnd = tb_12_days()

@@ -1,6 +1,7 @@
 from __future__ import division
 from .core import (_Frame, _Timeline, _Schedule,
-                   Organizer, get_period, get_timestamp, _is_iterable)
+                   Organizer, get_period, get_timestamp,
+                   _is_iterable, _is_null)
 from .workshift import Workshift
 from .interval import Interval
 from .exceptions import (OutOfBoundsError,
@@ -505,10 +506,15 @@ class Timeboard(object):
         the first and the last workshifts of the interval.
         
             interval_ref : tuple(`Timestamp`-like, `Timestamp`-like)
+                If the first element of the tuple is null, the interval will 
+                start on the first workshift of the timeboard. If the second 
+                element of the tuple is null, the interval will end on the 
+                last workshift of the timeboard.
             
             length : parameter must be omitted
             
             period : parameter must be omitted
+            
             
         2. Create an interval of a specific length starting from a 
         workshift referred to by a point in time.
@@ -580,11 +586,12 @@ class Timeboard(object):
         ----------
         interval_ref : optional
             The reference object(s) of the interval. Depending on the 
-            technique of interval definition this can be:
+            technique of interval definition, this can be:
             
             - `Timestamp`-like (object convertible to a timestamp, such as 
-              a string, or a `pandas.Timestamp`, or a `datetime` object
-            - sequence (`Timestamp`-like, `Timestamp`-like)
+              a string, or a `pandas.Timestamp`, or a `datetime` object, or
+              an object that implements `to_timestamp()` method)
+            - tuple (`Timestamp`-like or null, `Timestamp`-like or null)
             - `pandas.Period`
             
         length : int !=0, optional
@@ -791,13 +798,15 @@ class Timeboard(object):
 
     def _get_interval_locs_from_reference(self, interval_ref,
                                           drop_head, drop_tail):
-        if interval_ref is None:
-            locs = [_Location(0, LOC_WITHIN),
-                    _Location(len(self._timeline) - 1, LOC_WITHIN)]
-        elif hasattr(interval_ref, '__getitem__') and len(interval_ref) >= 2 \
-                and not isinstance(interval_ref, str):
-            locs = [self._locate(interval_ref[0]),
-                    self._locate(interval_ref[1])]
+        locs = [_Location(0, LOC_WITHIN),
+                _Location(len(self._timeline) - 1, LOC_WITHIN)]
+        if _is_null(interval_ref):
+            pass
+        elif _is_iterable(interval_ref) and len(interval_ref) >= 2:
+            if not _is_null(interval_ref[0]):
+                locs[0] = self._locate(interval_ref[0])
+            if not _is_null(interval_ref[1]):
+                locs[1] = self._locate(interval_ref[1])
         else:
             raise TypeError("Could not get interval bounds from the provided "
                             "reference. Expected a sequence of two "
