@@ -2,6 +2,10 @@ import pandas as pd
 import numpy as np
 from dateutil.easter import easter
 
+# import timeit
+# timers1 = []
+# timers2 = []
+# timers3 = []
 
 def from_start_of_each(pi, normalize_by=None, **kwargs):
     """Calculate point in time specified by offset.
@@ -30,13 +34,8 @@ def from_start_of_each(pi, normalize_by=None, **kwargs):
         # with negative offset all results will fall out of their periods
         return pd.DatetimeIndex([])
 
-    start_times = pi.to_timestamp(how='start')
-    end_times = pi.to_timestamp(how='end')
-
-    # workaround for bug in pandas when pi.freq='D'
-    if end_times[0] == start_times[0]:
-        et = np.array([p.end_time for p in pi], dtype='datetime64[ns]')
-        end_times = pd.DatetimeIndex(et)
+    start_times = pi.to_timestamp(how='start', freq='S')
+    end_times = pi.to_timestamp(how='end', freq='S')
 
     result = start_times + offset
     if normalize_by is not None:
@@ -92,6 +91,21 @@ def nth_weekday_of_month(pi, month, week, weekday, shift=None, **kwargs):
     pandas.DatetimeIndex
  
     """
+    # TODO: (Prio: LOW) Optimize performance
+    # Creating model timeline '3-DoW-per-M' (compound workshifts on daily frame
+    # with marks on 3 weekdays per month) takes ~1 sec for 100 years,
+    # ~1,8 sec for 278 years.
+    # Counting per workshift it is more than 100 times slower than 'CC-2-8-18'
+    # model which uses `from_start_of_each`. However, in practice
+    # weekday-of-month marks occur with a frequency that is ~100 times lower
+    # than that of 'CC-2-8-18', so in a practical case these markers will
+    # be on par with each other.
+    # Speed profile of this function:
+    #    @timer1 : 24%
+    #    @timer2 : 8%
+    #    @timer3 : 68%
+
+    # timer0 = timeit.default_timer()
     assert month in range(1, 13)
     assert weekday in range(1, 8)
     assert week in range(1, 6) or week in range(-5, 0)
@@ -103,12 +117,15 @@ def nth_weekday_of_month(pi, month, week, weekday, shift=None, **kwargs):
     m_start_times = dti + pd.tseries.offsets.MonthBegin(month - 1,
                                                         normalize=True)
     m_end_times = dti + pd.tseries.offsets.MonthEnd(month, normalize=True)
+
+    # timer1 = timeit.default_timer()
     # make sure we are inside put periods pi - this check makes sense when
     # pi.freq is based on 'M'
     pi_end_times = pi.to_timestamp(how='end')
     m_start_times = m_start_times[m_start_times <= pi_end_times]
     m_end_times = m_end_times[m_end_times <= pi_end_times]
 
+    # timer2 = timeit.default_timer()
     if week > 0:
         off_by_one_bug_flag = m_start_times.weekday == weekday - 1
         week_factors = week * np.ones(len(m_start_times),
@@ -131,6 +148,12 @@ def nth_weekday_of_month(pi, month, week, weekday, shift=None, **kwargs):
             [m_end_times[i] + week_offsets[i]
              for i in range(len(m_end_times))])
         dtw = dtw[dtw >= m_start_times]
+
+    # timer3 = timeit.default_timer()
+    # timers1.append(timer1 - timer0)
+    # timers2.append(timer2 - timer1)
+    # timers3.append(timer3 - timer2)
+
     return dtw + pd.DateOffset(days=shift)
 
 
@@ -166,8 +189,8 @@ def from_easter(pi, easter_type='western', normalize_by=None, **kwargs):
     testtime = pd.Timestamp('01 Jan 2004')
     shift_to_future = testtime + offset >= testtime
 
-    pi_start_times = pi.to_timestamp(how='start')
-    pi_end_times = pi.to_timestamp(how='end')
+    pi_start_times = pi.to_timestamp(how='start', freq='S')
+    pi_end_times = pi.to_timestamp(how='end', freq='S')
 
     easter_dates = pd.DatetimeIndex([easter(y, _easter_type) for y in pi.year])
     easter_dates = easter_dates[(easter_dates >= pi_start_times) &

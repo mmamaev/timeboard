@@ -11,9 +11,14 @@ from itertools import cycle, dropwhile
 from collections import Iterable, OrderedDict
 import re
 import six
+
+# # imports for timing the performance;
+# # there are also commented lines in the code referring to timeit or timers
 # import timeit
+# import timeboard.when as when
 
 SMALLEST_TIMEDELTA = pd.Timedelta(1, unit='s')
+TIMELINE_DEL_TEMP_OBJECTS = True
 
 
 def get_timestamp(arg):
@@ -318,27 +323,25 @@ class _Frame(pd.PeriodIndex):
         """
         # timer0 = timeit.default_timer()
         self.check_span(span)
-        # TODO: SPEED UP.
-        # This computation takes 0.3s for 100 Years Standard Week 8x5
-        # loc_list = [self.get_loc(t, 0) for t in points_in_time]
         split_positions = self.get_loc_vectorized(points_in_time,
                                                   span_first=span.first,
                                                   span_last=span.last)
         # timer1 = timeit.default_timer()
-        # split_positions = [int(x)
-        #                    for x in loc_list if span_first < x <= span_last]
-        # timer2 = timeit.default_timer()
+
         split_positions = sorted(list(set(split_positions)))
-        # timer3 = timeit.default_timer()
+
+        # timer2 = timeit.default_timer()
 
         start_positions = split_positions[:]
         start_positions.insert(0, span.first)
         end_positions = [x-1 for x in split_positions]
         end_positions.append(span.last)
-        # timer4 = timeit.default_timer()
-        # print "_locate_span timers:\n\t1: {:.5f}\n\t2: {:.5f}\n\t3: {:.5f}"\
-        #       "\n\t4: {:.5f}".format(timer1-timer0, timer2-timer1,
-        #                              timer3-timer2, timer4-timer3)
+
+        # timer3 = timeit.default_timer()
+        # print("_locate_span breakdown:\n"
+        #       "\tget_loc_vectorized: {:.5f}\n\tdedup and sort: {:.5f}\n"
+        #       "\tmake start_ and end_positions: {:.5f}\n".
+        #       format(timer1 - timer0, timer2 - timer1, timer3 - timer2))
 
         return zip(start_positions, end_positions)
 
@@ -411,6 +414,9 @@ class _Frame(pd.PeriodIndex):
         in this subspan, to 5. All subspans in between represent a full week
         each, and their `skip_left` and `skip_right` attributes are zeroed. 
         """
+        # timer0 = timeit.default_timer()
+        # timer1, timer2, timer3 = 0, 0, 0
+        # when.timers1, when.timers2, when.timers3 = [], [], []
         if not _check_groupby_freq(self._base_unit_freq, marker.each):
             raise UnacceptablePeriodError('Ambiguous organizing: '
                                           '{} is not a subperiod of {}'
@@ -433,12 +439,17 @@ class _Frame(pd.PeriodIndex):
                              start=envelope_start_ts,
                              end=envelope_end_ts)
 
+            # timer1 = timeit.default_timer()
+
             for kwargs in marker.at:
                 at_points = at_points.append(
                                  marker.how(stencil,
                                             normalize_by=self._base_unit_freq,
                                             **kwargs)
                             )
+
+            # timer2 = timeit.default_timer()
+
             at_points = pd.DatetimeIndex(np.sort(at_points))
             at_points = at_points[
                 max([0, np.searchsorted(at_points,
@@ -454,8 +465,11 @@ class _Frame(pd.PeriodIndex):
                                           at_points[-1] - SMALLEST_TIMEDELTA])
                 right_dangle_undefined = at_points[-1] < span_end_ts
                 split_points = at_points
+
             else:
                 return [_Span(span.first, span.last, -1, -1)]
+
+            # timer3 = timeit.default_timer()
 
         else:
             stencil = _Frame(base_unit_freq=marker.each,
@@ -464,6 +478,10 @@ class _Frame(pd.PeriodIndex):
             left_stencil_bound = stencil[0].start_time
             right_stencil_bound = stencil[-1].end_time
             split_points = stencil.to_timestamp(how='start')
+
+            # timer1 = timeit.default_timer()
+            # timer2 = timer1
+            # timer3 = timer1
 
         if left_dangle_undefined:
             skipped_units_before = -1
@@ -486,9 +504,23 @@ class _Frame(pd.PeriodIndex):
                                       difference(self[:span.last + 1]))
         else:
             skipped_units_after = 0
+
+        # timer4 = timeit.default_timer()
+
         spans = self._create_subspans(span, split_points)
         spans[0].skip_left = skipped_units_before
         spans[-1].skip_right = skipped_units_after
+
+        # timer5 = timeit.default_timer()
+        # print("partition_with_marker breakdown:\n"
+        #       "\tpreprocessing: {:.5f}\n\tat point generation: {:.5f}\n"
+        #       "\t\ttimer1: {:.5f}\n\t\ttimer2: {:.5f}\n\t\ttimer3: {:.5f}\n"
+        #       "\tat point processing: {:.5f}\n\tdangles: {:.5f}\n"
+        #       "\tspan generation: {:.5f}".
+        #       format(timer1 - timer0, timer2 - timer1,
+        #              sum(when.timers1), sum(when.timers2), sum(when.timers3),
+        #              timer3 - timer2, timer4 - timer3, timer5 - timer4)
+        # )
         return spans
 
     def partition_at_marks(self, span, marks):
@@ -594,15 +626,154 @@ class _Timeline(object):
     """
     def __init__(self, frame, organizer=None, workshift_ref=None, data=None):
         self._frame = frame
-        self._frameband = pd.Series(index=frame, data=np.arange(len(frame)))
-        self._wsband = pd.Series(index=np.arange(len(frame)), data=data)
-        if organizer is not None:
-            self._organize(organizer)
+
+        # make auxiliary temporary arrays to speed up organizing
+        # numpy arrays are 5-10 times faster in processing than pd.Series
+        self._ws_labels = np.empty((len(frame)), dtype=object)
+        self._ws_labels[:] = data
+        self._ws_compound_mask = np.ones((len(frame)), dtype=np.int8)
+
+        def _masked_counter(mask):
+            n = 0
+            for i, m in enumerate(mask):
+                if m:
+                    n = i
+                yield n
+
+        if organizer is None:
+            self._frameband = pd.Series(index=frame,
+                                        data=np.arange(len(frame)))
+            self._wsband = pd.Series(index=np.arange(len(frame)),
+                                     data=data)
+        else:
+            # timer1 = timeit.default_timer()
+            self.__organize(organizer)
+            # timer2 = timeit.default_timer()
+            wsband_index = np.nonzero(self._ws_compound_mask)[0]
+            self._wsband = pd.Series(
+                index = wsband_index,
+                data = self._ws_labels[wsband_index])
+            self._frameband = pd.Series(
+                index=frame,
+                data=_masked_counter(self._ws_compound_mask))
+            # timer3 = timeit.default_timer()
+            # print ("__organize total: {:.5f}\npostproc: {:.5f}".
+            #        format(timer2 - timer1, timer3 - timer2))
+
+        # saves 7-10% of memory used by timeline
+        if TIMELINE_DEL_TEMP_OBJECTS:
+            del self._ws_labels
+            del self._ws_compound_mask
+
         if workshift_ref is None:
             self._workshift_ref = 'start'
         else:
             self._workshift_ref = workshift_ref
 
+    def __apply_pattern(self, pattern, span):
+        """Set workshift labels from a pattern.
+
+        Pattern application is repeated in cycles until the end of the span 
+        is reached. If `span.skip_left`>0, then the respective number of
+        idle iterations through pattern is done before a label is set for the 
+        first workshift of the span. The value of `span.skip_right` 
+        is currently ignored (reserved for future support of pattern 
+        application done in reverse).
+
+        Parameters
+        ----------
+        pattern : Iterable of labels
+        span : Subframe
+
+        Returns
+        -------
+        None
+
+        Note
+        ----
+        Nothing is returned; the timeline is modified in-place.
+
+        If `pattern` is empty, timeline elements in the span retain default 
+        labels or NaN if no default label has been set.
+        """
+        # TODO: (Prio: UNKN) support both directions
+        # (set direction in Organizer?)
+        if span.skip_left < 0:
+            raise OutOfBoundsError("Attempted to apply forward pattern to {}, "
+                                   "where left dangle could not be "
+                                   "calculated".format(span))
+        pattern_iterator = _skiperator(pattern,
+                                       skip=span.skip_left)
+        try:
+            self._ws_labels[span.first: span.last+1] = [
+                next(pattern_iterator)
+                for i in range(span.first, span.last + 1)
+            ]
+        except StopIteration:
+            pass
+
+    def __organize(self, organizer, span=None):
+        """Mark up the frame to create workshifts.
+
+        Partition the specified span of the frame into workshifts and set 
+        workshift labels as prescribed by `organizer`.
+
+        Parameters
+        ----------
+        organizer : Organizer 
+        span : _Span
+
+        Returns
+        -------
+        None
+
+        Note
+        ----
+        Nothing is returned; the timeline is modified in-place.
+        """
+        if span is None:
+            span = _Span(0, len(self.frame) - 1)
+        span_seq = []
+
+        # timero1 = timeit.default_timer()
+
+        if organizer.marker is not None:
+            span_seq = self.frame.partition_with_marker(span, organizer.marker)
+        if organizer.marks is not None:
+            span_seq = self.frame.partition_at_marks(span, organizer.marks)
+
+        structure_iterator = cycle(organizer.structure)
+
+        # timero2 = timeit.default_timer()
+        # timersa = np.zeros((len(self.frame)))
+        # timersb = np.zeros((len(self.frame)))
+        # timersp = np.zeros((len(self.frame)))
+
+        for span, layout in zip(span_seq, structure_iterator):
+
+            if isinstance(layout, Organizer):
+                self.__organize(layout, span)
+            elif _is_iterable(layout):
+                # timer1 = timeit.default_timer()
+                self.__apply_pattern(layout, span)
+                # timersp[span.first] = timeit.default_timer() - timer1
+            else:
+                # make compound workshift from the span, use layout as label
+                # timer1 = timeit.default_timer()
+                self._ws_labels[span.first] = layout
+                # timer2 = timeit.default_timer()
+                self._ws_compound_mask[span.first+1: span.last+1] = 0
+
+                # timer3 = timeit.default_timer()
+                # timersa[span.first] = timer2-timer1
+                # timersb[span.first] = timer3 - timer2
+
+        # timero3 = timeit.default_timer()
+        # print ("__organize breakdown:\n"
+        #        "\tpartitioning: {:.5f}\n\tmain loop: {:.5f}\n"
+        #        "\ttimersp: {:.5f}\n\ttimersa: {:.5f}\n\ttimersb: {:.5f}".
+        #        format(timero2 - timero1, timero3 - timero2,
+        #               timersp.sum(), timersa.sum(), timersb.sum()))
     @property
     def frame(self):
         return self._frame
@@ -902,111 +1073,6 @@ class _Timeline(object):
         self._wsband.iloc[list(amendments_located.keys())] = \
             list(amendments_located.values())
 
-    def _apply_pattern(self, pattern, span):
-        """Set workshift labels from a pattern.
-        
-        Pattern application is repeated in cycles until the end of the span 
-        is reached. If `span.skip_left`>0, then the respective number of
-        idle iterations through pattern is done before a label is set for the 
-        first workshift of the span. The value of `span.skip_right` 
-        is currently ignored (reserved for future support of pattern 
-        application done in reverse).
-
-        Parameters
-        ----------
-        pattern : Iterable of labels
-        span : Subframe
-         
-        Returns
-        -------
-        None
-        
-        Note
-        ----
-        Nothing is returned; the timeline is modified in-place.
-        
-        If `pattern` is empty, timeline elements in the span retain default 
-        labels or NaN if no default label has been set.
-        """
-        # TODO: support both directions (set direction in Organizer?)
-        if span.skip_left < 0:
-            raise OutOfBoundsError("Attempted to apply forward pattern to {}, "
-                                   "where left dangle could not be "
-                                   "calculated".format(span))
-        pattern_iterator = _skiperator(pattern,
-                                       skip=span.skip_left)
-        try:
-            self._wsband.loc[span.first: span.last] = [
-                next(pattern_iterator)
-                for i in range(span.first, span.last + 1)
-            ]
-        except StopIteration:
-            pass
-
-        # THIS VERSION IS 100 TIMES SLOWER!!!
-        # for i in range(span.first, span.last+1):
-        #     try:
-        #         self.iloc[i] = next(pattern_iterator)
-        #     except StopIteration:
-        #         raise IndexError('Timeline pattern exhausted since '
-        #                          '{}'.format(i))
-
-    def _organize(self, organizer, span=None):
-        """Mark up the frame to create workshifts.
-        
-        Partition the specified span of the frame into workshifts and set 
-        workshift labels as prescribed by `organizer`.
-
-        Parameters
-        ----------
-        organizer : Organizer 
-        span : _Span
-            
-        Returns
-        -------
-        None
-        
-        Note
-        ----
-        Nothing is returned; the timeline is modified in-place.
-        """
-        if span is None:
-            span = _Span(0, len(self.frame) - 1)
-        span_seq = []
-        # timer0 = timeit.default_timer()
-        if organizer.marker is not None:
-            span_seq = self.frame.partition_with_marker(span, organizer.marker)
-        if organizer.marks is not None:
-            span_seq = self.frame.partition_at_marks(span, organizer.marks)
-        # structure_iterator = _skiperator(organizer.structure,
-        #                                  skip=span.skip_left)
-        structure_iterator = cycle(organizer.structure)
-        # timer1 = timeit.default_timer()
-        # timer2 = None
-        # TODO: SPEED UP.
-        # This loop takes 0.7s for 100 Years Standard Week 8x5
-        for span, layout in zip(span_seq, structure_iterator):
-            # if timer2 is None: timer2 = timeit.default_timer()
-
-            if isinstance(layout, Organizer):
-                self._organize(layout, span)
-            elif _is_iterable(layout):
-                self._apply_pattern(layout, span)
-            else:
-                # make compound workshift from the span, use layout as label
-                # self._wsband.iloc[span.first] = layout
-                # self._wsband.iloc[span.first+1: span.last+1] = np.nan
-                self._wsband.loc[span.first] = layout
-                self._wsband.drop(index=np.arange(span.first+1,
-                                                  span.last+1), inplace=True)
-                self._frameband.iloc[span.first:
-                                     span.last+1] = span.first
-        # post processing
-        # self._wsband.dropna(inplace=True)
-        # timer3 = timeit.default_timer()
-        # print "_organize ({},{})\n\tsplit: {:.5f}\n\tstructure init: {:.5f}" \
-        #     "\n\tstructure run: {:.5f}".format(span_first, span_last,
-        #                     timer1-timer0, timer2-timer1, timer3-timer2)
 
     def to_dataframe(self, first_ws=None, last_ws=None):
         """Convert (a part of) timeline into `pandas.Dataframe`.
