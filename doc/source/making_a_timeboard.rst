@@ -814,7 +814,7 @@ To accommodate periods of varying length you need to use compound workshifts. A 
 
 .. note:: See also :ref:`Compound Workshifts <compound-workshifts-section>` section in *Data Model* for the discussion about why and when you need compound workshifts.
 
-Compound workshift is created from a span when a corresponding element of `structure` is neither a pattern nor an organizer. The value of such element is considered the label for the compound workshift. The workshift will consists of all base units of the corresponding span. ::
+Compound workshift is created from a span when a corresponding element of `structure` is neither a pattern nor an organizer. The value of such element is considered the label for the compound workshift. The workshift consists of all base units of the corresponding span. ::
 
     >>> day_parts = tb.Marker(each='D', 
     ...                    at=[{'hours':2}, {'hours':8}, {'hours':18}])

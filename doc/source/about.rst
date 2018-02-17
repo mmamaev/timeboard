@@ -2,23 +2,26 @@
 About timeboard
 ***************
 
-:py:mod:`timeboard` performs calendar calculations over business schedules such as business days or work shifts.
+:py:mod:`timeboard` performs calendar calculations over schedules of work periods. A standard business day calendar is a common example of such schedule.
 
 Examples of problems solved by :py:mod:`timeboard`: 
 
     - If we have 20 business days to complete the project, when will be the deadline? 
 
-    - If a person was employed from November 15 to December 22, how many month's salaries the company owes them?
+    - If a person was employed from November 15 to December 22 and salary is paid monthly, how many month's salaries has the employee earned?
 
     - A 24x7 call center operates in shifts of varying length starting at 02:00, 08:00, and 18:00. An operator comes in on every fourth shift. How many hours has the operator worked in a specific month?
 
+    - With employees entering and leaving a company throughout a year, what was the average annual headcount?
+
 Based on pandas timeseries library, :py:mod:`timeboard` gives more flexibility than pandas's built-in business calendars. The key features of :py:mod:`timeboard` are:
 
-- Support of any time periods as elements of a calendar such as days, hours, multiple-hour shifts, etc.
+- You can choose any time frequencies (days, hours, multiple-hour shifts, etc.) as work periods.
 
-- Tools to build sophisticated schedules which can combine periodical patterns, seasonal variations, stop-and-resume behavior, etc.
+- You can create sophisticated schedules which can combine periodical patterns, seasonal variations, stop-and-resume behavior, etc.
 
-- Built-in standard business day calendars (in this version: for USA, UK, and Russia).
+- There are built-in standard business day calendars (in this version: for USA, UK, and Russia).
+
 
 
 Developer

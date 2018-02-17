@@ -14,25 +14,27 @@
 timeboard - business calendar calculations
 *********************************************
 
-`timeboard` performs calendar calculations over business schedules such as business days or work shifts.
+`timeboard` performs calendar calculations over schedules of work periods. A standard business day calendar is a common example of such schedule.
 
 .. pypi-start
 
 Examples of problems solved by `timeboard`: 
 
-    - If we have 20 business days to complete the project, when will be the deadline? 
+    - If we have 20 business days to complete the project when will be the deadline? 
 
-    - If a person was employed from November 15 to December 22, how many month's salaries the company owes them?
+    - If a person was employed from November 15 to December 22 and salary is paid monthly, how many month's salaries has the employee earned?
 
     - A 24x7 call center operates in shifts of varying length starting at 02:00, 08:00, and 18:00. An operator comes in on every fourth shift. How many hours has the operator worked in a specific month?
 
+    - With employees entering and leaving a company throughout a year, what was the average annual headcount?
+
 Based on pandas timeseries library, `timeboard` gives more flexibility than pandas's built-in business calendars. The key features of `timeboard` are:
 
-- Support of any time periods as elements of a calendar such as days, hours, multiple-hour shifts, etc.
+- You can choose any time frequencies (days, hours, multiple-hour shifts, etc.) as work periods.
 
-- Tools to build sophisticated schedules which can combine periodical patterns, seasonal variations, stop-and-resume behavior, etc.
+- You can create sophisticated schedules which can combine periodical patterns, seasonal variations, stop-and-resume behavior, etc.
 
-- Built-in standard business day calendars (in this version: for USA, UK, and Russia).
+- There are built-in standard business day calendars (in this version: for USA, UK, and Russia).
 
 
 Installation
@@ -60,17 +62,21 @@ The import statement to run all the examples:
 Quick Start Guide
 =================
 
-
-Firstly, you need to build a timeboard (calendar). The simplest way to do it is to use a preconfigured calendar which is shipped with the package. Let's take a regular business day calendar for the United States. 
+To get started you need to build a timeboard (calendar). The simplest way to do so is to use a preconfigured calendar which is shipped with the package. Let's take a regular business day calendar for the United States. 
 ::
 
     >>> import timeboard.calendars.US as US
     >>> clnd = US.Weekly8x5()
 
-Now you may perform queries and calculations over your timeboard.
+
+.. note:: If you need to build a custom calendar, for example, a schedule of shifts for a 24x7 call center, `Making a Timeboard <https://timeboard.readthedocs.io/en/latest/making_a_timeboard.html>`_ section of the documentation explains this topic in details. 
+
+Once you have got a timeboard, you may perform queries and calculations over it.
 
 
 **Is a certain date a business day?** 
+
+Calling `clnd()` with a single point in time produces an object representing a unit of the calendar (in this case, a day) that contains this point in time. Object of this type is called *workshift*.
 ::
 
     >>> ws = clnd('27 May 2017')
@@ -86,7 +92,7 @@ Indeed, it was a Saturday.
     >>> ws.rollforward()
     Workshift(6359) of 'D' at 2017-05-30
 
-It tells us that this calendar's unit (workshift) has the sequence number of 6359 and covers a period of 'D' (day) on 30 May 2017, which, by the way, was the Tuesday after the Memorial Day holiday.
+This calendar unit (workshift) has the sequence number of 6359 and takes a day of 30 May 2017, which, by the way, was the Tuesday after the Memorial Day holiday.
 
 
 **If we were to finish the project in 22 business days starting on 01 May 2017, when would be our deadline?** 
@@ -96,35 +102,33 @@ It tells us that this calendar's unit (workshift) has the sequence number of 635
     Workshift(6361) of 'D' at 2017-06-01
 
 
-**When was the first business day in 2017?** 
-::
-
-    >>> clnd('2017', period='A').first()
-    Workshift(6212) of 'D' at 2017-01-03
-
-
 **How many business days were in a certain month?** 
+
+Calling `clnd()` with two arguments produces an object representing an *interval* on the calendar.
 ::
 
-    >>> clnd('May 2017', period='M').count()
+    >>> may2017 = clnd('May 2017', period='M')
+    >>> may2017.count()
     22
 
 
 **How many days off?** 
 ::
 
-    >>> clnd('May 2017', period='M').count(duty='off')
+    >>> may2017.count(duty='off')
     9
 
 
 **How many working hours?**
 ::
 
-    >>> clnd('May 2017', period='M').worktime()
+    >>> may2017.worktime()
     176.0
 
 
-**If an employee was on staff from the 3rd to the 28th of April, 2017, how many business months did this person work in the company?** 
+**If an employee was on the staff from the 3rd to the 28th of April, 2017, how many business months did this person work in the company?** 
+
+Calling `clnd()` with a tuple of two points in time also produces an *interval*.
 ::
 
     >>> clnd(('03 Apr 2017','28 Apr 2017')).count_periods('M')
@@ -138,6 +142,27 @@ Indeed, the 1st, the 2nd, as well as the 29th and the 30th of April in 2017 fell
 
     >>> clnd(('03 May 2017','28 May 2017')).count_periods('M')
     0.8181818181818182
+
+**If an employee was on the staff from 01 Jan 2016 to 15 Jul 2017, what portion of the year 2017 this person has spent in the company?**
+::
+
+    >>> tenure = clnd(('01 Jan 2016', '15 Jul 2017'))
+    >>> y2017 = clnd('2017', period='A')
+    >>> tenure.what_portion_of(y2017)
+    0.5421686746987951
+
+**And what portion of 2016?**
+::
+
+    >>> y2016 = clnd('2016', period='A')
+    >>> tenure.what_portion_of(y2016)
+    1.0
+
+**In total, how many years this person has worked for the company?**
+::
+
+    >>> tenure.count_periods('A')
+    1.5421686746987953
 
 
 Links
