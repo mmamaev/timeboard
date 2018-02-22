@@ -1,6 +1,6 @@
 class OutOfBoundsError(LookupError):
     """Raise on an attempt to create or access an object which is outside 
-    timeboard's bounds."""
+    the bounds of the timeboard or the interval."""
     pass
 
 
@@ -8,6 +8,7 @@ class PartialOutOfBoundsError(ValueError):
     """Raise on an attempt to construct an object which partially lays within 
     the timeboard but extends beyond the timeboard's bounds."""
     pass
+
 
 class VoidIntervalError(ValueError):
     """Raise on an attempt to create an empty interval. This includes the case

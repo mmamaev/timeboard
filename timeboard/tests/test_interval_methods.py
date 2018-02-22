@@ -1,5 +1,5 @@
 import timeboard as tb
-from timeboard.interval import Interval
+from timeboard.interval import Interval, _VoidInterval
 from timeboard.workshift import Workshift
 from timeboard.exceptions import (OutOfBoundsError,
                                   PartialOutOfBoundsError,
@@ -145,12 +145,6 @@ class TestIntervalFirstLastNth(object):
             assert wsf._loc == loc
             assert wsl._loc == loc
             assert ws2._loc == loc
-
-    # def test_interval_nth_zero(self):
-    #     clnd = tb_12_days()
-    #     ivl = Interval(clnd, (1, 10), clnd.default_schedule)
-    #     with pytest.raises(ValueError):
-    #         ivl.nth(0)
 
     def test_interval_nth_no_on_duty(self):
         clnd = tb_12_days()
@@ -484,9 +478,9 @@ class TestIntervalCountPeriodsCornerCases(object):
         assert ivl.count_periods('H', duty='any') == 1.5 # (1/2 + 2/2)
 
 
-class TestIntervalWhatPartOf(object):
+class TestIntervalWhatPortionOf(object):
 
-    def test_ivl_whatpart_other_is_longer(self):
+    def test_ivl_whatportion_other_is_longer(self):
         clnd = tb_12_days()
         ivl = Interval(clnd, (2, 6))
         other = Interval(clnd, (2, 8))
@@ -504,7 +498,13 @@ class TestIntervalWhatPartOf(object):
         assert ivl.what_portion_of(other, duty='off') == 3.0 / 5
         assert ivl.what_portion_of(other, duty='any') == 4.0 / 7
 
-    def test_ivl_whatpart_other_is_the_same(self):
+    def test_ivl_whatportion_operator_div(self):
+        clnd = tb_12_days()
+        ivl = Interval(clnd, (2, 6))
+        other = Interval(clnd, (2, 8))
+        assert ivl / other == 1.0 / 2
+
+    def test_ivl_whatportion_other_is_the_same(self):
         clnd = tb_12_days()
         other = Interval(clnd, (2, 8))
         ivl = Interval(clnd, (2, 8))
@@ -512,7 +512,7 @@ class TestIntervalWhatPartOf(object):
         assert ivl.what_portion_of(other, duty='off') == 1
         assert ivl.what_portion_of(other, duty='any') == 1
 
-    def test_ivl_whatpart_other_is_shorter(self):
+    def test_ivl_whatportion_other_is_shorter(self):
         clnd = tb_12_days()
         other = Interval(clnd, (2, 8))
 
@@ -531,7 +531,7 @@ class TestIntervalWhatPartOf(object):
         assert ivl.what_portion_of(other, duty='off') == 1
         assert ivl.what_portion_of(other, duty='any') == 1
 
-    def test_ivl_whatpart_other_is_outside_ivl(self):
+    def test_ivl_whatportion_other_is_outside_ivl(self):
         clnd = tb_12_days()
         other = Interval(clnd, (2, 8))
         ivl = Interval(clnd, (9, 10))
@@ -539,7 +539,7 @@ class TestIntervalWhatPartOf(object):
         assert ivl.what_portion_of(other, duty='off') == 0
         assert ivl.what_portion_of(other, duty='any') == 0
 
-    def test_ivl_whatpart_intersection_lacks_duty(self):
+    def test_ivl_whatportion_intersection_lacks_duty(self):
         clnd = tb_12_days()
         other = Interval(clnd, (5, 9))
         ivl = Interval(clnd, (2, 6))
@@ -564,7 +564,13 @@ class TestIntervalWhatPartOf(object):
         assert ivl.what_portion_of(other, duty='off') == 1
         assert ivl.what_portion_of(other, duty='any') == 1
 
-    def test_ivl_whatpart_change_schedule(self):
+    def test_ivl_whatportion_of_void_ivl(self):
+        clnd = tb_12_days()
+        ivl = Interval(clnd, (2, 8))
+        void_ivl = _VoidInterval(clnd, (8, 2))
+        assert ivl.what_portion_of(void_ivl) == 0
+
+    def test_ivl_whatportion_change_schedule(self):
         clnd = tb_12_days()
         sdl = clnd.add_schedule('sdl', lambda label: label>1)
         sdl_other = clnd.add_schedule('sdl_other', lambda label: label>2)
@@ -797,7 +803,175 @@ class TestIntervalWorktime(object):
         # however there is not "off" duty in the interval
         assert clnd().worktime(duty='off') == 0
 
-    
+
+class TestIntervalOverlap(object):
+
+    def test_ivl_overlap_partial(self):
+        clnd = tb_12_days()
+        ivl = Interval(clnd, (2,8))
+        other = Interval(clnd, (6,12))
+        overlap = ivl.overlap(other)
+        assert overlap._loc == (6,8)
+        assert len(overlap) == 3
+
+        other = Interval(clnd, (1,3))
+        overlap = ivl.overlap(other)
+        assert overlap._loc == (2,3)
+        assert len(overlap) == 2
+
+    def test_ivl_overlap_total(self):
+        clnd = tb_12_days()
+        ivl = Interval(clnd, (2,8))
+        other = Interval(clnd, (0,12))
+        overlap = ivl.overlap(other)
+        assert overlap._loc == (2,8)
+        assert len(overlap) == 7
+
+    def test_ivl_overlap_within(self):
+        clnd = tb_12_days()
+        ivl = Interval(clnd, (2,8))
+        other = Interval(clnd, (3,7))
+        overlap = ivl.overlap(other)
+        assert overlap._loc == (3,7)
+        assert len(overlap) == 5
+
+    def test_ivl_overlap_with_self(self):
+        clnd = tb_12_days()
+        ivl = Interval(clnd, (2,8))
+        overlap = ivl.overlap(ivl)
+        assert overlap._loc == (2,8)
+        assert len(overlap) == 7
+
+    def test_ivl_overlap_one(self):
+        clnd = tb_12_days()
+        ivl = Interval(clnd, (2,8))
+        other = Interval(clnd, (1,2))
+        overlap = ivl.overlap(other)
+        assert overlap._loc == (2,2)
+        assert len(overlap) == 1
+
+        other = Interval(clnd, (2,2))
+        overlap = ivl.overlap(other)
+        assert overlap._loc == (2,2)
+        assert len(overlap) == 1
+
+    def test_ivl_overlap_void(self):
+        clnd = tb_12_days()
+        ivl = Interval(clnd, (2,8))
+        other = Interval(clnd, (9,10))
+        overlap = ivl.overlap(other)
+        assert overlap._loc == (9,8)
+        assert len(overlap) == 0
+        assert isinstance(overlap, _VoidInterval)
+
+        other = Interval(clnd, (1,1))
+        overlap = ivl.overlap(other)
+        assert overlap._loc == (2,1)
+        assert len(overlap) == 0
+        assert isinstance(overlap, _VoidInterval)
+
+        overlap_with_void = ivl.overlap(overlap)
+        assert overlap_with_void._loc == (2,1)
+        assert len(overlap_with_void) == 0
+        assert isinstance(overlap_with_void, _VoidInterval)
+
+    def test_ivl_overlap_change_schedule(self):
+        clnd = tb_12_days()
+        my_schedule = clnd.add_schedule('my_schedule', lambda x: True)
+        my_schedule_2 = clnd.add_schedule('my_schedule_2', lambda x: True)
+
+        ivl = Interval(clnd, (2,8), schedule=my_schedule)
+        other = Interval(clnd, (6,12))
+        overlap = ivl.overlap(other)
+        assert overlap._loc == (6,8)
+        assert overlap.schedule.name == 'my_schedule'
+
+        ivl = Interval(clnd, (2, 8))
+        other = Interval(clnd, (6,12), schedule=my_schedule)
+        overlap = ivl.overlap(other)
+        assert overlap._loc == (6,8)
+        assert overlap.schedule.name == clnd.default_schedule.name
+
+        ivl = Interval(clnd, (2,8), schedule=my_schedule)
+        other = Interval(clnd, (6,12))
+        overlap = ivl.overlap(other, schedule=my_schedule_2)
+        assert overlap._loc == (6,8)
+        assert overlap.schedule.name == 'my_schedule_2'
+
+        ivl = Interval(clnd, (2,8), schedule=my_schedule)
+        other = Interval(clnd, (10,12))
+        overlap = ivl.overlap(other)
+        assert isinstance(overlap, _VoidInterval)
+        assert overlap.schedule.name == 'my_schedule'
+
+    def test_ivl_overlap_mul(self):
+        clnd = tb_12_days()
+        ivl = Interval(clnd, (2,8))
+        other = Interval(clnd, (6,12))
+        overlap = ivl * other
+        assert overlap._loc == (6,8)
+        assert len(overlap) == 3
+
+
+class TestVoidIntervalMethods(object):
+
+    def test_void_ivl_misc_counts(self):
+        clnd = tb_12_days()
+        void_ivl = _VoidInterval(clnd, (8,2))
+        for method in [void_ivl.count, void_ivl.count_periods,
+                       void_ivl.total_duration, void_ivl.worktime]:
+            assert method() == 0
+            assert method('no matter', what_args='are given') == 0
+
+    def test_void_ivl_nth(self):
+        clnd = tb_12_days()
+        void_ivl = _VoidInterval(clnd, (8,2))
+        for method in [void_ivl.nth, void_ivl.first, void_ivl.nth]:
+            with pytest.raises(OutOfBoundsError):
+                method()
+
+    def test_void_ivl_overlap(self):
+        clnd = tb_12_days()
+        my_schedule = clnd.add_schedule('my_schedule', lambda x: True)
+        void_ivl = _VoidInterval(clnd, (8,2))
+        ivl = Interval(clnd, (2,8))
+        overlap = void_ivl.overlap(ivl, schedule=my_schedule)
+        assert isinstance(overlap, _VoidInterval)
+        assert overlap._loc == (8,2)
+        assert len(overlap) == 0
+        assert overlap.schedule.name == 'my_schedule'
+
+        overlap = void_ivl * ivl
+        assert overlap._loc == (8, 2)
+        assert len(overlap) == 0
+        assert overlap.schedule.name == clnd.default_schedule.name
+
+        overlap = void_ivl.overlap(void_ivl)
+        assert overlap._loc == (8,2)
+        assert len(overlap) == 0
+        assert overlap.schedule.name == clnd.default_schedule.name
+
+        void_ivl2 = _VoidInterval(clnd, (1,0), schedule=my_schedule)
+        overlap = void_ivl2.overlap(void_ivl)
+        assert isinstance(overlap, _VoidInterval)
+        assert overlap._loc == (1,0)
+        assert len(overlap) == 0
+        assert overlap.schedule.name == 'my_schedule'
+
+    def test_void_ivl_whatportion(self):
+        clnd = tb_12_days()
+        void_ivl = _VoidInterval(clnd, (8,2))
+        ivl = Interval(clnd, (2,8))
+        assert void_ivl.what_portion_of(ivl) == 0
+        assert void_ivl / ivl == 0
+        assert void_ivl.what_portion_of(void_ivl) == 0
+
+    @pytest.mark.xfail(reason='Not implemented')
+    def test_void_ivl_to_dataframe(self):
+        clnd = tb_12_days()
+        void_ivl = _VoidInterval(clnd, (8,2))
+        assert void_ivl.to_dataframe().empty
+
 
 
 

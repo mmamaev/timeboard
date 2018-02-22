@@ -1,5 +1,5 @@
 import timeboard as tb
-from timeboard.interval import Interval
+from timeboard.interval import Interval, _VoidInterval
 from timeboard.workshift import Workshift
 from timeboard.exceptions import (OutOfBoundsError, PartialOutOfBoundsError,
                                   VoidIntervalError)
@@ -19,7 +19,7 @@ def tb_12_days():
     #  0   1   0   0   1   0   0   1   0   0   1   0   0
 
 
-class TestIntervalLocatorFromReference:
+class TestIntervalLocatorFromReference(object):
 
     def test_interval_locator_default(self):
         clnd = tb_12_days()
@@ -139,7 +139,7 @@ class TestIntervalLocatorFromReference:
                 pd.Timestamp('08 Jan 2017 15:00'), False, False)
 
 
-class TestIntervalStripLocs:
+class TestIntervalStripLocs(object):
 
     def test_interval_strip_locs(self):
         clnd = tb_12_days()
@@ -213,7 +213,7 @@ class TestIntervalStripLocs:
             clnd.get_interval(closed=True)
 
 
-class TestIntervalConstructorWithTS:
+class TestIntervalConstructorWithTS(object):
 
     def test_interval_constructor_with_two_ts(self):
         clnd = tb_12_days()
@@ -223,7 +223,6 @@ class TestIntervalConstructorWithTS:
         assert ivl.end_time < datetime.datetime(2017, 1, 9, 0, 0, 0)
         assert ivl._loc == (2,8)
         assert len(ivl) == 7
-        assert ivl.labels == [0, 0, 1, 0, 0, 1, 0]
 
         ivlx = clnd(('02 Jan 2017 15:00', '08 Jan 2017 15:00'))
         assert ivlx._loc == ivl._loc
@@ -397,7 +396,7 @@ class TestIntervalConstructorWithTS:
         assert ivlx._loc == ivl._loc
 
 
-class TestIntervalConstructorDefault:
+class TestIntervalConstructorDefault(object):
 
     def test_interval_constructor_default(self):
         clnd = tb_12_days()
@@ -407,7 +406,6 @@ class TestIntervalConstructorDefault:
         assert ivl.end_time < datetime.datetime(2017, 1, 13, 0, 0, 0)
         assert ivl._loc == (0,12)
         assert len(ivl) == 13
-        assert ivl.labels == [0] + [1, 0, 0] * 4
 
     def test_interval_constructor_default_open_ended(self):
         clnd = tb_12_days()
@@ -430,7 +428,7 @@ class TestIntervalConstructorDefault:
             ivl = clnd.get_interval(closed='00')
 
 
-class TestIntervalConstructorFromPeriod:
+class TestIntervalConstructorFromPeriod(object):
 
     def test_interval_constructor_with_period(self):
         clnd = tb_12_days()
@@ -633,7 +631,7 @@ class TestIntervalConstructorFromPeriod:
         # workshift, an interval could be constructed
 
 
-class TestIntervalConstructorWithLength:
+class TestIntervalConstructorWithLength(object):
 
     def test_interval_constructor_with_length(self):
         clnd = tb_12_days()
@@ -710,7 +708,7 @@ class TestIntervalConstructorWithLength:
             clnd.get_interval('bad_timestamp', length=5)
 
 
-class TestIntervalConstructorBadArgs:
+class TestIntervalConstructorBadArgs(object):
 
     def test_interval_constructor_bad_arg_combinations(self):
         clnd = tb_12_days()
@@ -757,7 +755,7 @@ class TestIntervalConstructorBadArgs:
             clnd(length=1, period='W')
 
 
-class TestIntervalConstructorDirect:
+class TestIntervalConstructorDirect(object):
 
     def test_interval_direct_with_locs(self):
         clnd = tb_12_days()
@@ -771,13 +769,22 @@ class TestIntervalConstructorDirect:
     def test_interval_direct_with_ws(self):
         clnd = tb_12_days()
         ivl = Interval(clnd,
-                       (clnd('02 Jan 2017'), clnd('08 Jan 2017')),
+                       (Workshift(clnd, 2), Workshift(clnd, 8)),
                         clnd.default_schedule)
         assert ivl.start_time == datetime.datetime(2017, 1, 2, 0, 0, 0)
         assert ivl.end_time > datetime.datetime(2017, 1, 8, 23, 59, 59)
         assert ivl.end_time < datetime.datetime(2017, 1, 9, 0, 0, 0)
         assert ivl._loc == (2,8)
         assert len(ivl) == 7
+
+    def test_interval_direct_schedules(self):
+        clnd = tb_12_days()
+        my_schedule = clnd.add_schedule('my_schedule', lambda x: True)
+        ivl = Interval(clnd, (2, 8))
+        assert ivl.schedule.name == clnd.default_schedule.name
+        ivl = Interval(clnd, (2, 8), my_schedule)
+        assert ivl.schedule.name == 'my_schedule'
+
 
     def test_interval_direct_mixed_args(self):
         clnd = tb_12_days()
@@ -826,28 +833,157 @@ class TestIntervalConstructorDirect:
             Interval(clnd, (2,), clnd.default_schedule)
         with pytest.raises(TypeError):
             Interval(clnd, 'not a tuple', clnd.default_schedule)
+        # 'on_duty' is _Schedule.name but _Schedule is expected
+        with pytest.raises(TypeError):
+            _VoidInterval(clnd, (8, 2), 'on_duty')
+
 
 class TestIntervalIteration(object):
 
     def test_ivl_as_generator(self):
         clnd = tb_12_days()
-        ivl = Interval(clnd, (2, 4))
+        ivl = Interval(clnd, (1, 4))
         ws_locs=[]
         ws_sdl_is_ok=[]
         for ws in ivl:
             ws_locs.append(ws._loc)
             ws_sdl_is_ok.append(ws.schedule.name == clnd.default_schedule.name)
-        assert ws_locs == [2, 3, 4]
+        assert ws_locs == [1, 2, 3, 4]
         assert all(ws_sdl_is_ok)
 
     def test_ivl_as_generator_change_schedule(self):
         clnd = tb_12_days()
         my_schedule = clnd.add_schedule('my_schedule', selector=lambda x:x>1)
-        ivl = Interval(clnd, (2, 4), schedule=my_schedule)
+        ivl = Interval(clnd, (1, 4), schedule=my_schedule)
         ws_locs=[]
         ws_sdl_is_ok=[]
         for ws in ivl:
             ws_locs.append(ws._loc)
             ws_sdl_is_ok.append(ws.schedule.name == my_schedule.name)
-        assert ws_locs == [2, 3, 4]
+        assert ws_locs == [1, 2, 3, 4]
         assert all(ws_sdl_is_ok)
+
+    def test_ivl_workshift_generator(self):
+        clnd = tb_12_days()
+        ivl = Interval(clnd, (1, 4))
+
+        ws_locs=[]
+        for ws in ivl.workshifts():
+            ws_locs.append(ws._loc)
+        assert ws_locs == [1, 4]
+
+        ws_locs=[]
+        for ws in ivl.workshifts(duty='off'):
+            ws_locs.append(ws._loc)
+        assert ws_locs == [2, 3]
+
+        ws_locs=[]
+        for ws in ivl.workshifts(duty='any'):
+            ws_locs.append(ws._loc)
+        assert ws_locs == [1, 2, 3, 4]
+
+    def test_ivl_workshift_generator_no_such_duty(self):
+        clnd = tb_12_days()
+        ivl = Interval(clnd, (2, 3))
+        assert list(ivl.workshifts()) == []
+        all_on = clnd.add_schedule('all_on', lambda x: True)
+        ivl = Interval(clnd, (2, 3), schedule=all_on)
+        assert list(ivl.workshifts(duty='off')) == []
+
+    def test_workshift_generator_change_schedule(self):
+        clnd = tb_12_days()
+        all_on = clnd.add_schedule('all_on', lambda x: True)
+        ivl = Interval(clnd, (1, 4))
+        ws_locs=[]
+        ws_sdl_is_ok=[]
+        for ws in ivl.workshifts():
+            ws_locs.append(ws._loc)
+            ws_sdl_is_ok.append(ws.schedule.name == clnd.default_schedule.name)
+        assert ws_locs == [1, 4]
+        assert all(ws_sdl_is_ok)
+
+        ws_locs=[]
+        ws_sdl_is_ok=[]
+        for ws in ivl.workshifts(schedule=all_on):
+            ws_locs.append(ws._loc)
+            ws_sdl_is_ok.append(ws.schedule.name == all_on.name)
+        assert ws_locs == [1, 2, 3, 4]
+        assert all(ws_sdl_is_ok)
+
+
+class TestVoidInterval(object):
+
+    def test_void_interval_with_locs(self):
+        clnd = tb_12_days()
+        ivl = _VoidInterval(clnd, (8, 2), clnd.default_schedule)
+        assert pd.isnull(ivl.start_time)
+        assert pd.isnull(ivl.end_time)
+        assert ivl._loc == (8,2)
+        assert len(ivl) == 0
+
+    def test_void_interval_with_ws(self):
+        clnd = tb_12_days()
+        ivl = _VoidInterval(clnd,
+                            (Workshift(clnd, 8), Workshift(clnd, 2)),
+                            clnd.default_schedule)
+        assert pd.isnull(ivl.start_time)
+        assert pd.isnull(ivl.end_time)
+        assert ivl._loc == (8,2)
+        assert len(ivl) == 0
+
+    def test_void_interval_mixed_args(self):
+        clnd = tb_12_days()
+        ivl = _VoidInterval(clnd, (Workshift(clnd, 8), 2),
+                            clnd.default_schedule)
+        assert pd.isnull(ivl.start_time)
+        assert pd.isnull(ivl.end_time)
+        assert ivl._loc == (8,2)
+        assert len(ivl) == 0
+
+    def test_void_interval_schedules(self):
+        clnd = tb_12_days()
+        my_schedule = clnd.add_schedule('my_schedule', lambda x: True)
+        ivl = _VoidInterval(clnd, (8, 2))
+        assert ivl.schedule.name == clnd.default_schedule.name
+        ivl = _VoidInterval(clnd, (8, 2), my_schedule)
+        assert ivl.schedule.name == 'my_schedule'
+
+    def test_void_interval_with_normal_locs(self):
+        clnd = tb_12_days()
+        with pytest.raises(VoidIntervalError):
+            _VoidInterval(clnd, (2, 8), clnd.default_schedule)
+
+    def test_voic_interval_OB_locs(self):
+        clnd = tb_12_days()
+        with pytest.raises(OutOfBoundsError):
+            _VoidInterval(clnd, (2, -1), clnd.default_schedule)
+        with pytest.raises(OutOfBoundsError):
+            _VoidInterval(clnd, (13, 8), clnd.default_schedule)
+        with pytest.raises(OutOfBoundsError):
+            _VoidInterval(clnd, (13, -1), clnd.default_schedule)
+        with pytest.raises(OutOfBoundsError):
+            _VoidInterval(clnd, (25, 13), clnd.default_schedule)
+
+    def test_void_ivl_iteration(self):
+        clnd = tb_12_days()
+        void_ivl = _VoidInterval(clnd, (8,2))
+        assert list(void_ivl) == []
+        assert list(void_ivl.workshifts()) == []
+        assert list(void_ivl.workshifts('no matter',
+                                        what_args = 'are given')) == []
+
+    def test_void_interval__bad_args(self):
+        clnd = tb_12_days()
+        with pytest.raises(AttributeError):
+            _VoidInterval('not a clnd', (8, 2), clnd.default_schedule)
+        with pytest.raises(TypeError):
+            _VoidInterval(clnd, (8.5, 2), clnd.default_schedule)
+        with pytest.raises(TypeError):
+            _VoidInterval(clnd, ('08 Jan 2017', 2), clnd.default_schedule)
+        with pytest.raises(IndexError):
+            _VoidInterval(clnd, (8,), clnd.default_schedule)
+        with pytest.raises(TypeError):
+            _VoidInterval(clnd, 'not a tuple', clnd.default_schedule)
+        # 'on_duty' is _Schedule.name but _Schedule is expected
+        with pytest.raises(TypeError):
+            _VoidInterval(clnd, (8, 2), 'on_duty')

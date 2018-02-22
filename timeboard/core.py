@@ -18,8 +18,11 @@ import six
 # import timeboard.when as when
 
 SMALLEST_TIMEDELTA = pd.Timedelta(1, unit='s')
-TIMELINE_DEL_TEMP_OBJECTS = True
+VOID_TIME = pd.NaT
 
+# `True` saves 7-10% of memory per Timeline;
+# `False` allows to test Timeline.__apply_pattern() (see tests/test_patterns.py)
+TIMELINE_DEL_TEMP_OBJECTS = True
 
 def get_timestamp(arg):
     try:
@@ -1072,7 +1075,6 @@ class _Timeline(object):
 
         self._wsband.iloc[list(amendments_located.keys())] = \
             list(amendments_located.values())
-
 
     def to_dataframe(self, first_ws=None, last_ws=None):
         """Convert (a part of) timeline into `pandas.Dataframe`.

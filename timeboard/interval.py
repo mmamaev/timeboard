@@ -3,10 +3,67 @@ from .exceptions import (OutOfBoundsError,
                          VoidIntervalError,
                          UnacceptablePeriodError)
 from .workshift import Workshift
-from .core import _Frame, _Schedule, get_period
+from .core import _Frame, _Schedule,  VOID_TIME
 
 
-class Interval(object):
+class _BaseInterval(object):
+    """Parent class for Interval and VoidInternal"""
+    def __init__(self, timeboard, bounds, schedule=None):
+
+        def handle_bound(bound):
+            if isinstance(bound, Workshift):
+                loc = bound._loc
+            elif isinstance(bound, int):
+                loc = bound
+            else:
+                raise TypeError('Interval bound = {}: expected integer or '
+                                'Workshift, received {}'.
+                                format(bound, type(bound)))
+            if not 0 <= loc < len(timeboard._timeline):
+                raise OutOfBoundsError(
+                    "Interval bound {} is outside timeboard {}".
+                    format(bound, timeboard.compact_str))
+            return loc
+
+        if not hasattr(bounds, '__getitem__'):
+            raise TypeError("`bounds` parameter must be list-like")
+
+        try:
+            bound0 = bounds[0]
+            bound1 = bounds[1]
+        except IndexError:
+            raise IndexError("`bounds` value must contain two items")
+
+        locs = (handle_bound(bound0), handle_bound(bound1))
+        self._tb = timeboard
+        self._loc = locs
+        try:
+            is_void = self.__class__.IS_VOID
+        except AttributeError:
+            is_void = False
+        if is_void:
+            if locs[0] <= locs[1]:
+                raise VoidIntervalError(
+                    'Attempted to instantiate void interval with valid '
+                    'locations:'
+                    ' {!r}'.format(locs))
+            self._length = 0
+        else:
+            if locs[0] > locs[1]:
+                raise VoidIntervalError(
+                    'Attempted to create empty interval with {!r}'.format(locs))
+            self._length = locs[1] - locs[0] + 1
+
+        if schedule is None:
+            self._schedule = timeboard.default_schedule
+        else:
+            self._schedule = schedule
+        if not isinstance(self._schedule, _Schedule):
+            raise TypeError('Wrong type of schedule. Expected _Schedule,'
+                            ' received {}'.format(type(schedule)))
+
+
+class Interval(_BaseInterval):
     """A sequence of workshifts within the timeboard.
     
     Interval is defined by two positions on the timeline which are
@@ -17,8 +74,9 @@ class Interval(object):
     Duty status of the workshifts within the interval is interpreted by the 
     given schedule.
     
-    In addition to the methods defined for intervals, you can use an interval 
-    as a generator that yields the workshifts.
+    In addition to the methods defined for intervals, you can use interval 
+    as a generator that yields the workshifts of the interval, from the
+    first to the last.
     
     Parameters
     ----------
@@ -46,8 +104,6 @@ class Interval(object):
     length : int >0
         Number of workshifts in the interval. You can also call `len()` 
         function for an interval which returns the same value. 
-    labels : list 
-        List of workshift labels in the interval.
     schedule : _Schedule
         Schedule used by interval's methods unless explicitly redefined in 
         the method call. Use `name` attribute of `schedule` to review its 
@@ -76,9 +132,6 @@ class Interval(object):
     The following operations consume memory to hold the data for 
     the entire interval.
        
-    >>> ivl.labels
-    [0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0]
-    
     >>> list(ivl)
     [Workshift(2) of 'D' at 2017-10-02,
      Workshift(3) of 'D' at 2017-10-03,
@@ -110,48 +163,9 @@ class Interval(object):
         calling `Interval()` constructor directly. Moreover, in many cases, 
         you can shortcut a :py:meth:`get_interval` call by calling 
         the instance of :py:class:`Timeboard` itself.
+    .workshifts
+        Return the generator that yields workshifts with the specified duty.
     """
-
-    def __init__(self, timeboard, bounds, schedule=None):
-
-        def handle_bound(bound):
-            if isinstance(bound, Workshift):
-                loc = bound._loc
-            elif isinstance(bound, int):
-                loc = bound
-            else:
-                raise TypeError('Interval bound = {}: expected integer or '
-                                'Workshift, received {}'.
-                                format(bound, type(bound)))
-            if not 0 <= loc < len(timeboard._timeline):
-                raise OutOfBoundsError(
-                    "Interval bound {} is outside timeboard {}".
-                    format(bound, timeboard.compact_str))
-            return loc
-
-        if not hasattr(bounds, '__getitem__'):
-            raise TypeError("`bounds` parameter must be list-like")
-
-        try:
-            bound0 = bounds[0]
-            bound1 = bounds[1]
-        except IndexError:
-            raise IndexError("`bounds` value must contain two items")
-
-        locs = (handle_bound(bound0), handle_bound(bound1))
-        if locs[0] > locs[1]:
-            raise VoidIntervalError('Attempted to create void interval with '
-                                    '{!r}'.format(locs))
-        self._tb = timeboard
-        self._loc = locs
-        self._length = self._loc[1] - self._loc[0] + 1
-        if schedule is None:
-            self._schedule = timeboard.default_schedule
-        else:
-            self._schedule = schedule
-        if not isinstance(self._schedule, _Schedule):
-            raise TypeError('Wrong type of schedule. Expected _Schedule,'
-                            ' received {}'.format(type(schedule)))
 
     def _repr_schedule_label(self):
         schedule_label = self.schedule.name
@@ -193,10 +207,6 @@ class Interval(object):
         return self._length
 
     @property
-    def labels(self):
-        return list(self._tb._timeline[self._loc[0]: self._loc[1]+1])
-
-    @property
     def schedule(self):
         return self._schedule
 
@@ -222,23 +232,6 @@ class Interval(object):
         pandas.DataFrame
         """
         return self._tb.to_dataframe(self._loc[0], self._loc[1])
-
-    def _ws_generator(self):
-        for i in range(self._loc[0], self._loc[1]+1):
-            yield Workshift(self._tb, i, schedule=self.schedule)
-
-    def __next__(self):
-        return next(self._ws_generator_activated)
-
-    def next(self):
-        return self.__next__()
-
-    def __iter__(self):
-        self._ws_generator_activated = self._ws_generator()
-        return self
-
-    def __len__(self):
-        return self._length
 
     def _find_my_bounds_in_idx(self, idx):
         # TODO: optimize this search
@@ -271,6 +264,68 @@ class Interval(object):
         else:
             duty_idx_bounds = self._loc
         return duty_idx, duty_idx_bounds
+
+    def workshifts(self, duty='on', schedule=None):
+        """
+        Return the generator that yields workshifts with the specified duty.
+        
+        The workshifts are yielded in order from the first to the last.
+        
+        Parameters
+        ----------
+        duty : {``'on'``, ``'off``', ``'any``'} , optional (default ``'on'``)
+            Duty of the workshifts to be yielded. If ``duty='on'``,
+            off duty workshifts are skipped, and vice versa. If ``duty='any'``,
+            every workshift in the interval is yielded.
+        schedule : _Schedule, optional
+            If `schedule` is not given, the interval's schedule is used.
+
+        Returns
+        -------
+        generator
+
+        Examples
+        --------
+        
+        >>> clnd = tb.Timeboard('D', '30 Sep 2017', '15 Oct 2017', layout=[0,1])
+        >>> ivl = tb.interval.Interval(clnd, (2,9))
+        >>> ivl
+        Interval((2, 9)): 'D' at 2017-10-02 -> 'D' at 2017-10-09 [8]
+        
+        >>> for ws in ivl.workshifts(): 
+        ...     print (ws.start_time, "\t", ws.label)    
+        2017-10-03 00:00:00 	 1
+        2017-10-05 00:00:00 	 1
+        2017-10-07 00:00:00 	 1
+        2017-10-09 00:00:00 	 1
+
+        >>> list(ivl.workshifts(duty='off'))
+        [Workshift(2) of 'D' at 2017-10-02,
+         Workshift(4) of 'D' at 2017-10-04,
+         Workshift(6) of 'D' at 2017-10-06,
+         Workshift(8) of 'D' at 2017-10-08]
+        """
+
+        if schedule is None:
+            schedule = self.schedule
+        duty_idx, duty_idx_bounds = self._get_duty_idx(duty, schedule)
+        if duty_idx_bounds[0] is None or duty_idx_bounds[1] is None:
+            raise StopIteration
+        for i in duty_idx[duty_idx_bounds[0] : duty_idx_bounds[1] + 1]:
+            yield Workshift(self._tb, i, schedule=schedule)
+
+    def __next__(self):
+        return next(self._ws_generator_activated)
+
+    def next(self):
+        return self.__next__()
+
+    def __iter__(self):
+        self._ws_generator_activated = self.workshifts(duty='any')
+        return self
+
+    def __len__(self):
+        return self.length
 
     def nth(self, n, duty='on', schedule=None):
         """Return n-th workshift with the specified duty in the interval.
@@ -309,6 +364,12 @@ class Interval(object):
         Workshift(4) of 'D' at 2017-10-04
         >>> ivl.nth(1, duty='any')
         Workshift(3) of 'D' at 2017-10-03
+        >>> ivl.nth(10)
+        -----------------------------------------------------------------------
+        OutOfBoundsError                      Traceback (most recent call last)
+          ...
+        OutOfBoundsError: Interval((2, 8)): 'D' at 2017-10-02 -> 'D' at 
+        2017-10-08 [7] contains not enough on-duty workshifts for n=10  
         """
         if schedule is None:
             schedule = self.schedule
@@ -326,8 +387,8 @@ class Interval(object):
         if (loc_in_duty_idx < duty_idx_bounds[0] or
                     loc_in_duty_idx > duty_idx_bounds[1]):
             return self._tb._handle_out_of_bounds(
-                "No {} {!r} workshifts in the interval {}".
-                format(n, duty, self.compact_str))
+                "{!r} contains not enough {}-duty workshifts for n={}".
+                format(self, duty, n))
 
         return Workshift(self._tb, duty_idx[loc_in_duty_idx], schedule)
 
@@ -412,6 +473,83 @@ class Interval(object):
             return 0
         else:
             return duty_idx_bounds[1] - duty_idx_bounds[0] + 1
+
+    def overlap(self, other, schedule=None):
+        """Create the interval that is the intersection of two intervals.
+        
+        Parameters
+        ----------
+        other : Interval
+        schedule : _Schedule, optional
+            The schedule to be attached to the created interval.
+            If `schedule` is not given, self's schedule is used. 
+            The schedule attached to `other` is ignored in any case.
+    
+        Returns
+        -------
+        Interval
+            The intersection of `self` and `other` intervals.
+        
+        Notes
+        -----
+        If the intervals do not overlap, a special object representing a void
+        interval is returned. You can call the same methods on a void interval 
+        as on a normal interval. Note that `start_time` and `end_time` 
+        properties of a void interval return the null value (`pandas.NaT`).
+        
+        You can also use `*` (multiplication) operator with two intervals 
+        to obtain their intersection. The resulting interval will get the
+        schedule of the first operand.
+        
+        Examples
+        --------
+        
+        >>> clnd = tb.Timeboard('D', '30 Sep 2017', '15 Oct 2017', layout=[0,1])
+        >>> ivl = tb.interval.Interval(clnd, (2,9))
+        >>> other = tb.interval.Interval(clnd, (8,11))
+        >>> ivl.overlap(other)
+        Interval((8, 9)): 'D' at 2017-10-08 -> 'D' at 2017-10-09 [2]
+        
+        The use of `*` operator:
+        
+        >>> ivl * other
+        Interval((8, 9)): 'D' at 2017-10-08 -> 'D' at 2017-10-09 [2]
+        
+        The case of no overlap:
+        
+        >>> other = tb.interval.Interval(clnd, (10,11))
+        >>> void_ivl = ivl.overlap(other)
+        >>> void_ivl
+        Interval ((10, 9)): void [0]
+        >>> len(void_ivl)
+        0
+        >>> void_ivl.count()
+        0
+        >>> list(void_ivl)
+        []
+        >>> void_ivl.start_time
+        NaT
+        >>> void_ivl.first(duty='any')
+        -----------------------------------------------------------------------
+        OutOfBoundsError                      Traceback (most recent call last)
+          ...
+        OutOfBoundsError: No workshifts in void interval Interval ((10, 9)): 
+        void [0]
+        
+        """
+        if schedule is None:
+            schedule = self.schedule
+        new_ivl_loc = (max(self._loc[0], other._loc[0]),
+                       min(self._loc[1], other._loc[1]))
+        try:
+            return Interval(self._tb, new_ivl_loc, schedule=schedule)
+        except VoidIntervalError:
+            return _VoidInterval(self._tb, new_ivl_loc, schedule=schedule)
+
+    def __mul__(self, other):
+        """``x * y`` is the same as ``x.overlap(y)``
+        """
+        return self.overlap(other)
 
     # noinspection PyPep8Naming
     def count_periods(self, freq, duty='on', schedule=None):
@@ -599,12 +737,17 @@ class Interval(object):
         duty : {``'on'``, ``'off'``, ``'any'``} , optional (default ``'on'``)
             Specify the duty of workshifts to be accounted for. 
         schedule : _Schedule, optional
-            If `schedule` is not given, the self's schedule is used. 
+            If `schedule` is not given, self's schedule is used. 
             The schedule attached to `other` is ignored in any case.
 
         Returns
         -------
         float
+        
+        Notes
+        -----
+        You can also use `/` (division) operator.  
+        ``x / y`` is the same as ``x.what_portion_of(y)``
 
         Examples
         --------
@@ -634,6 +777,12 @@ class Interval(object):
         >>> 3 / 7 # all days
         0.42857142857142855
         
+        Using `/` (division) operator calls `what_portion_of()` with the 
+        default parameter values (so, the duty is 'on'):
+        
+        >>> ivl / week1
+        0.4
+        
         `ivl` and `week2` do not overlap:
         
         >>> week2 = clnd('09 Oct 2017', period='W')
@@ -659,24 +808,25 @@ class Interval(object):
         >>> weekend.what_portion_of(week1, duty='off')
         1.0
         """
-
         if schedule is None:
             schedule = self.schedule
 
-        if self._loc[0] > other._loc[1] or self._loc[1] < other._loc[0]:
-            return 0.0
-
-        intersection = Interval(self._tb,
-                                (max(self._loc[0], other._loc[0]),
-                                 min(self._loc[1], other._loc[1])),
-                                schedule=schedule
-                                )
-
+        intersection = self.overlap(other, schedule=schedule)
         x_duty_count = intersection.count(duty=duty)
         if x_duty_count == 0:
             return 0.0
         else:
             return x_duty_count / other.count(duty=duty, schedule=schedule)
+
+    def __truediv__(self, other):
+        """``x / y`` is the same as ``x.what_portion_of(y)``
+        """
+        return self.what_portion_of(other)
+
+    def __div__(self, other):
+        """``x / y`` is the same as ``x.what_portion_of(y)``
+        """
+        return self.what_portion_of(other)
 
     def _sum_labels(self, duty='on', schedule=None):
         """Return the sum of labels of workshifts with the specified duty.
@@ -862,3 +1012,78 @@ class Interval(object):
             raise RuntimeError("Unrecognized worktime_source={!r}".
                                format(self._tb.worktime_source))
         return result
+
+
+class _VoidInterval(Interval):
+    """
+    Empty interval containing no workshifts.
+    
+    `_VoidInterval` is returned by `Interval.overlap()` when the intervals 
+    do not overlap. It is not supposed to be instantiated directly. 
+    
+    An attempt to create an empty interval with `Timeboard.get_interval()` or 
+    by calling `Interval()` constructor will raise `VoidIntervalError`.
+    
+    Attributes
+    ----------
+    start_time : `pandas.NaT`
+    end_time : `pandas.NaT`
+    length : 0
+    schedule : _Schedule
+        Schedule is retained for the attribute compatibility with normal 
+        intervals.
+
+    """
+
+    IS_VOID = True
+
+    @property
+    def compact_str(self):
+        return "Interval ({!r}{}): void [0]".format(
+            self._loc, self._repr_schedule_label())
+
+    def __repr__(self):
+        return self.compact_str
+
+    def __str__(self):
+        return self.compact_str
+
+    @property
+    def start_time(self):
+        return VOID_TIME
+
+    @property
+    def end_time(self):
+        return VOID_TIME
+
+    def to_dataframe(self):
+        raise NotImplementedError
+
+    def workshifts(self, *args, **kwargs):
+        raise StopIteration
+        yield
+
+    def nth(self, *args, **kwargs):
+        return self._tb._handle_out_of_bounds(
+            "No workshifts in void interval {}".
+            format(self.compact_str))
+
+    def count(self, *args, **kwargs):
+        return 0
+
+    def overlap(self, other, schedule=None):
+        if schedule is None:
+            schedule = self.schedule
+        return _VoidInterval(self._tb, self._loc, schedule=schedule)
+
+    def count_periods(self, *args, **kwargs):
+        return 0.0
+
+    def what_portion_of(self, other, *args, **kwargs):
+        return 0.0
+
+    def total_duration(self, *args, **kwargs):
+        return 0
+
+    def worktime(self, *args, **kwargs):
+        return 0.0
