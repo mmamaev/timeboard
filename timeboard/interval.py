@@ -145,7 +145,7 @@ class Interval(_BaseInterval):
     >>> print(ivl)
     Interval((2, 9)): 'D' at 2017-10-02 -> 'D' at 2017-10-09 [8]
     <BLANKLINE>
-         workshift      start  duration        end  label  on_duty
+            ws_ref      start  duration        end  label  on_duty
     loc                                                           
     2   2017-10-02 2017-10-02         1 2017-10-02    0.0    False
     3   2017-10-03 2017-10-03         1 2017-10-03    1.0     True
@@ -910,7 +910,7 @@ class Interval(_BaseInterval):
         >>> print (ivl)
         Interval((0, 3)): 3x'D' at 2017-09-30 -> 3x'D' at 2017-10-09 [4]
         <BLANKLINE>
-             workshift      start  duration        end  label  on_duty
+                ws_ref      start  duration        end  label  on_duty
         loc                                                           
         0   2017-09-30 2017-09-30         3 2017-10-02    0.0    False
         1   2017-10-03 2017-10-03         4 2017-10-06    1.0     True
@@ -972,7 +972,7 @@ class Interval(_BaseInterval):
         >>> print (ivl)
         Interval((1, 3)): 'D' at 2017-10-01 -> 'D' at 2017-10-03 [3]
         <BLANKLINE>
-             workshift      start  duration        end  label  on_duty
+                ws_ref      start  duration        end  label  on_duty
         loc                                                           
         1   2017-10-01 2017-10-01         1 2017-10-01    8.0     True
         2   2017-10-02 2017-10-02         1 2017-10-02    4.0    False

@@ -62,7 +62,7 @@ class Workshift(object):
     >>> print(ws)
     Workshift(1) of 'D' at 2017-10-01
     <BLANKLINE>
-         workshift      start  duration        end  label  on_duty
+            ws_ref      start  duration        end  label  on_duty
     loc                                                           
     1   2017-10-01 2017-10-01         1 2017-10-01    1.0     True
     """

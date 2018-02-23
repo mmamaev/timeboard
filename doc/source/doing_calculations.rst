@@ -218,7 +218,7 @@ Actually, the methods do not roll, they step. The distance is measured in a numb
     >>> print(clnd)
     Timeboard of 'D': 2017-09-30 -> 2017-10-11
     <BLANKLINE>
-         workshift      start  duration        end  label  on_duty
+            ws_ref      start  duration        end  label  on_duty
     loc                                                           
     0   2017-09-30 2017-09-30         1 2017-09-30    0.0    False
     1   2017-10-01 2017-10-01         1 2017-10-01    1.0     True
@@ -540,7 +540,7 @@ Consider the following timeboard::
     ...                     layout=[1])
     >>> print(clnd)
     <BLANKLINE>
-                  workshift               start  duration                 end
+                     ws_ref               start  duration                 end
     loc                                                                      
     0   2017-10-01 21:00:00 2017-10-01 21:00:00         1 2017-10-02 08:59:59
     1   2017-10-02 09:00:00 2017-10-02 09:00:00         1 2017-10-02 20:59:59
@@ -560,11 +560,11 @@ Note the change in 'workshift' column in the output below when ``workshift_ref='
 
     >>> clnd = tb.Timeboard('12H', '01 Oct 2017 21:00', '03 Oct 2017',
     ...                     layout=[1], 
-    ...                     workshift_ref='end')
+    ...                        ws_ref_ref='end')
     >>> print(clnd)
     Timeboard of '12H': 2017-10-01 21:00 -> 2017-10-02 21:00
     <BLANKLINE>
-                  workshift               start  duration                 end
+                     ws_ref               start  duration                 end
     loc                                                                      
     0   2017-10-02 08:59:59 2017-10-01 21:00:00         1 2017-10-02 08:59:59
     1   2017-10-02 20:59:59 2017-10-02 09:00:00         1 2017-10-02 20:59:59
@@ -593,7 +593,7 @@ However meaningless, this operation is handled according to the same logic of at
     >>> print(ivl)
     Interval((2, 2)): 'D' at 2017-10-02 -> 'D' at 2017-10-02 [1]
     <BLANKLINE>
-         workshift      start  duration        end  label  on_duty
+            ws_ref      start  duration        end  label  on_duty
     loc                                                           
     2   2017-10-02 2017-10-02         1 2017-10-02    1.0     True
 
@@ -691,7 +691,7 @@ Create an interval for the examples::
     >>> print(ivl)
     Interval((2, 8)): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]
     <BLANKLINE>
-         workshift      start  duration        end  label  on_duty
+            ws_ref      start  duration        end  label  on_duty
     loc                                                           
     2   2017-10-02 2017-10-02         1 2017-10-02    0.0    False
     3   2017-10-03 2017-10-03         1 2017-10-03    2.0     True
@@ -757,7 +757,7 @@ Itertating over the interval
     >>> print(ivl)
     Interval((2, 8)): 'D' at 2017-10-02 -> 'D' at 2017-10-08 [7]
     <BLANKLINE>
-         workshift      start  duration        end  label  on_duty
+            ws_ref      start  duration        end  label  on_duty
     loc                                                           
     2   2017-10-02 2017-10-02         1 2017-10-02    0.0    False
     3   2017-10-03 2017-10-03         1 2017-10-03    2.0     True
@@ -825,7 +825,7 @@ By default, workshift's work time equals to workshift's duration::
     >>> print (ivl)
     Interval((1, 3)): 'D' at 2017-10-01 -> 'D' at 2017-10-03 [3]
     <BLANKLINE>
-         workshift      start  duration        end  label  on_duty
+            ws_ref      start  duration        end  label  on_duty
     loc                                                           
     1   2017-10-01 2017-10-01         1 2017-10-01    8.0     True
     2   2017-10-02 2017-10-02         1 2017-10-02    4.0    False

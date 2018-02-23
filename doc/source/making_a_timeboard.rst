@@ -47,7 +47,7 @@ Under the hood, the timeboard builds default schedule using default selector whi
     >>> print(clnd)
     Timeboard of 'D': 2017-10-01 -> 2017-10-10
     <BLANKLINE>
-         workshift      start  duration        end  label  on_duty
+            ws_ref      start  duration        end  label  on_duty
     loc                                                           
     0   2017-10-01 2017-10-01         1 2017-10-01    1.0     True
     1   2017-10-02 2017-10-02         1 2017-10-02    0.0    False
@@ -75,7 +75,7 @@ You use the optional parameter `amendments` to account for any disruptions of th
     >>> print(clnd)
     Timeboard of 'D': 2017-10-01 -> 2017-10-10
     <BLANKLINE>
-         workshift      start  duration        end  label  on_duty
+            ws_ref      start  duration        end  label  on_duty
     loc                                                           
     0   2017-10-01 2017-10-01         1 2017-10-01      1     True
     1   2017-10-02 2017-10-02         1 2017-10-02      0    False
@@ -110,7 +110,7 @@ workshift_ref : {``"start"`` | ``"end"``}, optional (default ``"start"``)
     Define what point in time will be used to represent a workshift. 
     The respective point in time will be returned by :py:meth:`.Workshift.to_timestamp`. Available  options: ``"start"`` to use the start time of the workshift, ``"end"`` to use the end time. 
 
-    When printing a timeboard, the workshift reference time is shown in "workshift" column.
+    When printing a timeboard, the workshift reference time is shown in "ws_ref" column.
 
     Workshift reference time is used to determine to which calendar period the workshift belongs if the workshift straddles a boundary of the calendar period. This is used by :py:meth:`.Interval.count_periods`.
 
@@ -143,7 +143,7 @@ Operators in a 24x7 call center work in three 8-hour shifts starting at 10:00, 1
     >>> print(clnd)
     Timeboard of '8H': 2017-10-01 02:00 -> 2017-10-04 18:00
     <BLANKLINE>
-                  workshift ...                  end  label  on_duty
+                     ws_ref ...                  end  label  on_duty
     loc                     ...                                     
     0   2017-10-01 02:00:00 ...  2017-10-01 09:59:59      A     True
     1   2017-10-01 10:00:00 ...  2017-10-01 17:59:59      B     True
@@ -175,7 +175,7 @@ To find out which workshifts are on duty for a team labeled with a particular sy
     >>> print(clnd)
     Timeboard of '8H': 2017-10-01 02:00 -> 2017-10-04 18:00
     <BLANKLINE>
-                  workshift ...                 end  label  on_duty   team_A
+                     ws_ref ...                 end  label  on_duty   team_A
     loc                     ...                                             
     0   2017-10-01 02:00:00 ... 2017-10-01 09:59:59      A     True     True
     1   2017-10-01 10:00:00 ... 2017-10-01 17:59:59      B     True    False
@@ -292,7 +292,7 @@ The resulting calendar is printed below. ::
     >>> print(clnd)
     Timeboard of 'D': 2017-10-01 -> 2017-10-12
     <BLANKLINE>
-         workshift      start  duration        end  label  on_duty
+            ws_ref      start  duration        end  label  on_duty
     loc                                                           
     0   2017-10-01 2017-10-01         1 2017-10-01    0.0    False
     1   2017-10-02 2017-10-02         1 2017-10-02    1.0     True
@@ -321,7 +321,7 @@ Consider a schedule of workshifts in a car dealership. A mechanic works on Monda
     >>> print(clnd)
     Timeboard of 'D': 2017-10-01 -> 2017-10-22
     <BLANKLINE>
-         workshift      start  duration        end  label  on_duty
+            ws_ref      start  duration        end  label  on_duty
     loc                                                           
     0   2017-10-01 2017-10-01         1 2017-10-01    1.0     True
     1   2017-10-02 2017-10-02         1 2017-10-02    0.0    False
@@ -363,7 +363,7 @@ The example below illustrates the behavior of undersized patterns. It shows the 
     >>> print(clnd)
     Timeboard of 'D': 2017-10-01 -> 2017-10-12
     <BLANKLINE>
-         workshift      start  duration        end  label  on_duty
+            ws_ref      start  duration        end  label  on_duty
     loc                                                           
     0   2017-10-01 2017-10-01         1 2017-10-01    1.0     True
     1   2017-10-02 2017-10-02         1 2017-10-02    1.0     True
@@ -403,7 +403,7 @@ On the inner level, each season is partitioned into weeks by `winter` or `summer
     >>> print(clnd)
     Timeboard of 'D': 2015-11-01 -> 2017-10-31
     <BLANKLINE>
-         workshift      start  duration        end  label  on_duty
+            ws_ref      start  duration        end  label  on_duty
     loc                                                           
     0   2015-11-01 2015-11-01         1 2015-11-01    0.0    False
     1   2015-11-02 2015-11-02         1 2015-11-02    0.0    False
@@ -495,7 +495,7 @@ As the timeboard is too long, we will print only intervals around the marks. ::
     >>> print(clnd(('20 Apr 2017','10 May 2017')))
     Interval((840, 860)): 'D' at 2017-04-20 -> 'D' at 2017-05-10 [21]
     <BLANKLINE>
-         workshift      start  duration        end  label  on_duty
+            ws_ref      start  duration        end  label  on_duty
     loc                                                           
     840 2017-04-20 2017-04-20         1 2017-04-20    1.0     True
     841 2017-04-21 2017-04-21         1 2017-04-21    0.0    False
@@ -522,7 +522,7 @@ As the timeboard is too long, we will print only intervals around the marks. ::
     >>> print(clnd(('04 Sep 2017','24 Sep 2017')))
     Interval((977, 997)): 'D' at 2017-09-04 -> 'D' at 2017-09-24 [21]
     <BLANKLINE>
-         workshift      start  duration        end  label  on_duty
+            ws_ref      start  duration        end  label  on_duty
     loc                                                           
     977 2017-09-04 2017-09-04         1 2017-09-04    0.0    False
     978 2017-09-05 2017-09-05         1 2017-09-05    1.0     True
@@ -634,7 +634,7 @@ The museum's summer season starts on a Tuesday after the first Monday in May and
     >>> print(clnd(('30 Apr 2012','15 May 2012')))
     Interval((120, 135)): 'D' at 2012-04-30 -> 'D' at 2012-05-15 [16]
     <BLANKLINE>
-         workshift      start  duration        end  label  on_duty
+            ws_ref      start  duration        end  label  on_duty
     loc                                                           
     120 2012-04-30 2012-04-30         1 2012-04-30    0.0    False
     121 2012-05-01 2012-05-01         1 2012-05-01    0.0    False
@@ -659,7 +659,7 @@ Note that 1 May 2012 was Tuesday, so the Tuesday after the first Monday was 8 Ma
     >>> print(clnd(('23 Sep 2012','07 Oct 2012')))
     Interval((266, 280)): 'D' at 2012-09-23 -> 'D' at 2012-10-07 [15]
     <BLANKLINE>
-         workshift      start  duration        end  label  on_duty
+            ws_ref      start  duration        end  label  on_duty
     loc                                                           
     266 2012-09-23 2012-09-23         1 2012-09-23    1.0     True
     267 2012-09-24 2012-09-24         1 2012-09-24    0.0    False
@@ -698,7 +698,7 @@ The days of the recess are labeled with ``-1`` to differentiate them from the re
     >>> print(clnd(('07 Jul 2016','17 Jul 2016')))
     Interval((188, 198)): 'D' at 2016-07-07 -> 'D' at 2016-07-17 [11]
     <BLANKLINE>
-         workshift      start  duration        end  label  on_duty
+            ws_ref      start  duration        end  label  on_duty
     loc                                                           
     188 2016-07-07 2016-07-07         1 2016-07-07    1.0     True
     189 2016-07-08 2016-07-08         1 2016-07-08    1.0     True
@@ -715,7 +715,7 @@ The days of the recess are labeled with ``-1`` to differentiate them from the re
     >>> print(clnd(('27 Aug 2016','06 Sep 2016')))
     Interval((239, 249)): 'D' at 2016-08-27 -> 'D' at 2016-09-06 [11]
     <BLANKLINE>
-         workshift      start  duration        end  label  on_duty
+            ws_ref      start  duration        end  label  on_duty
     loc                                                           
     239 2016-08-27 2016-08-27         1 2016-08-27   -1.0    False
     240 2016-08-28 2016-08-28         1 2016-08-28   -1.0    False
@@ -747,7 +747,7 @@ However, if you wish to retain the flow of administrator's schedule as if it was
     >>> print(clnd(('07 Jul 2016','17 Jul 2016')))
     Interval((188, 198)): 'D' at 2016-07-07 -> 'D' at 2016-07-17 [11]
     <BLANKLINE>
-         workshift      start  duration        end  label  on_duty
+            ws_ref      start  duration        end  label  on_duty
     loc                                                           
     188 2016-07-07 2016-07-07         1 2016-07-07    1.0     True
     189 2016-07-08 2016-07-08         1 2016-07-08    1.0     True
@@ -764,7 +764,7 @@ However, if you wish to retain the flow of administrator's schedule as if it was
     >>> print(clnd(('27 Aug 2016','08 Sep 2016')))
     Interval((239, 251)): 'D' at 2016-08-27 -> 'D' at 2016-09-08 [13]
     <BLANKLINE>
-         workshift      start  duration        end  label  on_duty
+            ws_ref      start  duration        end  label  on_duty
     loc                                                           
     239 2016-08-27 2016-08-27         1 2016-08-27   -1.0    False
     240 2016-08-28 2016-08-28         1 2016-08-28   -1.0    False
@@ -827,7 +827,7 @@ Compound workshift is created from a span when a corresponding element of `struc
     >>>print(clnd)
     Timeboard of 'H': 2017-10-02 08:00 -> 2017-10-07 01:00
     <BLANKLINE>
-                  workshift ... dur.                 end  label on_duty  team_A
+                     ws_ref ... dur.                 end  label on_duty  team_A
     loc                     ...                                                
     0   2017-10-02 08:00:00 ...   10 2017-10-02 17:59:59      A    True    True
     1   2017-10-02 18:00:00 ...    8 2017-10-03 01:59:59      B    True   False
@@ -875,7 +875,7 @@ Moreover, we will need a :py:class:`.RememberingPattern` to ensure that the orde
     >>> print(clnd)
     Timeboard of 'H': 2017-10-02 00:00 -> 2017-10-10 01:00
     <BLANKLINE>
-                  workshift ... dur.                 end label  on_duty  team_A
+                     ws_ref ... dur.                 end label  on_duty  team_A
     loc                     ...                                                
     0   2017-10-02 00:00:00 ...    2 2017-10-02 01:59:59     0    False   False
     1   2017-10-02 02:00:00 ...    6 2017-10-02 07:59:59     A     True    True
@@ -991,7 +991,7 @@ Let's go back to the example of the call center's timeboard with compound worksh
     >>> print(clnd)
     Timeboard of 'H': 2017-10-02 00:00 -> 2017-10-10 01:00
     <BLANKLINE>
-                  workshift ... dur.                 end label  on_duty  team_A
+                     ws_ref ... dur.                 end label  on_duty  team_A
     loc                     ...                                                
     0   2017-10-02 00:00:00 ...    2 2017-10-02 01:59:59     0    False   False
     1   2017-10-02 02:00:00 ...    6 2017-10-02 07:59:59     A     True    True
@@ -1025,7 +1025,7 @@ However, if the start of the timeboard is moved to 02:00 of Monday or any time a
     >>> print(clnd)
     Timeboard of 'H': 2017-10-02 02:00 -> 2017-10-10 01:00
     <BLANKLINE>
-                  workshift ... duration                 end label  on_duty
+                     ws_ref ... duration                 end label  on_duty
     loc                     ...                                            
     0   2017-10-02 20:00:00 ...      102 2017-10-07 01:59:59     0    False
     1   2017-10-07 02:00:00 ...        6 2017-10-07 07:59:59     C     True

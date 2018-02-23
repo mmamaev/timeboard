@@ -327,7 +327,7 @@ class Timeboard(object):
         Column           Explanation
         ================ =====================================================
         'loc'            zero-based position of the workshift on the timeline
-        'workshift'      the reference time of the workshift
+        'ws_ref'         the reference time of the workshift
         'start'          the start time of the workshift
         'end'            the start time of the workshift
         'duration'       the number of base units in the workshift
