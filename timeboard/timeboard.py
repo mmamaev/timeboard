@@ -236,7 +236,7 @@ class Timeboard(object):
             self._frame[-1])
 
     def __str__(self):
-        return self.compact_str + "\n\n{}".format(self.to_dataframe())
+        return self.compact_str + "\n\n{!r}".format(self.to_dataframe())
 
     @property
     def base_unit_freq(self):
@@ -357,7 +357,8 @@ class Timeboard(object):
             first_ws = 0
         if last_ws is None:
             last_ws = len(self._timeline) - 1
-        assert (0 <= first_ws <= last_ws)
+        assert ((0 <= first_ws < len(self._timeline)) and
+                (0 <= last_ws < len(self._timeline)))
         df = self._timeline.to_dataframe(first_ws, last_ws)
         for activity, schedule in self._schedules.items():
             # TODO: refactor to use already computed duty indexes from _Schedule

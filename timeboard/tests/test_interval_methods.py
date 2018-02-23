@@ -965,16 +965,3 @@ class TestVoidIntervalMethods(object):
         assert void_ivl.what_portion_of(ivl) == 0
         assert void_ivl / ivl == 0
         assert void_ivl.what_portion_of(void_ivl) == 0
-
-    @pytest.mark.xfail(reason='Not implemented')
-    def test_void_ivl_to_dataframe(self):
-        clnd = tb_12_days()
-        void_ivl = _VoidInterval(clnd, (8,2))
-        assert void_ivl.to_dataframe().empty
-
-
-
-
-
-
-

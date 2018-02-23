@@ -1056,9 +1056,6 @@ class _VoidInterval(Interval):
     def end_time(self):
         return VOID_TIME
 
-    def to_dataframe(self):
-        raise NotImplementedError
-
     def workshifts(self, *args, **kwargs):
         raise StopIteration
         yield

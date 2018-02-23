@@ -911,6 +911,19 @@ class TestIntervalIteration(object):
         assert all(ws_sdl_is_ok)
 
 
+class TestIntervalToDataFrame(object):
+
+    def test_ivl_to_dataframe(self):
+        clnd = tb_12_days()
+        clnd.add_schedule('my_schedule', lambda x: True)
+        ivl = Interval(clnd, (2, 8))
+        clnd_df = clnd.to_dataframe(2, 8)
+        ivl_df = ivl.to_dataframe()
+        assert len(ivl_df) == len(ivl) == len(clnd_df)
+        assert list(ivl_df.columns) == list(clnd_df.columns)
+        assert 'my_schedule' in list(ivl_df.columns)
+
+
 class TestVoidInterval(object):
 
     def test_void_interval_with_locs(self):
@@ -948,7 +961,7 @@ class TestVoidInterval(object):
         ivl = _VoidInterval(clnd, (8, 2), my_schedule)
         assert ivl.schedule.name == 'my_schedule'
 
-    def test_void_interval_with_normal_locs(self):
+    def test_void_interval_fails_with_normal_locs(self):
         clnd = tb_12_days()
         with pytest.raises(VoidIntervalError):
             _VoidInterval(clnd, (2, 8), clnd.default_schedule)
@@ -971,6 +984,17 @@ class TestVoidInterval(object):
         assert list(void_ivl.workshifts()) == []
         assert list(void_ivl.workshifts('no matter',
                                         what_args = 'are given')) == []
+
+    def test_void_ivl_to_dataframe(self):
+        clnd = tb_12_days()
+        clnd.add_schedule('my_schedule', lambda x: True)
+        ivl = Interval(clnd, (2, 8))
+        void_ivl = _VoidInterval(clnd, (8, 2))
+        ivl_df_columns = list(ivl.to_dataframe().columns)
+        void_ivl_df = void_ivl.to_dataframe()
+        assert void_ivl_df.empty
+        assert list(void_ivl_df.columns) == ivl_df_columns
+        assert 'my_schedule' in list(void_ivl_df.columns)
 
     def test_void_interval__bad_args(self):
         clnd = tb_12_days()

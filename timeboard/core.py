@@ -1112,7 +1112,7 @@ class _Timeline(object):
             first_ws = 0
         if last_ws is None:
             last_ws = len(self._wsband)-1
-        assert 0 <= first_ws <= last_ws < len(self)
+        assert (0 <= first_ws < len(self)) and (0 <= last_ws < len(self))
         if last_ws == len(self._wsband)-1:
             ws_bounds = np.concatenate((np.array(self._wsband.index[first_ws:]),
                                        [len(self.frame)]))
@@ -1127,14 +1127,14 @@ class _Timeline(object):
         else:
             ref_times = start_times
         data = {'loc': range(first_ws, last_ws+1),
-                'workshift': ref_times,
+                'ws_ref': ref_times,
                 'start': start_times,
                 'end': end_times,
                 'duration': durations,
                 'label': np.array(self.labels.iloc[first_ws:last_ws+1]),
                 }
         return pd.DataFrame(data=data,
-                            columns=['loc', 'workshift', 'start',
+                            columns=['loc', 'ws_ref', 'start',
                                      'duration', 'end', 'label']
                             ).set_index('loc')
 
