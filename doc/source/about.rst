@@ -2,7 +2,7 @@
 About timeboard
 ***************
 
-:py:mod:`timeboard` performs calendar calculations over schedules of work periods. A standard business day calendar is a common example of such schedule.
+:py:mod:`timeboard` creates schedules of work periods and performs calendar calculations over them. You can build standard business day calendars as well as a variety of other schedules, simple or complex.
 
 Examples of problems solved by :py:mod:`timeboard`: 
 
@@ -10,7 +10,9 @@ Examples of problems solved by :py:mod:`timeboard`:
 
     - If a person was employed from November 15 to December 22 and salary is paid monthly, how many month's salaries has the employee earned?
 
-    - A 24x7 call center operates in shifts of varying length starting at 02:00, 08:00, and 18:00. An operator comes in on every fourth shift. How many hours has the operator worked in a specific month?
+    - The above-mentioned person was scheduled to work Mondays, Tuesdays, Saturdays, and Sundays on odd weeks, and Wednesdays, Thursdays, and Fridays on even weeks. The question is the same.
+
+    - A 24x7 call center operates in shifts of varying length starting at 02:00, 08:00, and 18:00. An operator comes in on every fourth shift and is paid per shift. How many shifts has the operator sat in a specific month?
 
     - With employees entering and leaving a company throughout a year, what was the average annual headcount?
 

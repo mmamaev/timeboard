@@ -17,9 +17,11 @@ Welcome to timeboard's documentation!
    making_a_timeboard
    using_preconfigured
    doing_calculations
+   use_cases.ipynb
    release_notes
 
 * :ref:`genindex`
+
 .. * :ref:`modindex`
 .. * :ref:`search`
 

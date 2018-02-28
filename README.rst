@@ -14,7 +14,7 @@
 timeboard - business calendar calculations
 *********************************************
 
-`timeboard` performs calendar calculations over schedules of work periods. A standard business day calendar is a common example of such schedule.
+`timeboard` creates schedules of work periods and performs calendar calculations over them. You can build standard business day calendars as well as a variety of other schedules, simple or complex.
 
 .. pypi-start
 
@@ -24,7 +24,9 @@ Examples of problems solved by `timeboard`:
 
     - If a person was employed from November 15 to December 22 and salary is paid monthly, how many month's salaries has the employee earned?
 
-    - A 24x7 call center operates in shifts of varying length starting at 02:00, 08:00, and 18:00. An operator comes in on every fourth shift. How many hours has the operator worked in a specific month?
+    - The above-mentioned person was scheduled to work Mondays, Tuesdays, Saturdays, and Sundays on odd weeks, and Wednesdays, Thursdays, and Fridays on even weeks. The question is the same.
+
+    - A 24x7 call center operates in shifts of varying length starting at 02:00, 08:00, and 18:00. An operator comes in on every fourth shift and is paid per shift. How many shifts has the operator sat in a specific month?
 
     - With employees entering and leaving a company throughout a year, what was the average annual headcount?
 
@@ -62,6 +64,9 @@ The import statement to run all the examples:
 Quick Start Guide
 =================
 
+Set up a timeboard
+------------------
+
 To get started you need to build a timeboard (calendar). The simplest way to do so is to use a preconfigured calendar which is shipped with the package. Let's take a regular business day calendar for the United States. 
 ::
 
@@ -73,10 +78,12 @@ To get started you need to build a timeboard (calendar). The simplest way to do 
 
 Once you have got a timeboard, you may perform queries and calculations over it.
 
+Play with workshifts
+--------------------
+
+Calling a timeboard instance `clnd` with a single point in time produces an object representing a unit of the calendar (in this case, a day) that contains this point in time. Object of this type is called *workshift*.
 
 **Is a certain date a business day?** 
-
-Calling `clnd()` with a single point in time produces an object representing a unit of the calendar (in this case, a day) that contains this point in time. Object of this type is called *workshift*.
 ::
 
     >>> ws = clnd('27 May 2017')
@@ -92,7 +99,7 @@ Indeed, it was a Saturday.
     >>> ws.rollforward()
     Workshift(6359) of 'D' at 2017-05-30
 
-This calendar unit (workshift) has the sequence number of 6359 and takes a day of 30 May 2017, which, by the way, was the Tuesday after the Memorial Day holiday.
+The returned calendar unit (workshift) has the sequence number of 6359 and represents the day of 30 May 2017, which, by the way, was the Tuesday after the Memorial Day holiday.
 
 
 **If we were to finish the project in 22 business days starting on 01 May 2017, when would be our deadline?** 
@@ -101,10 +108,19 @@ This calendar unit (workshift) has the sequence number of 6359 and takes a day o
     >>> clnd('01 May 2017') + 22
     Workshift(6361) of 'D' at 2017-06-01
 
+This is the same as:
+::
+
+    >>> clnd('01 May 2017').rollforward(22)
+    Workshift(6361) of 'D' at 2017-06-01
+
+
+Play with intervals
+-------------------
+
+Calling ``clnd()`` with a different set of parameters produces an object representing an *interval* on the calendar. The interval below contains all workshifts of the months of May 2017.
 
 **How many business days were in a certain month?** 
-
-Calling `clnd()` with two arguments produces an object representing an *interval* on the calendar.
 ::
 
     >>> may2017 = clnd('May 2017', period='M')
@@ -126,42 +142,42 @@ Calling `clnd()` with two arguments produces an object representing an *interval
     176.0
 
 
-**If an employee was on the staff from the 3rd to the 28th of April, 2017, how many business months did this person work in the company?** 
+**If an employee was on the staff from April 3, 2017 to May 15, 2017, what portion of April did they spend with the company?** 
 
-Calling `clnd()` with a tuple of two points in time also produces an *interval*.
+Calling ``clnd()`` with a tuple of two points in time produces an interval containing all workshifts between these points, inclusively.
 ::
 
-    >>> clnd(('03 Apr 2017','28 Apr 2017')).count_periods('M')
+    >>> time_in_company = clnd(('03 Apr 2017','15 May 2017'))
+    >>> time_in_company.what_portion_of(clnd('Apr 2017', period='M'))
     1.0
 
-Indeed, the 1st, the 2nd, as well as the 29th and the 30th of April in 2017 fell on the weekends, therefore, having started on the 3rd and finished on the 28th, the employee checked out all the working days in the month.
+Indeed, the 1st and the 2nd of April in 2017 fell on the weekend, therefore, having started on the 3rd, the employee checked out all the working days in the month.
 
-
-**And if it were the same dates in May?** 
+**And what portion of May?** 
 ::
 
-    >>> clnd(('03 May 2017','28 May 2017')).count_periods('M')
-    0.8181818181818182
+    >>> time_in_company.what_portion_of(may2017)
+    0.5
 
-**If an employee was on the staff from 01 Jan 2016 to 15 Jul 2017, what portion of the year 2017 this person has spent in the company?**
+**How many days has the employee worked in May?**
+
+The multiplication operator returns the intersection of two intervals.
 ::
 
-    >>> tenure = clnd(('01 Jan 2016', '15 Jul 2017'))
-    >>> y2017 = clnd('2017', period='A')
-    >>> tenure.what_portion_of(y2017)
-    0.5421686746987951
+    >>> (time_in_company * may2017).count()
+    11
 
-**And what portion of 2016?**
+**How many hours?**
 ::
 
-    >>> y2016 = clnd('2016', period='A')
-    >>> tenure.what_portion_of(y2016)
-    1.0
+    >>> (time_in_company * may2017).worktime()
+    88
 
-**In total, how many years this person has worked for the company?**
+
+**If an employee was on the staff from 01 Jan 2016 to 15 Jul 2017, how many years this person has worked for the company?**
 ::
 
-    >>> tenure.count_periods('A')
+    >>> clnd(('01 Jan 2016', '15 Jul 2017')).count_periods('A')
     1.5421686746987953
 
 

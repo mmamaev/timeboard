@@ -8,6 +8,7 @@ graft timeboard
 
 graft doc/source
 prune doc/source/_build
+prune doc/source/.ipynb_checkpoints
 
 global-exclude *.py[co]
 global-exclude __pycache__

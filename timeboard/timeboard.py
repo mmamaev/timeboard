@@ -511,11 +511,11 @@ class Timeboard(object):
                 start on the first workshift of the timeboard. If the second 
                 element of the tuple is null, the interval will end on the 
                 last workshift of the timeboard.
-            
+
             length : parameter must be omitted
-            
+
             period : parameter must be omitted
-            
+
             
         2. Create an interval of a specific length starting from a 
         workshift referred to by a point in time.
@@ -594,7 +594,7 @@ class Timeboard(object):
               an object that implements `to_timestamp()` method)
             - tuple (`Timestamp`-like or null, `Timestamp`-like or null)
             - `pandas.Period`
-            
+  
         length : int !=0, optional
             Number of workshifts in the interval. 
         period : str, optional
@@ -618,7 +618,7 @@ class Timeboard(object):
             Schedule to be used in calculations with the interval unless a 
             schedule is explicitly redefined for a specific calculation. 
             By default, the timeboard's default schedule is used.
-                  
+        
         Returns
         -------
         :py:obj:`.Interval`
