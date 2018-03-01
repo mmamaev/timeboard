@@ -26,11 +26,12 @@ Based on pandas timeseries library, :py:mod:`timeboard` gives more flexibility t
 
 
 
-Developer
----------
+Contributing
+-------------
 
 :py:mod:`timeboard` is authored and maintained by Maxim Mamaev.
 
+Please use Github issues for the feedback.
 
 License
 -------

@@ -25,6 +25,10 @@ Welcome to timeboard's documentation!
 .. * :ref:`modindex`
 .. * :ref:`search`
 
+Downloads:
+
+* :download:`jupyter notebook <use_cases.ipynb>` with common use cases
+
 Links:
 
 * Github: https://github.com/mmamaev/timeboard
