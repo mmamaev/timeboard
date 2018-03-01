@@ -3,11 +3,15 @@
    :alt: timeboard logo
 
 .. image:: https://img.shields.io/travis/mmamaev/timeboard.svg
-   :alt: travis build status
+   :alt: Travis build status
    :target: https://travis-ci.org/mmamaev/timeboard
 
+.. image:: https://ci.appveyor.com/api/projects/status/github/mmamaev/timeboard?svg=true
+   :alt: AppVeyor build status
+   :target: https://ci.appveyor.com/project/mmamaev/timeboard
+
 .. image:: https://img.shields.io/readthedocs/timeboard.svg
-   :alt: readthedocs build status
+   :alt: Readthedocs build status
    :target: https://timeboard.readthedocs.io/
 
 *********************************************
