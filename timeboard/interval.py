@@ -101,7 +101,7 @@ class Interval(_BaseInterval):
         When the first workshift of the interval starts.
     end_time : Timestamp
         When the last workshift of the interval ends.
-    length : int >0
+    length : int
         Number of workshifts in the interval. You can also call `len()` 
         function for an interval which returns the same value. 
     schedule : _Schedule
@@ -203,7 +203,6 @@ class Interval(_BaseInterval):
 
     @property
     def length(self):
-        """Number of workshifts in the interval."""
         return self._length
 
     @property

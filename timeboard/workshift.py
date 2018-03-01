@@ -30,10 +30,12 @@ class Workshift(object):
         
     Attributes
     ----------
+    
     start_time : Timestamp
-        When the workshift starts.
+        When the workshift starts (the start time of workshift's first 
+        base unit).
     end_time : Timestamp
-        When the workshift ends.
+        When the workshift ends (the end time of workshift's last base unit).
     duration : int >0
         Number of base units in the workshift.
     label
@@ -117,19 +119,16 @@ class Workshift(object):
 
     @property
     def start_time(self):
-        """Timestamp of the start of the workshift"""
         # TODO: Refactor. _Timeline methods should not be called from this class
         return self._tb._timeline.get_ws_start_time(self._loc)
 
     @property
     def end_time(self):
-        """Timestamp of the end of the workshift"""
         # TODO: Refactor. _Timeline methods should not be called from this class
         return self._tb._timeline.get_ws_end_time(self._loc)
 
     @property
     def duration(self):
-        """Number of base units in the workshift"""
         # TODO: Refactor. _Timeline methods should not be called from this class
         return self._tb._timeline.get_ws_duration(self._loc)
 
