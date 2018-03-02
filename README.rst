@@ -14,6 +14,14 @@
    :alt: Readthedocs build status
    :target: https://timeboard.readthedocs.io/
 
+.. image:: https://img.shields.io/pypi/v/timeboard.svg
+   :alt: Version available on PyPI
+   :target: https://pypi.python.org/pypi/timeboard
+
+.. image:: https://img.shields.io/github/release/mmamaev/timeboard.svg
+   :alt: Release on Github
+   :target: https://github.com/mmamaev/timeboard/releases
+
 *********************************************
 timeboard - business calendar calculations
 *********************************************
