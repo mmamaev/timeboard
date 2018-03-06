@@ -274,7 +274,7 @@ class Interval(_BaseInterval):
         ----------
         duty : {``'on'``, ``'off``', ``'any``'} , optional (default ``'on'``)
             Duty of the workshifts to be yielded. If ``duty='on'``,
-            off duty workshifts are skipped, and vice versa. If ``duty='any'``,
+            off-duty workshifts are skipped, and vice versa. If ``duty='any'``,
             every workshift in the interval is yielded.
         schedule : _Schedule, optional
             If `schedule` is not given, the interval's schedule is used.
@@ -339,7 +339,7 @@ class Interval(_BaseInterval):
             duty). 
         duty : {``'on'``, ``'off``', ``'any``'} , optional (default ``'on'``)
             Duty of workshifts to be counted. If ``duty='on'``,
-            off duty workshifts are ignored, and vice versa. If ``duty='any'``,
+            off-duty workshifts are ignored, and vice versa. If ``duty='any'``,
             all workshifts are counted whatever the duty.
         schedule : _Schedule, optional
             If `schedule` is not given, the interval's schedule is used.
@@ -613,16 +613,16 @@ class Interval(_BaseInterval):
         The timeboard's `layout` defines that all workshifts taking place on 
         even hours are off duty, and those on odd hours are on duty. 
         The first workshift of the interval (01 October 11:00 - 11:59) is 
-        on duty. Hence, the interval contains 7 of 12 on duty workshifts 
-        of October 1, and all 12 on duty workshifts of October 2.
+        on duty. Hence, the interval contains 7 of 12 on-duty workshifts 
+        of October 1, and all 12 on-duty workshifts of October 2.
         
         >>> ivl.count_periods('D')
         1.5833333333333335
         >>> 7/12 + 12/12
         1.5833333333333335
          
-        The interval contains 6 of 12 off duty workshifts of October 1, 
-        and all 12 off duty workshifts of October 2. 
+        The interval contains 6 of 12 off-duty workshifts of October 1, 
+        and all 12 off-duty workshifts of October 2. 
         
         >>> ivl.count_periods('D', duty='off')
         1.5
@@ -802,7 +802,7 @@ class Interval(_BaseInterval):
         >>> weekend.what_portion_of(week1)
         0.0
         
-        However, `weekend` contains all off duty days of `week1`:
+        However, `weekend` contains all off-duty days of `week1`:
         
         >>> weekend.what_portion_of(week1, duty='off')
         1.0

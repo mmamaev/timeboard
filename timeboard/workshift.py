@@ -319,14 +319,14 @@ class Workshift(object):
         Workshift(3) of 'D' at 2017-10-03
         
         This happens because ``ws0.rollforward(-1)`` assumes the default 
-        `duty='on'` and seeks the zero step "on duty" workshift by moving 
-        forward from "off duty" self (October 6). Thus the zero step workshift 
-        will be October 7. From that point the method takes one "on duty" step 
+        `duty='on'` and seeks the zero step on-duty workshift by moving 
+        forward from the off-duty self (October 6). Thus the zero step workshift 
+        will be October 7. From that point the method takes one on-duty step 
         to the past and arrives at October 5 which is the result.
         
         On the contrary, ``ws0 - 1`` calls ``ws0.rollback(1, duty='on')`` 
-        which seeks the zero step "on duty" workshift by moving backward from
-        self. Thus the zero step workshift will be October 5, and one "on duty" 
+        which seeks the zero step on-duty workshift by moving backward from
+        self. Thus the zero step workshift will be October 5, and one on-duty 
         step to the past from that will be the result, October 3. 
         """
         if schedule is None:
@@ -457,15 +457,15 @@ class Workshift(object):
         Workshift(9) of 'D' at 2017-10-09
         
         This happens because ``ws0.rollback(-1)`` assumes the default 
-        `duty='on'` and seeks the zero step "on duty" workshift by moving 
-        backwards from "off duty" self (October 6). Thus the zero step 
+        `duty='on'` and seeks the zero step on-duty workshift by moving 
+        backwards from the off-duty self (October 6). Thus the zero step 
         workshift will be October 5. From that point the method takes one 
-        "on duty" step to the future and arrives at October 7 which is the 
+        on-duty step to the future and arrives at October 7 which is the 
         result.
         
         On the contrary, ``ws0 + 1`` calls ``ws0.rollforward(1, duty='on')`` 
-        which seeks the zero step "on duty" workshift by moving forward from
-        self. Thus the zero step workshift will be October 7, and one "on duty" 
+        which seeks the zero step on-duty workshift by moving forward from
+        self. Thus the zero step workshift will be October 7, and one on-duty 
         step to the future from that will be the result, October 9. 
         """
         # TODO: Optimize rollback and rollforward to comply with DRY?

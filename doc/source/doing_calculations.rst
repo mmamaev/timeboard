@@ -335,7 +335,7 @@ Caveats
     >>> clnd('06 Oct 2017').rollback(1)
     Workshift(3) of 'D' at 2017-10-03
 
-As the workshift of October 6 is off duty while method's duty is "on" by default, the method must seek the zero step workshift. In doing that,  `rollforward` looks in the future and finds October 7, while `rollback` looks in the past and find October 5. Then both methods take one "on duty" step to the past and arrive at the results shown above.
+As the workshift of October 6 is off duty while method's duty is "on" by default, the method must seek the zero step workshift. In doing that,  `rollforward` looks in the future and finds October 7, while `rollback` looks in the past and find October 5. Then both methods take one "on-duty" step to the past and arrive at the results shown above.
 
 The analogous behavior takes place with ``rollback(-n)`` and ``rollforward(n)``::
 
@@ -927,7 +927,7 @@ working days, so::
     >>> weekend.what_portion_of(week1)
     0.0
 
-However, `weekend` contains all off duty days of `week1`::
+However, `weekend` contains all off-duty days of `week1`::
 
     >>> weekend.what_portion_of(week1, duty='off')
     1.0
@@ -962,21 +962,21 @@ October 1, and all 24 workshifts of October 2::
      >>> 11.0/24 + 24.0/24
      1.4583333333333333
 
-The timeboard's `layout` defines that all workshifts taking place on even hours are off duty, and those on odd hours are on duty. The first workshift of the interval (01 October 13:00 - 13:59) is on duty. Hence, interval `X_in_staff` contains 6 of 12 on duty workshifts of October 1, and all 12 on duty workshifts of October 2::
+The timeboard's `layout` defines that all workshifts taking place on even hours are off duty, and those on odd hours are on duty. The first workshift of the interval (01 October 13:00 - 13:59) is on duty. Hence, interval `X_in_staff` contains 6 of 12 on-duty workshifts of October 1, and all 12 on-duty workshifts of October 2::
 
     >>> X_in_staff.count_periods('D')
     1.5
     >>> 6.0/12 + 12.0/12
     1.5
 
-The interval contains 5 of 12 off duty workshifts of October 1, and all 12 off duty workshifts of October 2::
+The interval contains 5 of 12 off-duty workshifts of October 1, and all 12 off-duty workshifts of October 2::
 
     >>> X_in_staff.count_periods('D', duty='off')
     1.4166666666666667
     >>> 5.0/12 + 12.0/12
     1.4166666666666667
 
-If we change the schedule to `my_schedule`, on duty workshifts will start only at 3, 7, 11, 15, 19, and 23 o'clock yielding 6 on duty workshifts per day. Interval `X_in_staff` will contain 3/6 + 6/6 on duty days and 8/18 + 18/18 off duty days::
+If we change the schedule to `my_schedule`, on-duty workshifts will start only at 3, 7, 11, 15, 19, and 23 o'clock yielding 6 on-duty workshifts per day. Interval `X_in_staff` will contain 3/6 + 6/6 on-duty days and 8/18 + 18/18 off-duty days::
 
     >>> my_schedule = clnd.add_schedule(name='my_schedule', 
     ...                                 selector=lambda label: label>1)

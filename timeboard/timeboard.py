@@ -79,7 +79,7 @@ class Timeboard(object):
     default_selector : function, optional
         The selector function for the default schedule. This is 
         the function which takes one argument - label of a workshift and 
-        returns True if this is an on duty workshift, False otherwise. 
+        returns True if this is an on-duty workshift, False otherwise. 
         If not supplied, the function that returns ``bool(label)`` is used.
     default_label : optional
         Label to initialize the timeline with. Normally, this value will be 

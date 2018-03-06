@@ -1182,7 +1182,7 @@ class _Schedule(object):
     Examples
     --------
     If a timeline consists of four workshifts, and the schedule's selector 
-    defines workshifts 0 and 2 as on duty, and the rest as off duty, 
+    defines workshifts 0 and 2 as on-duty, and the rest as off-duty, 
     the schedules's attributes are  as follows::
     
         index = np.array([0, 1, 2, 3])

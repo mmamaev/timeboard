@@ -59,7 +59,7 @@ Play with intervals
 
 Calling ``clnd()`` with a different set of parameters produces an object representing an *interval* on the calendar. The interval below contains all workshifts of the months of May 2017.
 
-**How many business days were in a certain month?** 
+**How many business days were there in a certain month?** 
 ::
 
     >>> may2017 = clnd('May 2017', period='M')
@@ -81,7 +81,7 @@ Calling ``clnd()`` with a different set of parameters produces an object represe
     176.0
 
 
-**If an employee was on the staff from April 3, 2017 to May 15, 2017, what portion of April did they spend with the company?** 
+An employee was on the staff from April 3, 2017 to May 15, 2017. **What portion of April's salary did the company owe them?** 
 
 Calling ``clnd()`` with a tuple of two points in time produces an interval containing all workshifts between these points, inclusively.
 ::
@@ -92,13 +92,13 @@ Calling ``clnd()`` with a tuple of two points in time produces an interval conta
 
 Indeed, the 1st and the 2nd of April in 2017 fell on the weekend, therefore, having started on the 3rd, the employee checked out all the working days in the month.
 
-**And what portion of May?** 
+**And what portion of May's?** 
 ::
 
     >>> time_in_company.what_portion_of(may2017)
     0.5
 
-**How many days has the employee worked in May?**
+**How many days had the employee worked in May?**
 
 The multiplication operator returns the intersection of two intervals.
 ::
@@ -113,7 +113,7 @@ The multiplication operator returns the intersection of two intervals.
     88
 
 
-**If an employee was on the staff from 01 Jan 2016 to 15 Jul 2017, how many years this person has worked for the company?**
+An employee was on the staff from 01 Jan 2016 to 15 Jul 2017. **How many years this person had worked for the company?**
 ::
 
     >>> clnd(('01 Jan 2016', '15 Jul 2017')).count_periods('A')

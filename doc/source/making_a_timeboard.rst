@@ -123,7 +123,7 @@ default_name : str, optional
 default_selector : function, optional
     The selector function for the default schedule. This is 
     the function which takes one argument - label of a workshift and 
-    returns True if this is an on duty workshift, False otherwise. 
+    returns True if this is an on-duty workshift, False otherwise. 
     If not supplied, the function that returns ``bool(label)`` is used.
 
 worktime_source : {``'duration'``, ``'labels'``}, optional
@@ -135,7 +135,7 @@ worktime_source : {``'duration'``, ``'labels'``}, optional
 Example: Call center shifts with equal duration
 -----------------------------------------------
 
-Operators in a 24x7 call center work in three 8-hour shifts starting at 10:00, 18:00, and 02:00. For each operator one on duty shift is followed by three off duty shifts. Hence, four teams of operators are needed. They are designated as 'A', 'B', 'C', and 'D'. ::
+Operators in a 24x7 call center work in three 8-hour shifts starting at 10:00, 18:00, and 02:00. For each operator one on-duty shift is followed by three off-duty shifts. Hence, four teams of operators are needed. They are designated as 'A', 'B', 'C', and 'D'. ::
 
     >>> clnd = tb.Timeboard(base_unit_freq='8H', 
     ...                     start='01 Oct 2017 02:00', end='05 Oct 2017 01:59',
@@ -785,9 +785,9 @@ The period after the recess started with a shortened cycle consisting of one wor
 Adjusting labels for work time
 ==============================
 
-In the above examples with daily workshifts, the actual work time takes only a part of the workshift (that is, a part of the 24 hour day). If the amount of the work time varies between on duty workshifts (for example, Friday's working hours in the office are shorter), these variations cannot be inferred from workshift's duration which is always equal to one (day). Therefore, you have to use labels as the source of the information about work time.
+In the above examples with daily workshifts, the actual work time takes only a part of the workshift (that is, a part of the 24 hour day). If the amount of the work time varies between on-duty workshifts (for example, Friday's working hours in the office are shorter), these variations cannot be inferred from workshift's duration which is always equal to one (day). Therefore, you have to use labels as the source of the information about work time.
 
-So far we have used simplistic labeling: ``0`` for an off duty day and ``1`` for an on duty day. To make work time measuring possible, the labeling scheme must be changed. The labels for off duty days remain zero but the labels for on duty days will be equal to the workshift's work time (presumably, measured in hours but this is up to the user). There is no need to change the selector. Yet you must add ``worktime_source='labels'`` to the parameters of timeboard.
+So far we have used simplistic labeling: ``0`` for an off-duty day and ``1`` for an on-duty day. To make work time measuring possible, the labeling scheme must be changed. The labels for off-duty days remain zero but the labels for on-duty days will be equal to the workshift's work time (presumably, measured in hours but this is up to the user). There is no need to change the selector. Yet you must add ``worktime_source='labels'`` to the parameters of timeboard.
 
 The adjusted timeboard of the museum accounts for short days in winter and longer days in summer with extended working hours on Sunday and Mondays. The changes are in the first two lines and in the last. ::
 
@@ -808,7 +808,7 @@ The adjusted timeboard of the museum accounts for short days in winter and longe
 Workshifts of varying length
 ============================
 
-Let us modify the schedule of the 24x7 call center. Now the call center's staff operate in shifts of varying length: 08:00 to 18:00 (10 hours), 18:00 to 02:00 (8 hours), and 02:00 to 08:00 (6 hours). An operator's schedule consists of one on duty shift followed by three off duty shifts. Hence, four teams of operators are needed. They are designated as 'A', 'B', 'C', and 'D'.
+Let us modify the schedule of the 24x7 call center. Now the call center's staff operate in shifts of varying length: 08:00 to 18:00 (10 hours), 18:00 to 02:00 (8 hours), and 02:00 to 08:00 (6 hours). An operator's schedule consists of one on-duty shift followed by three off-duty shifts. Hence, four teams of operators are needed. They are designated as 'A', 'B', 'C', and 'D'.
 
 To accommodate periods of varying length you need to use compound workshifts. A compound workshift consists of several base units.
 
