@@ -7,7 +7,6 @@ import datetime
 import pytest
 import pandas as pd
 
-@pytest.fixture(scope='module')
 def tb_12_days():
     org = Organizer(marker='W', structure=[100, [0, 0, 1, 1]])
     return tb.Timeboard(base_unit_freq='D',

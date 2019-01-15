@@ -9,7 +9,6 @@ import datetime
 import pandas as pd
 import pytest
 
-@pytest.fixture(scope='module')
 def tb_12_days():
     return tb.Timeboard(base_unit_freq='D',
                         start='31 Dec 2016', end='12 Jan 2017',
@@ -236,7 +235,6 @@ class TestIntervalCount(object):
         assert ivl.count(duty='any') == 13
 
 
-@pytest.fixture(scope='module')
 def tb_281116_020517_8x5():
     week5x8 = tb.Organizer(marker='W', structure=[[1, 1, 1, 1, 1, 0, 0]])
     amendments = pd.Series(index = pd.date_range(start='01 Jan 2017',
@@ -389,7 +387,6 @@ class TestIntervalDaysCountPeriodsY(object):
     pass
 
 
-@pytest.fixture(scope='module')
 def clnd_variable_mins(workshift_ref=None):
     if workshift_ref is None:
         workshift_ref = 'start'

@@ -4,12 +4,10 @@ import pytest
 from pandas import Period
 
 
-@pytest.fixture(scope='module')
 def frame_60d():
     return _Frame(base_unit_freq='D', start='01 Jan 2017', end='01 Mar 2017')
 
 
-@pytest.fixture(scope='module')
 def frame_10d():
     return _Frame(base_unit_freq='D', start='01 Jan 2017', end='10 Jan 2017')
 

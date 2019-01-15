@@ -195,17 +195,14 @@ class TestFrameConstructor(object) :
             # 22 Sep 1677 is the earliest possible day
 
 
-@pytest.fixture(scope='module')
 def frame_60d():
     return _Frame(base_unit_freq='D', start='01 Jan 2017', end='01 Mar 2017')
 
 
-@pytest.fixture(scope='module')
 def split_frame_60d():
     return [(0,8), (9,39), (40,49), (50,59)]
 
 
-@pytest.fixture(scope='module')
 def split_frame_60d_int():
     return [(5,8), (9,39), (40,49), (50,55)]
 
@@ -425,12 +422,12 @@ class TestFrameLocSubframesSpan(object):
     def test_frame_locsubf_span_ts_injection1(self):
         split_points = [pd.Timestamp('10 Feb 2017 12:12:12')]
         f = frame_60d()
-        with pytest.raises(TypeError):
+        with pytest.raises(Exception):
              f._locate_subspans(_Span(5, '20 Feb 2017'), split_points)
 
     def test_frame_locsubf_span_ts_injection2(self):
         split_points = [pd.Timestamp('10 Feb 2017 12:12:12')]
         f = frame_60d()
-        with pytest.raises(TypeError):
+        with pytest.raises(Exception):
              f._locate_subspans(_Span(5, pd.Timestamp('20 Feb 2017')),
                                 split_points)

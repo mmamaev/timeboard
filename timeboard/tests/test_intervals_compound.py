@@ -6,7 +6,6 @@ import datetime
 import pandas as pd
 import pytest
 
-@pytest.fixture(scope='module')
 def tb_10_8_6_hours(workshift_ref='start', worktime_source='duration'):
     shifts = tb.Marker(each='D', at=[{'hours': 2}, {'hours': 8}, {'hours': 18}])
     daily = tb.Organizer(marker=shifts, structure=[1, 0])

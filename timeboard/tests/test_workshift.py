@@ -8,7 +8,6 @@ import datetime
 import pytest
 import pandas as pd
 
-@pytest.fixture(scope='module')
 def tb_12_days():
     return tb.Timeboard(base_unit_freq='D',
                         start='31 Dec 2016', end='12 Jan 2017',

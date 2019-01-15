@@ -79,7 +79,6 @@ class TestTimelineConstructor(object):
         assert t.end_time == f.end_time
         assert t.labels.isnull().all()
 
-@pytest.fixture(scope='module')
 def timeline_10d(data=None):
     return _Timeline(_Frame(base_unit_freq='D',
                             start='01 Jan 2017', end='10 Jan 2017'),
