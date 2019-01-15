@@ -2,12 +2,15 @@
 Release Notes
 ***************
 
-timeboard 0.1
-=============
+timeboard 0.2.1
+===============
 
-**Release date:** February 01, 2018
+**Release date:** January 15, 2019
 
-This is the first release.
+Miscellaneous
+-------------
+
+* Business day calendars for RU, UK, and US have been updated
 
 
 timeboard 0.2
@@ -32,3 +35,11 @@ Miscellaneous
 * Performance: building any practical timeboard should take a fraction of a second.
 
 * Documentation: added :doc:`Common Use Cases <use_cases>` section. It is also available as a :download:`jupyter notebook <use_cases.ipynb>`.
+
+
+timeboard 0.1
+=============
+
+**Release date:** February 01, 2018
+
+This is the first release.
