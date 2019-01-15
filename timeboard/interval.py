@@ -309,7 +309,7 @@ class Interval(_BaseInterval):
             schedule = self.schedule
         duty_idx, duty_idx_bounds = self._get_duty_idx(duty, schedule)
         if duty_idx_bounds[0] is None or duty_idx_bounds[1] is None:
-            raise StopIteration
+            return
         for i in duty_idx[duty_idx_bounds[0] : duty_idx_bounds[1] + 1]:
             yield Workshift(self._tb, i, schedule=schedule)
 
@@ -1056,7 +1056,7 @@ class _VoidInterval(Interval):
         return VOID_TIME
 
     def workshifts(self, *args, **kwargs):
-        raise StopIteration
+        return
         yield
 
     def nth(self, *args, **kwargs):
