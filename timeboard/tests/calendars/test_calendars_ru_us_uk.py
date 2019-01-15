@@ -21,11 +21,18 @@ class TestCalendarsRU(object):
         bdays_in_year = {
             2005: 248, 2006: 248, 2007: 249,
             2008: 250, 2009: 249, 2010: 249, 2011: 248, 2012: 249, 2013: 247,
-            2014: 247, 2015: 247, 2016: 247, 2017: 247, 2018: 247
+            2014: 247, 2015: 247, 2016: 247, 2017: 247, 2018: 247, 2019: 247,
         }
         for year, bdays in bdays_in_year.items():
             assert clnd.get_interval('01 Jan {}'.format(year),
                                      period='A').count() == bdays
+
+        bhours_in_year =  {
+            2015: 1971, 2016: 1974, 2017: 1973, 2018: 1970, 2019: 1970,
+        }
+        for year, bhours in bhours_in_year.items():
+            assert clnd.get_interval('01 Jan {}'.format(year),
+                                     period='A').worktime() == bhours
 
         # a regular week
         for day in range(20, 25):
@@ -52,7 +59,7 @@ class TestCalendarsRU(object):
 
     def test_calendar_RU_week8x5_31dec_off(self):
         clnd = RU.Weekly8x5(work_on_dec31=False)
-        for y in range(2008,2019):
+        for y in range(2008,2020):
             assert clnd("31 Dec {}".format(y)).is_off_duty()
 
     def test_calendar_RU_week8x5_no_short_eves(self):
@@ -123,7 +130,7 @@ class TestCalendarsRU(object):
         with pytest.raises(OutOfBoundsError):
             RU.Weekly8x5('1990')
         with pytest.raises(OutOfBoundsError):
-            RU.Weekly8x5('2008', '31 Dec 2019')
+            RU.Weekly8x5('2008', '31 Dec 2020')
 
 class TestCalendarsUS(object):
 
@@ -132,6 +139,7 @@ class TestCalendarsUS(object):
             '31 Dec 2010', '17 Jan 2011', '21 Feb 2011', '30 May 2011',
             '04 Jul 2011', '05 Sep 2011', '10 Oct 2011', '11 Nov 2011',
             '24 Nov 2011', '25 Nov 2011', '26 Dec 2011'
+            # Christmas observance moved forward to Monday
         ]
         clnd0 = US.Weekly8x5(do_not_amend=True)
         assert all([clnd0(d).is_on_duty() for d in holidays_2011])
@@ -145,18 +153,30 @@ class TestCalendarsUS(object):
                clnd1.get_interval('2011', period='A').count() +
                len(holidays_2011) - 1)
 
+        # Observance moved backward to Friday:
+        assert clnd1('31 Dec 2010').is_off_duty()
+
+        # one-off or irregular holidays
+        assert clnd1('05 Dec 2018').is_off_duty()
+        assert clnd1('24 Dec 2018').is_off_duty()
+        assert clnd1('26 Dec 2018').is_off_duty()
+
     def test_calendar_US_week8x5_exclusions(self):
         holidays_2011 = [
             '31 Dec 2010', '17 Jan 2011', '21 Feb 2011', '30 May 2011',
             '04 Jul 2011', '05 Sep 2011', '10 Oct 2011', '11 Nov 2011',
             '24 Nov 2011', '25 Nov 2011', '26 Dec 2011'
         ]
-        clnd = US.Weekly8x5(do_not_observe=['independence', 'christmas',
-                                      'black_friday'])
+        clnd = US.Weekly8x5(do_not_observe=[
+            'independence', 'christmas', 'black_friday',
+            'one_off', 'xmas_additional_day'
+        ])
         assert clnd('04 Jul 2011').is_on_duty()
         assert clnd('25 Nov 2011').is_on_duty()
         assert clnd('25 Dec 2011').is_off_duty()
         assert clnd('26 Dec 2011').is_on_duty()
+        assert clnd('24 Dec 2018').is_on_duty()
+        assert clnd('26 Dec 2018').is_on_duty()
 
     def test_calendar_US_week8x5_short_weekends(self):
         holidays_2011 = [
@@ -165,7 +185,7 @@ class TestCalendarsUS(object):
             '24 Nov 2011', '25 Nov 2011', '26 Dec 2011'
         ]
         clnd = US.Weekly8x5(long_weekends=False)
-        assert clnd('30 Dec 2010').is_on_duty()
+        assert clnd('31 Dec 2010').is_on_duty()
         assert clnd('04 Jul 2011').is_off_duty()
         assert clnd('25 Dec 2011').is_off_duty()
         assert clnd('26 Dec 2011').is_on_duty()

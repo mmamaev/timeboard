@@ -42,6 +42,13 @@ def fed_holidays(start_year, end_year, do_not_observe=None, long_weekends=True,
         amendments.update(
             nth_weekday_of_month(year, floating_dates_to_seek, label))
 
+    if 2014 in years and 'xmas_additional_day' not in do_not_observe:
+        amendments[get_timestamp('26 Dec 2018')] = label
+    if 2018 in years and 'one_off' not in do_not_observe:
+        amendments[get_timestamp('05 Dec 2018')] = label
+    if 2018 in years and 'xmas_additional_day' not in do_not_observe:
+        amendments[get_timestamp('24 Dec 2018')] = label
+
     return amendments
 
 
@@ -82,7 +89,10 @@ class Weekly8x5(CalendarBase):
         the set: ``'new_year'``, ``'mlk'`` for Martin Luther King Jr. Day, 
         ``'presidents'``, ``'memorial'``, ``'independence'``, ``'labor'``, 
         ``'columbus'``, ``'veterans'``, 
-        ``'thanksgiving'``, ``'black_friday'``, ``'christmas'``.
+        ``'thanksgiving'``, ``'black_friday'``, ``'christmas'``,
+        ``'xmas_additional_day'`` for Christmas Eve or the day after Christmas
+        in certain years only, ``'one_off'`` for one-off events such as State
+        funeral of George W. Bush senior in 05 Dec 2018.
     long_weekends : bool, optional (default True)
         If false, do not extend weekends if a holiday falls on Saturday or
         Sunday.
