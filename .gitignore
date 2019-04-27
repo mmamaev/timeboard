@@ -4,6 +4,7 @@ stuff/
 test.bat
 test-cov.bat
 coverage.html/
+.idea/
 
 ## IDEA
 
