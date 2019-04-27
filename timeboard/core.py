@@ -15,7 +15,7 @@ import six
 try:
     _pandas_is_subperiod = pd.tseries.frequencies.is_subperiod
 except AttributeError:
-    _pandas_is_subperiod = pandas._libs.tslibs.frequencies.is_subperiod
+    _pandas_is_subperiod = pd._libs.tslibs.frequencies.is_subperiod
 
 # # imports for timing the performance;
 # # there are also commented lines in the code referring to timeit or timers
