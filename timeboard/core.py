@@ -12,6 +12,11 @@ from collections import Iterable, OrderedDict
 import re
 import six
 
+try:
+    _pandas_is_subperiod = pd.tseries.frequencies.is_subperiod
+except AttributeError:
+    _pandas_is_subperiod = pandas._libs.tslibs.frequencies.is_subperiod
+
 # # imports for timing the performance;
 # # there are also commented lines in the code referring to timeit or timers
 # import timeit
@@ -128,7 +133,7 @@ def _check_groupby_freq(base_unit_freq, group_by_freq):
     True if `group_by_freq` can be used for grouping, False otherwise.
     """
     if bool(
-            pd.tseries.frequencies.is_subperiod(base_unit_freq, group_by_freq)
+            _pandas_is_subperiod(base_unit_freq, group_by_freq)
             # Some combinations of arguments result in is_subperiod function
             # returning nothing (NoneType)
             ):
