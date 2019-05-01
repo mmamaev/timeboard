@@ -37,7 +37,13 @@ def from_start_of_each(pi, normalize_by=None, **kwargs):
     start_times = pi.to_timestamp(how='start', freq='S')
     end_times = pi.to_timestamp(how='end', freq='S')
 
-    result = start_times + offset
+
+    # result = start_times + offset
+    # The above raises VallueError in pandas > 0.22.
+    # https://github.com/pandas-dev/pandas/issues/26258
+    # Workaround:
+    result = pd.DatetimeIndex([t + offset for t in start_times])
+
     if normalize_by is not None:
         result = pd.PeriodIndex(result,
                                 freq=normalize_by).to_timestamp(how='start')
