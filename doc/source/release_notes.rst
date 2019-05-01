@@ -2,6 +2,20 @@
 Release Notes
 ***************
 
+timeboard 0.2.2
+===============
+
+**Release date:** May 01, 2019
+
+Resolved issues
+---------------
+
+Breaking changes were introduced in pandas versions 0.23 and 0.24
+
+* Pandas 0.23 moved `is_subperiod` function to another module
+* Workaround for pandas issue #26258 (Adding offset to DatetimeIndex is broken)
+
+
 timeboard 0.2.1
 ===============
 
