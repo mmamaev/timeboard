@@ -190,9 +190,15 @@ class TestFrameConstructor(object) :
             _Frame(base_unit_freq='D', start='01 Mar 2017', end='bad timestamp')
 
     def test_frame_constructor_too_big_range(self):
-        with pytest.raises(RuntimeError):
+
+        try:
+            excpt = (RuntimeError,  pd._libs.tslibs.np_datetime.OutOfBoundsDatetime)
+        except AttributeError:
+            excpt = RuntimeError
+        with pytest.raises(excpt):
             _Frame(start='21 Sep 1677', end='2017', base_unit_freq='D')
-            # 22 Sep 1677 is the earliest possible day
+            # '22 Sep 1677' is the earliest possible day,
+            # '21 Sep 1677 00:12:44' is the earliest possible time
 
 
 def frame_60d():

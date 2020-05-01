@@ -203,7 +203,7 @@ class TestTimeboardSchedules(object):
         clnd = tb.Timeboard(base_unit_freq='D',
                             start='31 Dec 2016', end='12 Jan 2017',
                             layout=[0, 1, 0, 0, 2, 0])
-        with pytest.raises(ValueError):
+        with pytest.raises((ValueError, AttributeError)):
             clnd.add_schedule(name='sdl', selector='selector')
         with pytest.raises(TypeError):
                 clnd.add_schedule(name='sdl', selector=lambda x,y: x+y)

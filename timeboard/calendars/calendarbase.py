@@ -2,7 +2,7 @@ from __future__ import division
 from ..exceptions import OutOfBoundsError
 from ..core import get_timestamp
 from ..timeboard import Timeboard
-from pandas import PeriodIndex
+from pandas import period_range
 import datetime
 from dateutil.easter import easter
 
@@ -47,7 +47,7 @@ def nth_weekday_of_month(year, dates_to_seek, label=0, errors='ignore'):
     >>> nth_weekday_of_month(2017, [(5, 1, -1), (9, 1, 1)])
     {Timestamp('2017-05-29 00:00:00'): 0, Timestamp('2017-09-04 00:00:00'): 0}
     """
-    months = PeriodIndex(start=datetime.date(year, 1, 1),
+    months = period_range(start=datetime.date(year, 1, 1),
                          end=datetime.date(year, 12, 31), freq='M')
     weekday_freq = {1: 'W-SUN', 2: 'W-MON', 3: 'W-TUE', 4: 'W-WED',
                     5: 'W-THU', 6: 'W-FRI', 7: 'W-SAT'}
@@ -63,7 +63,7 @@ def nth_weekday_of_month(year, dates_to_seek, label=0, errors='ignore'):
             shift = 0
         if n > 0:
             n -= 1
-        weeks = PeriodIndex(start=months[month - 1].start_time,
+        weeks = period_range(start=months[month - 1].start_time,
                             end=months[month - 1].end_time,
                             freq=weekday_freq[weekday])
         if weeks[0].start_time < months[month - 1].start_time:

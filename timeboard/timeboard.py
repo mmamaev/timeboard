@@ -198,7 +198,7 @@ class Timeboard(object):
         self._worktime_source = worktime_source
 
         # create the frame and the timeline
-        self._frame = _Frame(base_unit_freq, start, end)
+        self._frame = _Frame(base_unit_freq=base_unit_freq, start=start, end=end)
         self._timeline = _Timeline(frame=self._frame, organizer=org,
                                    workshift_ref=workshift_ref,
                                    data=default_label)

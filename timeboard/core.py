@@ -17,6 +17,20 @@ try:
 except AttributeError:
     _pandas_is_subperiod = pd._libs.tslibs.frequencies.is_subperiod
 
+try:
+    _ = pd.Series.to_numpy
+except AttributeError:
+    nonzero = np.nonzero
+else:
+    def _nonzero(a):
+        if isinstance(a, pd.Series):
+            return np.nonzero(a.to_numpy())
+        else:
+            return np.nonzero(a)
+
+    nonzero = _nonzero
+
+
 # # imports for timing the performance;
 # # there are also commented lines in the code referring to timeit or timers
 # import timeit
@@ -49,7 +63,7 @@ def get_period(period_ref, freq=None, freq_override=False):
 def get_freq_delta(freq):
     # Starting on 01 Jul 2016 gives the longest timedeltas for freq  based
     # on 'M', 'Q', 'A'
-    pi = pd.PeriodIndex(start='01 Jul 2016', freq=freq, periods=2)
+    pi = pd.period_range(start='01 Jul 2016', freq=freq, periods=2)
     return pi[1].start_time - pi[0].start_time
 
 
@@ -224,8 +238,12 @@ class _Frame(pd.PeriodIndex):
         else:
             _freq = kwargs['freq']
 
-        frame = super(_Frame, cls).__new__(cls, start=start, end=end,
-                                           freq=_freq)
+        # if _is_iterable(_data):
+        #     frame = super(_Frame, cls).__new__(cls, data=_data)
+        # else:
+        frame = super(_Frame, cls).__new__(cls,
+            data=pd.period_range(start=start, end=end, freq=_freq),
+            freq=_freq)
         if len(frame) == 0:
             raise VoidIntervalError("Empty frame not allowed "
                                     "(make sure the start time precedes "
@@ -276,7 +294,7 @@ class _Frame(pd.PeriodIndex):
                               side='right')-1
         # result = np.where((arr>span_first) & (arr<=span_last),
         #                   arr, [not_in_range])
-        result = arr[np.nonzero((arr > span_first) & (arr <= span_last))[0]]
+        result = arr[nonzero((arr > span_first) & (arr <= span_last))[0]]
         return result
 
     def check_span(self, span):
@@ -494,22 +512,22 @@ class _Frame(pd.PeriodIndex):
         if left_dangle_undefined:
             skipped_units_before = -1
         elif left_stencil_bound < span_start_ts:
-            left_dangle = pd.PeriodIndex(freq=self._base_unit_freq,
+            left_dangle = pd.period_range(freq=self._base_unit_freq,
                                          start=left_stencil_bound,
                                          end=span_start_ts)
             skipped_units_before = len(left_dangle.
-                                       difference(self[span.first:]))
+                                       difference(pd.PeriodIndex(self)[span.first:]))
         else:
             skipped_units_before = 0
 
         if right_dangle_undefined:
             skipped_units_after = -1
         elif right_stencil_bound > span_end_ts:
-            right_dangle = pd.PeriodIndex(freq=self._base_unit_freq,
+            right_dangle = pd.period_range(freq=self._base_unit_freq,
                                           start=self[span.last].start_time,
                                           end=right_stencil_bound)
             skipped_units_after = len(right_dangle.
-                                      difference(self[:span.last + 1]))
+                                      difference(pd.PeriodIndex(self)[:span.last + 1]))
         else:
             skipped_units_after = 0
 
@@ -657,7 +675,7 @@ class _Timeline(object):
             # timer1 = timeit.default_timer()
             self.__organize(organizer)
             # timer2 = timeit.default_timer()
-            wsband_index = np.nonzero(self._ws_compound_mask)[0]
+            wsband_index = nonzero(self._ws_compound_mask)[0]
             self._wsband = pd.Series(
                 index = wsband_index,
                 data = self._ws_labels[wsband_index])
@@ -1014,7 +1032,7 @@ class _Timeline(object):
     def labels(self):
         return self._wsband
 
-    def reset(self, value=pd.np.nan):
+    def reset(self, value=np.nan):
         """Set all workshift labels on the timeline to the specified value.
         
         Parameters
@@ -1125,8 +1143,8 @@ class _Timeline(object):
             ws_bounds = np.array(self._wsband.index[first_ws: last_ws+2])
         durations = [ws_bounds[i+1] - ws_bounds[i]
                      for i in range(len(ws_bounds)-1)]
-        start_times = self.frame[ws_bounds[:-1]].to_timestamp(how='start')
-        end_times = self.frame[ws_bounds[1:]-1].to_timestamp(how='end')
+        start_times = pd.PeriodIndex(self.frame)[ws_bounds[:-1]].to_timestamp(how='start')
+        end_times = pd.PeriodIndex(self.frame)[ws_bounds[1:]-1].to_timestamp(how='end')
         if self._workshift_ref == 'end':
             ref_times = end_times
         else:
@@ -1200,9 +1218,9 @@ class _Schedule(object):
         self._name = str(name)
         self._selector = selector
 
-        on_duty_bool_index = self._timeline.labels.apply(self._selector)
-        self._on_duty_index = np.nonzero(on_duty_bool_index)[0]
-        self._off_duty_index = np.nonzero(~on_duty_bool_index)[0]
+        on_duty_bool_index = np.array(self._timeline.labels.apply(self._selector), dtype=bool)
+        self._on_duty_index = nonzero(on_duty_bool_index)[0]
+        self._off_duty_index = nonzero(~on_duty_bool_index)[0]
 
     @property
     def name(self):

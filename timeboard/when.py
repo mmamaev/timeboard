@@ -163,7 +163,8 @@ def nth_weekday_of_month(pi, month, week, weekday, shift=None, **kwargs):
     return dtw + pd.DateOffset(days=shift)
 
 
-def from_easter(pi, easter_type='western', normalize_by=None, **kwargs):
+def from_easter(pi, easter_type='western', normalize_by=None, shift=None,
+                **kwargs):
     """Calculate point in time related to Easter.
 
     In each period in the period index `pi` find the start time of the day of 
@@ -191,6 +192,8 @@ def from_easter(pi, easter_type='western', normalize_by=None, **kwargs):
     elif easter_type == 'orthodox':
         _easter_type = 2
 
+    if shift is not None:
+        kwargs['days']=shift
     offset = pd.DateOffset(**kwargs)
     testtime = pd.Timestamp('01 Jan 2004')
     shift_to_future = testtime + offset >= testtime
