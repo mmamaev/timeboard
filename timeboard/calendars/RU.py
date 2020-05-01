@@ -63,6 +63,9 @@ def changes(eve_hours):
         '08 Jan 2019': 0, '22 Feb 2019': x, '07 Mar 2019': x, '30 Apr 2019': x,
         '02 May 2019': 0, '03 May 2019': 0, '08 May 2019': x, '10 May 2019': 0,
         '11 Jun 2019': x, '31 Dec 2019': x,
+        '08 Jan 2020': 0, '24 Feb 2020': 0, '09 Mar 2020': 0, '30 Apr 2020': x,
+        '04 May 2020': 0, '05 May 2020': 0, '08 May 2020': x, '11 May 2020': 0,
+        '11 Jun 2020': x, '03 Nov 2020': x, '31 Dec 2020': x,
     }
 
     return {get_timestamp(k): v for k, v in dates.items()}
