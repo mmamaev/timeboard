@@ -5,7 +5,7 @@ Installation
 Python version support
 ----------------------
 
-:py:mod:`timeboard` is tested with Python versions 2.7 and 3.6.
+:py:mod:`timeboard` is tested with Python versions 2.7, 3.6 and 3.7.
 
 
 Installation
@@ -23,14 +23,14 @@ Dependencies
 ------------
 
 ====================================================== =================
-Package                                                version tested
+Package                                                versions tested
 ====================================================== =================
-`pandas <http://pandas.pydata.org/>`_                  0.22, 0.23.4
-`numpy <http://www.numpy.org/>`_                       1.13, 1.14, 1.15.4
-`python-dateutil <http://labix.org/python-dateutil>`_  2.6.1, 2.7.5
-`six <http://pythonhosted.org/six/>`_                  1.11, 1.12
+`pandas <http://pandas.pydata.org/>`_                  0.22 - 1.0
+`numpy <http://www.numpy.org/>`_                       1.13 - 1.18
+`python-dateutil <http://labix.org/python-dateutil>`_  2.6.1 - 2.8.1
+`six <http://pythonhosted.org/six/>`_                  1.11 - 1.14
 ====================================================== =================
 
-The code is tested by `pytest <http://pytest.org/>`_ 4.0.2.
+The code is tested by `pytest <http://pytest.org/>`_ .
 
 
