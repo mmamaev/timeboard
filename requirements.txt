@@ -1,4 +1,6 @@
-pandas>=0.22
-numpy>=1.13
+pandas >=0.22,<=0.24; python_version < '3.6.1'
+pandas >=0.22; python_version >= '3.6.1'
+numpy >=1.13,<=1.16; python_version < '3.6'
+numpy >=1.16; python_version >= '3.6'
 python-dateutil>=2.6.1
 six
