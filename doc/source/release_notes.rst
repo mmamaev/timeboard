@@ -2,6 +2,22 @@
 Release Notes
 ***************
 
+timeboard 0.2.3
+===============
+
+**Release date:** May 01, 2020
+
+Resolved issues
+---------------
+
+* Incompatibility with the breaking API changes introduced in pandas 1.0
+
+Miscellaneous
+-------------
+
+* Russian business day calendar has been updated for 2020.
+
+
 timeboard 0.2.2
 ===============
 
