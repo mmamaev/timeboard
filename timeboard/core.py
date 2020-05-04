@@ -5,10 +5,17 @@ from .exceptions import (OutOfBoundsError,
 from .when import (from_start_of_each,
                    nth_weekday_of_month,
                    from_easter_western, from_easter_orthodox)
+
 import pandas as pd
 import numpy as np
 from itertools import cycle, dropwhile
-from collections import Iterable, OrderedDict
+from collections import OrderedDict
+
+try:
+    from collections.abc import Iterable, Mapping
+except ImportError:
+    from collections import Iterable, Mapping
+
 import re
 import six
 
@@ -66,10 +73,12 @@ def get_freq_delta(freq):
     pi = pd.period_range(start='01 Jul 2016', freq=freq, periods=2)
     return pi[1].start_time - pi[0].start_time
 
+def _is_string(obj):
+    return isinstance(obj, six.string_types)
 
 def _is_iterable(obj):
     return (isinstance(obj, Iterable) and
-            not isinstance(obj, six.string_types))
+            not _is_string(obj))
 
 
 def _to_iterable(x):
@@ -80,6 +89,8 @@ def _to_iterable(x):
     else:
         return [x]
 
+def _is_dict(obj):
+    return isinstance(obj, Mapping)
 
 def _is_null(x):
     return pd.isnull(x)
