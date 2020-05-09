@@ -5,37 +5,13 @@ from .exceptions import (OutOfBoundsError,
 from .when import (from_start_of_each,
                    nth_weekday_of_month,
                    from_easter_western, from_easter_orthodox)
+from .utils import _pandas_is_subperiod, nonzero, is_iterable, to_iterable
 
 import pandas as pd
 import numpy as np
 from itertools import cycle, dropwhile
 from collections import OrderedDict
-
-try:
-    from collections.abc import Iterable, Mapping
-except ImportError:
-    from collections import Iterable, Mapping
-
 import re
-import six
-
-try:
-    _pandas_is_subperiod = pd.tseries.frequencies.is_subperiod
-except AttributeError:
-    _pandas_is_subperiod = pd._libs.tslibs.frequencies.is_subperiod
-
-try:
-    _ = pd.Series.to_numpy
-except AttributeError:
-    nonzero = np.nonzero
-else:
-    def _nonzero(a):
-        if isinstance(a, pd.Series):
-            return np.nonzero(a.to_numpy())
-        else:
-            return np.nonzero(a)
-
-    nonzero = _nonzero
 
 
 # # imports for timing the performance;
@@ -56,7 +32,6 @@ def get_timestamp(arg):
     except AttributeError:
         return pd.Timestamp(arg)
 
-
 def get_period(period_ref, freq=None, freq_override=False):
     if (isinstance(period_ref, pd.Period) and
             (freq is None or not freq_override)):
@@ -66,34 +41,11 @@ def get_period(period_ref, freq=None, freq_override=False):
     else:
         return pd.Period(get_timestamp(period_ref), freq=freq)
 
-
 def get_freq_delta(freq):
     # Starting on 01 Jul 2016 gives the longest timedeltas for freq  based
     # on 'M', 'Q', 'A'
     pi = pd.period_range(start='01 Jul 2016', freq=freq, periods=2)
     return pi[1].start_time - pi[0].start_time
-
-def _is_string(obj):
-    return isinstance(obj, six.string_types)
-
-def _is_iterable(obj):
-    return (isinstance(obj, Iterable) and
-            not _is_string(obj))
-
-
-def _to_iterable(x):
-    if x is None:
-        return x
-    if _is_iterable(x):
-        return x
-    else:
-        return [x]
-
-def _is_dict(obj):
-    return isinstance(obj, Mapping)
-
-def _is_null(x):
-    return pd.isnull(x)
 
 
 def _skiperator(values, skip=0):
@@ -790,7 +742,7 @@ class _Timeline(object):
 
             if isinstance(layout, Organizer):
                 self.__organize(layout, span)
-            elif _is_iterable(layout):
+            elif is_iterable(layout):
                 # timer1 = timeit.default_timer()
                 self.__apply_pattern(layout, span)
                 # timersp[span.first] = timeit.default_timer() - timer1
@@ -1392,13 +1344,13 @@ class Organizer(object):
         if (marker is None) == (marks is None):
             raise ValueError("One and only one of 'marker' or 'marks' "
                              "must be specified ")
-        if not _is_iterable(structure):
+        if not is_iterable(structure):
             raise TypeError("structure parameter must be iterable")
         self._marker = marker
         self._marks = marks
         if marker is not None and not isinstance(marker, Marker):
             self._marker = Marker(marker)
-        self._marks = _to_iterable(marks)
+        self._marks = to_iterable(marks)
         self._structure = structure
 
     @property

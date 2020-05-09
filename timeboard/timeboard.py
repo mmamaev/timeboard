@@ -1,7 +1,7 @@
 from __future__ import division
 from .core import (_Frame, _Timeline, _Schedule,
-                   Organizer, get_period, get_timestamp,
-                   _is_iterable, _is_null)
+                   Organizer, get_period, get_timestamp)
+from .utils import is_iterable, is_null
 from .workshift import Workshift
 from .interval import Interval
 from .exceptions import (OutOfBoundsError,
@@ -172,7 +172,7 @@ class Timeboard(object):
         # check and prepare parameters for the timeline
         if isinstance(layout, Organizer):
             org = layout
-        elif _is_iterable(layout):
+        elif is_iterable(layout):
             if len(layout) == 1 and isinstance(layout[0], Organizer):
                 warnings.warn("Received 'layout' as an Organizer wrapped in "
                               "a list. Probably you do not want a list here.",
@@ -213,7 +213,7 @@ class Timeboard(object):
         self._schedules = {self._default_name: self._default_schedule}
 
         # prepare the text for `__repr__`
-        if _is_iterable(layout):
+        if is_iterable(layout):
             org_repr = ""
             org_arg = "{!r}".format(org)
         else:
@@ -801,12 +801,12 @@ class Timeboard(object):
                                           drop_head, drop_tail):
         locs = [_Location(0, LOC_WITHIN),
                 _Location(len(self._timeline) - 1, LOC_WITHIN)]
-        if _is_null(interval_ref):
+        if is_null(interval_ref):
             pass
-        elif _is_iterable(interval_ref) and len(interval_ref) >= 2:
-            if not _is_null(interval_ref[0]):
+        elif is_iterable(interval_ref) and len(interval_ref) >= 2:
+            if not is_null(interval_ref[0]):
                 locs[0] = self._locate(interval_ref[0])
-            if not _is_null(interval_ref[1]):
+            if not is_null(interval_ref[1]):
                 locs[1] = self._locate(interval_ref[1])
         else:
             raise TypeError("Could not get interval bounds from the provided "

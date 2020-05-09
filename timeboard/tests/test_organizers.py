@@ -1,4 +1,4 @@
-from timeboard.core import _Timeline, _Frame, Organizer, RememberingPattern, _to_iterable
+from timeboard.core import _Timeline, _Frame, Organizer, RememberingPattern
 from timeboard.exceptions import OutOfBoundsError
 from itertools import cycle
 import numpy as np
@@ -7,14 +7,6 @@ import pytest
 
 class TestOrganizerConstructor(object):
 
-    def test_to_iterable(self):
-        assert _to_iterable(None) is None
-        assert _to_iterable(1) == [1]
-        assert _to_iterable('1') == ['1']
-        assert _to_iterable([1]) == [1]
-        assert _to_iterable(['1']) == ['1']
-        assert _to_iterable(set((1,2,3))) == set((1,2,3))
-        assert _to_iterable(1==3) == [False]
 
     def test_organizer_constructor_marker(self):
         org = Organizer(marker='W', structure=[1, 2, 3])
