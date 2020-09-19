@@ -5,7 +5,7 @@ Installation
 Python version support
 ----------------------
 
-:py:mod:`timeboard` is tested with Python versions 2.7, 3.6 and 3.7.
+:py:mod:`timeboard` is tested with Python versions 2.7, 3.6, 3.7, and 3.8.
 
 
 Installation
