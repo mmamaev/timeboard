@@ -66,6 +66,9 @@ def changes(eve_hours):
         '08 Jan 2020': 0, '24 Feb 2020': 0, '09 Mar 2020': 0, '30 Apr 2020': x,
         '04 May 2020': 0, '05 May 2020': 0, '08 May 2020': x, '11 May 2020': 0,
         '11 Jun 2020': x, '03 Nov 2020': x, '31 Dec 2020': x,
+        '08 Jan 2021': 0, '20 Feb 2021': x, '22 Feb 2021': 0, '30 Apr 2021': x,
+        '03 May 2021': 0, '10 May 2021': 0, '11 Jun 2021': x, '14 Jun 2021': 0,
+        '03 Nov 2021': x, '05 Nov 2021': 0, '31 Dec 2021': 0,
     }
 
     return {get_timestamp(k): v for k, v in dates.items()}
@@ -157,7 +160,7 @@ class Weekly8x5(CalendarBase):
         return {
             'base_unit_freq': 'D',
             'start': get_timestamp('01 Jan 2005'),
-            'end': get_timestamp('31 Dec 2019 23:59:59'),
+            'end': get_timestamp('31 Dec 2021 23:59:59'),
             'layout': Organizer(marker='W', structure=[[8, 8, 8, 8, 8, 0, 0]]),
             'worktime_source': 'labels',
         }
