@@ -130,7 +130,7 @@ class TestCalendarsRU(object):
         with pytest.raises(OutOfBoundsError):
             RU.Weekly8x5('1990')
         with pytest.raises(OutOfBoundsError):
-            RU.Weekly8x5('2008', '31 Dec 2020')
+            RU.Weekly8x5('2008', '31 Dec 2050')
 
 class TestCalendarsUS(object):
 
@@ -220,6 +220,17 @@ class TestCalendarsUS(object):
 
 
 class TestCalendarsUK(object):
+
+    @pytest.mark.skip("Is this for a new version of calendar?")
+    def test_calendar_UK_week8x5_processing(self):
+        assert UK.Weekly8x5.amendments() is None
+        clnd = UK.Weekly8x5(do_not_amend=True)
+        assert len(UK.Weekly8x5.amendments()) == 0
+        clnd = UK.Weekly8x5(country='northern_ireland')
+        assert len(UK.Weekly8x5.amendments()) > 0
+        print(" ")
+        for d in [d for d in UK.Weekly8x5.amendments() if d.year==2016]:
+            print(d)
 
     def test_calendar_UK_week8x5_nirl(self):
         holidays_nirl_2016 = [
