@@ -3,6 +3,12 @@ from setuptools.command.test import test as TestCommand
 import sys
 
 def read_file(path):
+    """
+    Read the contents
+
+    Args:
+        path: (str): write your description
+    """
     with open(path) as f:
         return f.read()
 
@@ -13,6 +19,12 @@ long_description = text.replace('`', '').replace('**', '').replace('::', '')
 
 class Unsupported(TestCommand):
     def run(self):
+        """
+        Run the command.
+
+        Args:
+            self: (todo): write your description
+        """
         print("Running 'test' with setup.py is not supported. "
               "Use 'pytest' or 'tox' to run the tests.")
 

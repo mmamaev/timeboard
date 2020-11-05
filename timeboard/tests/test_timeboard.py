@@ -6,12 +6,24 @@ import pandas as pd
 class TestVersion(object):
 
     def test_version(self):
+        """
+        Read the version of the test_version.
+
+        Args:
+            self: (todo): write your description
+        """
         version = tb.read_from('VERSION.txt')
         assert version == tb.__version__
 
 class TestTBConstructor(object):
 
     def test_tb_constructor_trivial(self):
+        """
+        Return a tb. tb
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb.Timeboard(base_unit_freq='D',
                             start='01 Jan 2017', end='12 Jan 2017',
                             layout=[1])
@@ -22,6 +34,12 @@ class TestTBConstructor(object):
         assert clnd.base_unit_freq == 'D'
 
     def test_tb_constructor_empty_layout(self):
+        """
+        Return a tbboard.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb.Timeboard(base_unit_freq='D',
                             start='01 Jan 2017', end='12 Jan 2017',
                             layout=[],
@@ -33,6 +51,12 @@ class TestTBConstructor(object):
         assert clnd.base_unit_freq == 'D'
 
     def test_tb_constructor_empty_layout_with_default_label(self):
+        """
+        Return a tbboard label for the given label.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb.Timeboard(base_unit_freq='D',
                             start='01 Jan 2017', end='12 Jan 2017',
                             layout=[],
@@ -44,6 +68,12 @@ class TestTBConstructor(object):
         assert clnd.base_unit_freq == 'D'
 
     def test_tb_constructor_trivial_with_amendments(self):
+        """
+        Test for tb_freendments
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb.Timeboard(base_unit_freq='D',
                             start='01 Jan 2017', end='12 Jan 2017',
                             layout=[1],
@@ -56,6 +86,12 @@ class TestTBConstructor(object):
         assert clnd.base_unit_freq == 'D'
 
     def test_tb_constructor_amendments_outside(self):
+        """
+        Test for examples for each audio data structure.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb.Timeboard(base_unit_freq='D',
                             start='01 Jan 2017', end='12 Jan 2017',
                             layout=[1],
@@ -68,12 +104,24 @@ class TestTBConstructor(object):
         assert clnd.base_unit_freq == 'D'
 
     def test_tb_constructor_bad_layout(self):
+        """
+        Test if the layout.
+
+        Args:
+            self: (todo): write your description
+        """
         with pytest.raises(TypeError):
             tb.Timeboard(base_unit_freq='D',
                          start='01 Jan 2017', end='12 Jan 2017',
                          layout=1)
 
     def test_tb_constructor_duplicate_amendments(self):
+        """
+        Return a tb_duments for tb
+
+        Args:
+            self: (todo): write your description
+        """
         with pytest.raises(KeyError):
             tb.Timeboard(base_unit_freq='D',
                          start='01 Jan 2017', end='12 Jan 2017',
@@ -82,6 +130,12 @@ class TestTBConstructor(object):
                                      '02 Jan 2017 15:15': 3})
 
     def test_tb_constructor_bad_amendments(self):
+        """
+        Construct a list of - like tb failures
+
+        Args:
+            self: (todo): write your description
+        """
         with pytest.raises(TypeError):
             tb.Timeboard(base_unit_freq='D',
                          start='01 Jan 2017', end='12 Jan 2017',
@@ -89,6 +143,12 @@ class TestTBConstructor(object):
                          amendments=[0])
 
     def test_tb_constructor_trivial_selector(self):
+        """
+        Construct a test for the test.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb.Timeboard(base_unit_freq='D',
                             start='01 Jan 2017', end='12 Jan 2017',
                             layout=[0, 1, 0, 2])
@@ -100,8 +160,20 @@ class TestTBConstructor(object):
         assert (sdl.off_duty_index == [0, 2, 4, 6, 8, 10]).all()
 
     def test_tb_constructor_trivial_custom_selector(self):
+        """
+        Return a custom custom test for a custom loading.
+
+        Args:
+            self: (todo): write your description
+        """
 
         def custom_selector(x):
+            """
+            Return the first matching selector.
+
+            Args:
+                x: (todo): write your description
+            """
             return x>1
 
         clnd = tb.Timeboard(base_unit_freq='D',
@@ -120,6 +192,12 @@ class TestTBConstructor(object):
 class TestTBConstructorWithOrgs(object):
 
     def test_tb_constructor_week5x8(self):
+        """
+        Return a tb5 index.
+
+        Args:
+            self: (todo): write your description
+        """
         week5x8 = tb.Organizer(marker='W', structure=[[1, 1, 1, 1, 1, 0, 0]])
         amendments = pd.Series(index=pd.date_range(start='01 Jan 2017',
                                                 end='10 Jan 2017',
@@ -149,6 +227,12 @@ class TestTBConstructorWithOrgs(object):
 class TestTimeboardSchedules(object):
 
     def test_tb_add_schedule(self):
+        """
+        Add a schedule to the scheduler.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb.Timeboard(base_unit_freq='D',
                             start='31 Dec 2016', end='12 Jan 2017',
                             #layout=[0, 1, 0, 0, 2, 0])
@@ -176,6 +260,12 @@ class TestTimeboardSchedules(object):
         assert clnd.default_schedule.is_on_duty(4)
 
     def test_tb_drop_schedule(self):
+        """
+        Drop the scheduler.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb.Timeboard(base_unit_freq='D',
                             start='31 Dec 2016', end='12 Jan 2017',
                             layout=[0, 1, 0, 0, 2, 0])
@@ -190,6 +280,12 @@ class TestTimeboardSchedules(object):
         assert not sdl.is_on_duty(1)
 
     def test_tb_schedule_names(self):
+        """
+        Return a list of schedule names.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb.Timeboard(base_unit_freq='D',
                             start='31 Dec 2016', end='12 Jan 2017',
                             layout=[0, 1, 0, 0, 2, 0])
@@ -200,6 +296,12 @@ class TestTimeboardSchedules(object):
             clnd.add_schedule(name='1', selector=lambda x: x > 2)
 
     def test_tb_bad_schedule(self):
+        """
+        Schedules the schedule.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb.Timeboard(base_unit_freq='D',
                             start='31 Dec 2016', end='12 Jan 2017',
                             layout=[0, 1, 0, 0, 2, 0])
@@ -212,12 +314,24 @@ class TestTimeboardSchedules(object):
 class TestTimeboardWorktime(object):
 
     def test_tb_default_worktime_source(self):
+        """
+        Return the default worktime_source.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb.Timeboard(base_unit_freq='D',
                             start='31 Dec 2016', end='12 Jan 2017',
                             layout=[0, 1, 0, 0, 2, 0])
         assert clnd.worktime_source == 'duration'
 
     def test_tb_set_worktime_source(self):
+        """
+        Set a set_source_source.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb.Timeboard(base_unit_freq='D',
                             start='31 Dec 2016', end='12 Jan 2017',
                             layout=[0, 1, 0, 0, 2, 0],
@@ -225,6 +339,12 @@ class TestTimeboardWorktime(object):
         assert clnd.worktime_source == 'labels'
 
     def test_tb_bad_worktime_source(self):
+        """
+        Test if a singleè¿è¿è¿è¿time : return :
+
+        Args:
+            self: (todo): write your description
+        """
         with pytest.raises(ValueError):
             tb.Timeboard(base_unit_freq='D',
                          start='31 Dec 2016', end='12 Jan 2017',
@@ -252,6 +372,12 @@ class TestTimeboardWorktime(object):
 class TestTimeboardToDataFrame(object):
 
     def test_timeboard_to_dataframe(self):
+        """
+        Return a pandas dataframe.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb.Timeboard(base_unit_freq='D',
                             start='01 Jan 2017', end='12 Jan 2017',
                             layout=[0, 1, 0, 2])
@@ -266,6 +392,12 @@ class TestTimeboardToDataFrame(object):
         assert 'my_schedule' in list(df.columns)
 
     def test_timeboard_to_dataframe_selected_ws(self):
+        """
+        Return a timeboard has selected bytestring.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb.Timeboard(base_unit_freq='D',
                             start='01 Jan 2017', end='12 Jan 2017',
                             layout=[0, 1, 0, 2])
@@ -273,6 +405,12 @@ class TestTimeboardToDataFrame(object):
         assert len(df) == 5
 
     def test_timeboard_to_dataframe_reversed_ws(self):
+        """
+        Return a timeboard to move to timeboard to timeboard to timeboard to_dataframe.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb.Timeboard(base_unit_freq='D',
                             start='01 Jan 2017', end='12 Jan 2017',
                             layout=[0, 1, 0, 2])
@@ -281,6 +419,12 @@ class TestTimeboardToDataFrame(object):
         assert df.empty
 
     def test_timeboard_to_dataframe_bad_locations(self):
+        """
+        Test if all locations to a pandas.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb.Timeboard(base_unit_freq='D',
                             start='01 Jan 2017', end='12 Jan 2017',
                             layout=[0, 1, 0, 2])

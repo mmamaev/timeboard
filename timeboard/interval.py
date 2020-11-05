@@ -9,8 +9,23 @@ from .core import _Frame, _Schedule,  VOID_TIME
 class _BaseInterval(object):
     """Parent class for Interval and VoidInternal"""
     def __init__(self, timeboard, bounds, schedule=None):
+        """
+        Initialize the schedule.
+
+        Args:
+            self: (todo): write your description
+            timeboard: (int): write your description
+            bounds: (todo): write your description
+            schedule: (todo): write your description
+        """
 
         def handle_bound(bound):
+            """
+            Handle the bounding box.
+
+            Args:
+                bound: (todo): write your description
+            """
             if isinstance(bound, Workshift):
                 loc = bound._loc
             elif isinstance(bound, int):
@@ -168,6 +183,12 @@ class Interval(_BaseInterval):
     """
 
     def _repr_schedule_label(self):
+        """
+        Generate a label for this schedule.
+
+        Args:
+            self: (todo): write your description
+        """
         schedule_label = self.schedule.name
         if schedule_label == self._tb.default_schedule.name:
             schedule_label = ""
@@ -177,6 +198,12 @@ class Interval(_BaseInterval):
 
     @property
     def compact_str(self):
+        """
+        Returns a string representing the strain.
+
+        Args:
+            self: (todo): write your description
+        """
         return "Interval({!r}{}): {} -> {} [{}]".format(
             self._loc,
             self._repr_schedule_label(),
@@ -186,27 +213,63 @@ class Interval(_BaseInterval):
         )
 
     def __repr__(self):
+        """
+        Return a repr representation of this object.
+
+        Args:
+            self: (todo): write your description
+        """
         return self.compact_str
 
     def __str__(self):
+        """
+        : return string representation of the frame.
+
+        Args:
+            self: (todo): write your description
+        """
         return self.compact_str + "\n\n{}".format(self.to_dataframe())
 
     @property
     def start_time(self):
+        """
+        The start time of the task.
+
+        Args:
+            self: (todo): write your description
+        """
         # TODO: Refactor. This class has to know methods of Timeboard only
         return self._tb._timeline.get_ws_start_time(self._loc[0])
 
     @property
     def end_time(self):
+        """
+        The end time.
+
+        Args:
+            self: (todo): write your description
+        """
         # TODO: Refactor. This class has to know methods of Timeboard only
         return self._tb._timeline.get_ws_end_time(self._loc[1])
 
     @property
     def length(self):
+        """
+        Returns the length of the queue.
+
+        Args:
+            self: (todo): write your description
+        """
         return self._length
 
     @property
     def schedule(self):
+        """
+        Schedules the schedule.
+
+        Args:
+            self: (todo): write your description
+        """
         return self._schedule
 
     def to_dataframe(self):
@@ -233,6 +296,13 @@ class Interval(_BaseInterval):
         return self._tb.to_dataframe(self._loc[0], self._loc[1])
 
     def _find_my_bounds_in_idx(self, idx):
+        """
+        Return the index of the left bounding box.
+
+        Args:
+            self: (todo): write your description
+            idx: (int): write your description
+        """
         # TODO: optimize this search
         left_bound = 0
         len_idx = len(idx)
@@ -248,6 +318,14 @@ class Interval(_BaseInterval):
         return left_bound, right_bound
 
     def _get_duty_idx(self, duty, schedule):
+        """
+        Return the index of the schedule.
+
+        Args:
+            self: (todo): write your description
+            duty: (str): write your description
+            schedule: (todo): write your description
+        """
         _duty_idx = {
             'on': schedule.on_duty_index,
             'off': schedule.off_duty_index,
@@ -314,16 +392,40 @@ class Interval(_BaseInterval):
             yield Workshift(self._tb, i, schedule=schedule)
 
     def __next__(self):
+        """
+        Returns the next iterator.
+
+        Args:
+            self: (todo): write your description
+        """
         return next(self._ws_generator_activated)
 
     def next(self):
+        """
+        Returns the next item
+
+        Args:
+            self: (todo): write your description
+        """
         return self.__next__()
 
     def __iter__(self):
+        """
+        Returns a generator of workshifts generator.
+
+        Args:
+            self: (todo): write your description
+        """
         self._ws_generator_activated = self.workshifts(duty='any')
         return self
 
     def __len__(self):
+        """
+        Returns the length of the queue.
+
+        Args:
+            self: (todo): write your description
+        """
         return self.length
 
     def nth(self, n, duty='on', schedule=None):
@@ -1038,48 +1140,129 @@ class _VoidInterval(Interval):
 
     @property
     def compact_str(self):
+        """
+        Returns a string representing the schedule.
+
+        Args:
+            self: (todo): write your description
+        """
         return "Interval ({!r}{}): void [0]".format(
             self._loc, self._repr_schedule_label())
 
     def __repr__(self):
+        """
+        Return a repr representation of this object.
+
+        Args:
+            self: (todo): write your description
+        """
         return self.compact_str
 
     def __str__(self):
+        """
+        Return a string representation of the call.
+
+        Args:
+            self: (todo): write your description
+        """
         return self.compact_str
 
     @property
     def start_time(self):
+        """
+        Returns the start time of the job.
+
+        Args:
+            self: (todo): write your description
+        """
         return VOID_TIME
 
     @property
     def end_time(self):
+        """
+        The end time of the end time.
+
+        Args:
+            self: (todo): write your description
+        """
         return VOID_TIME
 
     def workshifts(self, *args, **kwargs):
+        """
+        See : meth : milhifts.
+
+        Args:
+            self: (todo): write your description
+        """
         return
         yield
 
     def nth(self, *args, **kwargs):
+        """
+        Return the number of rows in the array.
+
+        Args:
+            self: (todo): write your description
+        """
         return self._tb._handle_out_of_bounds(
             "No workshifts in void interval {}".
             format(self.compact_str))
 
     def count(self, *args, **kwargs):
+        """
+        Count the number of results.
+
+        Args:
+            self: (todo): write your description
+        """
         return 0
 
     def overlap(self, other, schedule=None):
+        """
+        Return true if this schedule contains another.
+
+        Args:
+            self: (todo): write your description
+            other: (todo): write your description
+            schedule: (todo): write your description
+        """
         if schedule is None:
             schedule = self.schedule
         return _VoidInterval(self._tb, self._loc, schedule=schedule)
 
     def count_periods(self, *args, **kwargs):
+        """
+        Count the number of periods.
+
+        Args:
+            self: (todo): write your description
+        """
         return 0.0
 
     def what_portion_of(self, other, *args, **kwargs):
+        """
+        Returns true if other is the same as other.
+
+        Args:
+            self: (todo): write your description
+            other: (todo): write your description
+        """
         return 0.0
 
     def total_duration(self, *args, **kwargs):
+        """
+        Calculate total duration of the number of seconds.
+
+        Args:
+            self: (todo): write your description
+        """
         return 0
 
     def worktime(self, *args, **kwargs):
+        """
+        Return the time of worktime.
+
+        Args:
+            self: (todo): write your description
+        """
         return 0.0

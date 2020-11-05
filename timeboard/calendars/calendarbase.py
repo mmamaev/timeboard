@@ -287,6 +287,12 @@ class CalendarBase(object):
     """
     @classmethod
     def parameters(cls):
+        """
+        Return a dict of parameters for this parameter.
+
+        Args:
+            cls: (todo): write your description
+        """
         return {
             'base_unit_freq': 'D',
             'start': get_timestamp('01 Jan 2001'),
@@ -297,18 +303,43 @@ class CalendarBase(object):
     @classmethod
     def amendments(cls, custom_start=None, custom_end=None,
                    custom_amendments=None, **additional_kwargs):
+        """
+        Return a list of adjments.
+
+        Args:
+            cls: (todo): write your description
+            custom_start: (todo): write your description
+            custom_end: (todo): write your description
+            custom_amendments: (str): write your description
+            additional_kwargs: (dict): write your description
+        """
         if custom_amendments is None:
             custom_amendments = {}
         return custom_amendments
 
     @classmethod
     def _check_time(cls, t):
+        """
+        Checks that terror if t.
+
+        Args:
+            cls: (todo): write your description
+            t: (todo): write your description
+        """
         if not cls.parameters()['start'] <= t <= cls.parameters()['end']:
             raise OutOfBoundsError("Point in time '{}' is outside calendar {}"
                                    .format(t, cls))
 
     @classmethod
     def _get_bounds(cls, custom_start=None, custom_end=None):
+        """
+        Get the bounds for the given query.
+
+        Args:
+            cls: (todo): write your description
+            custom_start: (int): write your description
+            custom_end: (todo): write your description
+        """
         if custom_start is None:
             start = get_timestamp(cls.parameters()['start'])
         else:
@@ -324,6 +355,18 @@ class CalendarBase(object):
     def __new__(cls, custom_start=None, custom_end=None,
                 do_not_amend=False, only_custom_amendments=False,
                 custom_amendments=None, **additional_kwargs):
+        """
+        Create a new : class
+
+        Args:
+            cls: (todo): write your description
+            custom_start: (todo): write your description
+            custom_end: (todo): write your description
+            do_not_amend: (str): write your description
+            only_custom_amendments: (todo): write your description
+            custom_amendments: (todo): write your description
+            additional_kwargs: (dict): write your description
+        """
         parameters = cls.parameters()
         parameters['start'], parameters['end'] = cls._get_bounds(
             custom_start, custom_end)

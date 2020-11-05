@@ -7,6 +7,17 @@ from itertools import product
 
 def bank_holidays(start_year, end_year, country='england', do_not_observe=None,
                   long_weekends=True, label=0):
+    """
+    The number of holidays.
+
+    Args:
+        start_year: (int): write your description
+        end_year: (array): write your description
+        country: (str): write your description
+        do_not_observe: (todo): write your description
+        long_weekends: (str): write your description
+        label: (str): write your description
+    """
 
     bank_holidays_fixed = {'new_year': '01 Jan',
                            'new_year2': '02 Jan',
@@ -176,6 +187,12 @@ class Weekly8x5(CalendarBase):
 
     @classmethod
     def parameters(cls):
+        """
+        Returns a dictionary of parameters.
+
+        Args:
+            cls: (todo): write your description
+        """
         return {
             'base_unit_freq': 'D',
             'start': get_timestamp('01 Jan 2000'),
@@ -188,6 +205,18 @@ class Weekly8x5(CalendarBase):
     def amendments(cls, custom_start=None, custom_end=None,
                    custom_amendments=None, country='england',
                    do_not_observe=None, long_weekends=True):
+        """
+        Return a list of all gpus.
+
+        Args:
+            cls: (todo): write your description
+            custom_start: (todo): write your description
+            custom_end: (todo): write your description
+            custom_amendments: (dict): write your description
+            country: (str): write your description
+            do_not_observe: (todo): write your description
+            long_weekends: (str): write your description
+        """
         start, end = cls._get_bounds(custom_start, custom_end)
 
         result = bank_holidays(start.year, end.year, country, do_not_observe,

@@ -8,6 +8,11 @@ import pytest
 import pandas as pd
 
 def tb_12_days():
+    """
+    Return a tb days. days.
+
+    Args:
+    """
     org = Organizer(marker='W', structure=[100, [0, 0, 1, 1]])
     return tb.Timeboard(base_unit_freq='D',
                         start='31 Dec 2016', end='12 Jan 2017',
@@ -20,6 +25,12 @@ def tb_12_days():
 class TestWorkshiftCompoundConstructor(object):
 
     def test_locate(self):
+        """
+        Test if the location of the same as the test.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         loc = clnd._locate('31 Dec 2016')
         assert loc == _Location(0, LOC_WITHIN)
@@ -33,6 +44,12 @@ class TestWorkshiftCompoundConstructor(object):
         assert loc == _Location(8, LOC_WITHIN)
 
     def test_locate_outside(self):
+        """
+        Test if the test is on a test.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         loc = clnd._locate('13 Jan 2017')
         assert loc == _Location(None, OOB_RIGHT)
@@ -40,6 +57,12 @@ class TestWorkshiftCompoundConstructor(object):
         assert loc == _Location(None, OOB_LEFT)
 
     def test_workshift_ordinary_constructor(self):
+        """
+        Test for workshift workshift.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd.get_workshift('04 Jan 2017')
         assert ws._loc == 3
@@ -54,6 +77,12 @@ class TestWorkshiftCompoundConstructor(object):
         assert wsx._loc == ws._loc
 
     def test_workshift_compound_constructor(self):
+        """
+        Return the workshift workshift workshift workshift.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd.get_workshift('11 Jan 2017')
         assert ws._loc == 8
@@ -69,6 +98,12 @@ class TestWorkshiftCompoundConstructor(object):
         assert wsx._label == ws._label
 
     def test_workshift_constructor_compound_at_start(self):
+        """
+        Test for workshift workshift workshift.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd.get_workshift('31 Dec 2016')
         assert ws._loc == 0
@@ -84,6 +119,12 @@ class TestWorkshiftCompoundConstructor(object):
         assert wsx._label == ws._label
 
     def test_workshift_constructor_compound_at_end(self):
+        """
+        Return the workshift workshift workshift.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd.get_workshift('12 Jan 2017')
         assert ws._loc == 8
@@ -102,6 +143,12 @@ class TestWorkshiftCompoundConstructor(object):
 class TestRollForwardCompound(object):
 
     def test_rollforward_trivial_0_to_self(self):
+        """
+        Test to rollforward to rollforward.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd('31 Dec 2016')
         new_ws = ws.rollforward()
@@ -117,6 +164,12 @@ class TestRollForwardCompound(object):
         assert new_ws._loc == 8
 
     def test_rollforward_trivial_0_to_next(self):
+        """
+        Test for next rollforward to rollforward
+
+        Args:
+            self: (todo): write your description
+        """
         org = Organizer(marker='W', structure=[False, [0, 0, 1, 1]])
         clnd =  tb.Timeboard(base_unit_freq='D',
                             start='31 Dec 2016', end='12 Jan 2017',
@@ -129,6 +182,12 @@ class TestRollForwardCompound(object):
         assert new_ws._loc == 3
 
     def test_rollforward_on_0(self):
+        """
+        Test for rollforward rollforward.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd('31 Dec 2016')
         new_ws_list = []
@@ -142,6 +201,12 @@ class TestRollForwardCompound(object):
                                                                       '2017')
 
     def test_rollforward_off_0(self):
+        """
+        Test rollforward off rollforward.
+
+        Args:
+            self: (todo): write your description
+        """
         org = Organizer(marker='W', structure=[False, [0, 0, 1, 1]])
         clnd =  tb.Timeboard(base_unit_freq='D',
                             start='31 Dec 2016', end='12 Jan 2017',
@@ -153,6 +218,12 @@ class TestRollForwardCompound(object):
         assert new_ws_list == [3, 0, 0, 3, 0]
 
     def test_rollforward_on_n(self):
+        """
+        Test if n times on n times.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd('31 Dec 2016')
         new_ws_list = []
@@ -161,6 +232,12 @@ class TestRollForwardCompound(object):
         assert new_ws_list == [4, 5, 4, 5, 2]
 
     def test_rollforward_off_n(self):
+        """
+        Test for rollforward rollforward.
+
+        Args:
+            self: (todo): write your description
+        """
         org = Organizer(marker='W', structure=[False, [0, 0, 1, 1]])
         clnd =  tb.Timeboard(base_unit_freq='D',
                             start='31 Dec 2016', end='12 Jan 2017',
@@ -172,6 +249,12 @@ class TestRollForwardCompound(object):
         assert new_ws_list == [7, 2, 2, 7, 2]
 
     def test_rollforward_on_n_negative_from_last_element(self):
+        """
+        Test if the next n times on_element on_days.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd('11 Jan 2017')
         assert ws.rollforward(steps=-2, duty='on')._loc == 4
@@ -183,6 +266,12 @@ class TestRollForwardCompound(object):
 class TestRollBackCompound(object):
 
     def test_rollback_trivial_0_to_self(self):
+        """
+        Test for rollback back to rollback.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd('11 Jan 2017')
         new_ws = ws.rollback()
@@ -193,6 +282,12 @@ class TestRollBackCompound(object):
 
 
     def test_rollback_trivial_0_to_next(self):
+        """
+        Test for back to rollback to rollback.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd('02 Jan 2017')
         new_ws = ws.rollback()
@@ -200,6 +295,12 @@ class TestRollBackCompound(object):
         assert new_ws.start_time == get_timestamp('31 Dec 2016')
 
     def test_rollback_on_0(self):
+        """
+        Test for back to rollback.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd('10 Jan 2017')
         new_ws_list = []
@@ -208,6 +309,12 @@ class TestRollBackCompound(object):
         assert new_ws_list == [8, 6, 8, 6, 8]
 
     def test_rollback_off_0(self):
+        """
+        Test for rollback back to rollback.
+
+        Args:
+            self: (todo): write your description
+        """
         org = Organizer(marker='W', structure=[False, [0, 0, 1, 1]])
         clnd =  tb.Timeboard(base_unit_freq='D',
                             start='31 Dec 2016', end='12 Jan 2017',
@@ -219,6 +326,12 @@ class TestRollBackCompound(object):
         assert new_ws_list == [7, 8, 8, 7, 8]
 
     def test_rollback_on_n(self):
+        """
+        Test for back back back to rollback.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd('11 Jan 2017')
         new_ws_list = []
@@ -227,6 +340,12 @@ class TestRollBackCompound(object):
         assert new_ws_list == [4, 2, 4, 2, 6]
 
     def test_rollback_off_n(self):
+        """
+        Test if back back back back back to rollback.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd('07 Jan 2017')
         new_ws_list = []
@@ -235,6 +354,12 @@ class TestRollBackCompound(object):
         assert new_ws_list == [0, 2, 2, 0, 4]
 
     def test_rollback_on_n_negative(self):
+        """
+        Test if n back back to rollback.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd('05 Jan 2017')
         new_ws_list = []
@@ -243,6 +368,12 @@ class TestRollBackCompound(object):
         assert new_ws_list == [8, 6, 8, 6, 6]
 
     def test_rollback_off_n_negative(self):
+        """
+        Test if back back back back back back to n times.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd('03 Jan 2017')
         new_ws_list = []

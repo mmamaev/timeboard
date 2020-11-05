@@ -27,12 +27,26 @@ VOID_TIME = pd.NaT
 TIMELINE_DEL_TEMP_OBJECTS = True
 
 def get_timestamp(arg):
+    """
+    Get timestamp from timestamp.
+
+    Args:
+        arg: (todo): write your description
+    """
     try:
         return arg.to_timestamp()
     except AttributeError:
         return pd.Timestamp(arg)
 
 def get_period(period_ref, freq=None, freq_override=False):
+    """
+    Get a period.
+
+    Args:
+        period_ref: (str): write your description
+        freq: (str): write your description
+        freq_override: (str): write your description
+    """
     if (isinstance(period_ref, pd.Period) and
             (freq is None or not freq_override)):
         return period_ref
@@ -42,6 +56,12 @@ def get_period(period_ref, freq=None, freq_override=False):
         return pd.Period(get_timestamp(period_ref), freq=freq)
 
 def get_freq_delta(freq):
+    """
+    Return a frequency
+
+    Args:
+        freq: (str): write your description
+    """
     # Starting on 01 Jul 2016 gives the longest timedeltas for freq  based
     # on 'M', 'Q', 'A'
     pi = pd.period_range(start='01 Jul 2016', freq=freq, periods=2)
@@ -71,9 +91,20 @@ def _skiperator(values, skip=0):
     generator
     """
     def make_counter():
+        """
+        Make a counter.
+
+        Args:
+        """
         nonlocal_vars = {'iters': 0}
 
         def _counter(_):
+            """
+            Returns the counter of a counter.
+
+            Args:
+                _: (todo): write your description
+            """
             flag = nonlocal_vars['iters'] < skip
             nonlocal_vars['iters'] += 1
             return flag
@@ -196,6 +227,15 @@ class _Frame(pd.PeriodIndex):
     Frame must contain at least one element. Empty frames are not allowed. 
     """
     def __new__(cls, base_unit_freq=None, start=None, end=None, **kwargs):
+        """
+        Create a new : class instance.
+
+        Args:
+            cls: (todo): write your description
+            base_unit_freq: (bool): write your description
+            start: (todo): write your description
+            end: (int): write your description
+        """
         if base_unit_freq is not None:
             _freq = base_unit_freq
         else:
@@ -224,17 +264,43 @@ class _Frame(pd.PeriodIndex):
 
     @property
     def start_time(self):
+        """
+        Returns the start time of the task.
+
+        Args:
+            self: (todo): write your description
+        """
         return self[0].start_time
 
     @property
     def end_time(self):
+        """
+        The end time.
+
+        Args:
+            self: (todo): write your description
+        """
         return self[-1].end_time
 
     @property
     def start_times(self):
+        """
+        Start the start time.
+
+        Args:
+            self: (todo): write your description
+        """
         return self._start_times
 
     def get_loc(self, timestamp, not_in_range=None, *kwargs):
+        """
+        Get the location of the given timestamp.
+
+        Args:
+            self: (todo): write your description
+            timestamp: (todo): write your description
+            not_in_range: (int): write your description
+        """
         if timestamp > self.end_time or timestamp < self.start_time:
             if not_in_range is None:
                 raise KeyError("Timestamp {} is out of bounds")
@@ -246,6 +312,16 @@ class _Frame(pd.PeriodIndex):
 
     def get_loc_vectorized(self, timestamps, not_in_range=0, span_first=None,
                            span_last=None):
+        """
+        Returns a list of the locus in - place.
+
+        Args:
+            self: (todo): write your description
+            timestamps: (todo): write your description
+            not_in_range: (int): write your description
+            span_first: (str): write your description
+            span_last: (str): write your description
+        """
         start_times = self.start_times.append(
             pd.DatetimeIndex([self.start_times[-1] + SMALLEST_TIMEDELTA]))
         if span_first is None:
@@ -261,6 +337,13 @@ class _Frame(pd.PeriodIndex):
         return result
 
     def check_span(self, span):
+        """
+        Check the span of the span.
+
+        Args:
+            self: (todo): write your description
+            span: (str): write your description
+        """
         span_first = span.first
         span_last = span.last
         try:
@@ -571,12 +654,28 @@ class _Span(object):
     Same as parameters. The attributes are mutable.
     """
     def __init__(self, first, last, skip_left=0, skip_right=0):
+        """
+        Initialize the first item.
+
+        Args:
+            self: (todo): write your description
+            first: (str): write your description
+            last: (todo): write your description
+            skip_left: (list): write your description
+            skip_right: (list): write your description
+        """
         self.first = first
         self.last = last
         self.skip_left = skip_left
         self.skip_right = skip_right
 
     def __repr__(self):
+        """
+        Return the representation of this field.
+
+        Args:
+            self: (todo): write your description
+        """
         return "{}({},{},{},{})".format(self.__class__, self.first, self.last,
                                         self.skip_left, self.skip_right)
 
@@ -614,6 +713,16 @@ class _Timeline(object):
         When the last workshift ends.
     """
     def __init__(self, frame, organizer=None, workshift_ref=None, data=None):
+        """
+        Initialize the frame.
+
+        Args:
+            self: (todo): write your description
+            frame: (todo): write your description
+            organizer: (todo): write your description
+            workshift_ref: (todo): write your description
+            data: (todo): write your description
+        """
         self._frame = frame
 
         # make auxiliary temporary arrays to speed up organizing
@@ -623,6 +732,12 @@ class _Timeline(object):
         self._ws_compound_mask = np.ones((len(frame)), dtype=np.int8)
 
         def _masked_counter(mask):
+            """
+            Yields all the counter that mask.
+
+            Args:
+                mask: (array): write your description
+            """
             n = 0
             for i, m in enumerate(mask):
                 if m:
@@ -765,26 +880,71 @@ class _Timeline(object):
         #               timersp.sum(), timersa.sum(), timersb.sum()))
     @property
     def frame(self):
+        """
+        : return : a frame.
+
+        Args:
+            self: (todo): write your description
+        """
         return self._frame
 
     @property
     def start_time(self):
+        """
+        Return the start time of the timer.
+
+        Args:
+            self: (todo): write your description
+        """
         return self._frame.start_time
 
     @property
     def end_time(self):
+        """
+        The end time.
+
+        Args:
+            self: (todo): write your description
+        """
         return self._frame.end_time
 
     def __len__(self):
+        """
+        Returns the length of the queue.
+
+        Args:
+            self: (todo): write your description
+        """
         return len(self._wsband)
 
     def __getitem__(self, n):
+        """
+        Return the first n item.
+
+        Args:
+            self: (todo): write your description
+            n: (todo): write your description
+        """
         return self._wsband.iloc[n]
 
     def _get_ws_first_baseunit(self, n):
+        """
+        Return the base unit of the n.
+
+        Args:
+            self: (todo): write your description
+            n: (todo): write your description
+        """
         return self._wsband.index[n]
 
     def _get_ws_last_baseunit(self, n):
+        """
+        Return the base unit in the base unit.
+
+        Args:
+            self: (todo): write your description
+            n: (str): write your description
+        """
         # first check if the workshift exists
         try:
             self._wsband.iloc[n]
@@ -993,6 +1153,12 @@ class _Timeline(object):
 
     @property
     def labels(self):
+        """
+        : rtype : return :
+
+        Args:
+            self: (todo): write your description
+        """
         return self._wsband
 
     def reset(self, value=np.nan):
@@ -1177,6 +1343,15 @@ class _Schedule(object):
     """
 
     def __init__(self, timeline, name, selector):
+        """
+        Initialize a timestamps.
+
+        Args:
+            self: (todo): write your description
+            timeline: (int): write your description
+            name: (str): write your description
+            selector: (str): write your description
+        """
         self._timeline = timeline
         self._name = str(name)
         self._selector = selector
@@ -1187,28 +1362,73 @@ class _Schedule(object):
 
     @property
     def name(self):
+        """
+        The name of the name
+
+        Args:
+            self: (todo): write your description
+        """
         return self._name
 
     @property
     def on_duty_index(self):
+        """
+        The success : class : class : ~pymongo.
+
+        Args:
+            self: (todo): write your description
+        """
         return self._on_duty_index
 
     @property
     def off_duty_index(self):
+        """
+        The index of the cycle index.
+
+        Args:
+            self: (todo): write your description
+        """
         return self._off_duty_index
 
     @property
     def index(self):
+        """
+        Return the index of the series.
+
+        Args:
+            self: (todo): write your description
+        """
         return np.arange(len(self._timeline))
 
     def label(self, n):
+        """
+        Return the number of rows n.
+
+        Args:
+            self: (todo): write your description
+            n: (array): write your description
+        """
         return self._timeline[n]
 
     def is_on_duty(self, n):
+        """
+        Return true if n is at the given.
+
+        Args:
+            self: (todo): write your description
+            n: (todo): write your description
+        """
         # noinspection PyCallingNonCallable
         return self._selector(self._timeline[n])
 
     def is_off_duty(self, n):
+        """
+        Return true if n is a negative number of times.
+
+        Args:
+            self: (todo): write your description
+            n: (str): write your description
+        """
         return not self.is_on_duty(n)
 
 
@@ -1341,6 +1561,15 @@ class Organizer(object):
     the documentation.
     """
     def __init__(self, marker=None, marks=None, structure=None):
+        """
+        Initialize a marker.
+
+        Args:
+            self: (todo): write your description
+            marker: (array): write your description
+            marks: (str): write your description
+            structure: (str): write your description
+        """
         if (marker is None) == (marks is None):
             raise ValueError("One and only one of 'marker' or 'marks' "
                              "must be specified ")
@@ -1355,14 +1584,32 @@ class Organizer(object):
 
     @property
     def marker(self):
+        """
+        The marker marker.
+
+        Args:
+            self: (todo): write your description
+        """
         return self._marker
 
     @property
     def marks(self):
+        """
+        : class : class : ~pymongo.
+
+        Args:
+            self: (todo): write your description
+        """
         return self._marks
 
     @property
     def structure(self):
+        """
+        Returns the structure.
+
+        Args:
+            self: (todo): write your description
+        """
         return self._structure
 
     def _repr_builder(self, repr_objects=None):
@@ -1440,6 +1687,12 @@ class Organizer(object):
         return repr_objects
 
     def __repr__(self):
+        """
+        Return a repr of this object.
+
+        Args:
+            self: (todo): write your description
+        """
         repr_objects = self._repr_builder()
         _, my_line = repr_objects.popitem()
         my_object_lines = ""
@@ -1624,6 +1877,15 @@ class Marker(object):
     """
 
     def __init__(self, each, at=None, how='from_start_of_each'):
+        """
+        Initialize easter.
+
+        Args:
+            self: (todo): write your description
+            each: (todo): write your description
+            at: (todo): write your description
+            how: (bool): write your description
+        """
         self._each = each
         self._at = at
         how_functions = {
@@ -1641,17 +1903,41 @@ class Marker(object):
 
     @property
     def each(self):
+        """
+        Returns the result of this query.
+
+        Args:
+            self: (todo): write your description
+        """
         return self._each
 
     @property
     def at(self):
+        """
+        : return value at the first : attr : at_at.
+
+        Args:
+            self: (todo): write your description
+        """
         return self._at
 
     @property
     def how(self):
+        """
+        Return the number of the next item
+
+        Args:
+            self: (todo): write your description
+        """
         return self._how
 
     def __repr__(self):
+        """
+        Return a representation of the representation.
+
+        Args:
+            self: (todo): write your description
+        """
         at_how_repr = ""
         if self.at:
             at_how_repr = ", at={!r}, how={!r}".format(self.at, self._how_str)
@@ -1688,32 +1974,88 @@ class RememberingPattern(object):
     the documentation.
     """
     def __init__(self, labels):
+        """
+        Initialize the internal state.
+
+        Args:
+            self: (todo): write your description
+            labels: (dict): write your description
+        """
         self._labels = labels
         self._label_generator = cycle(labels)
 
     def __repr__(self):
+        """
+        Return a human - readable representation of this object.
+
+        Args:
+            self: (todo): write your description
+        """
         return "RememberingPattern({!r})".format(self._labels)
 
     def __next__(self):
+        """
+        Returns the next iterator.
+
+        Args:
+            self: (todo): write your description
+        """
         return next(self._label_generator)
 
     def next(self):
+        """
+        Returns the next item
+
+        Args:
+            self: (todo): write your description
+        """
         return self.__next__()
 
     def __iter__(self):
+        """
+        Returns an iterator over the iterable.
+
+        Args:
+            self: (todo): write your description
+        """
         return self
 
     def __getitem__(self, i):
+        """
+        Return the item with the given i.
+
+        Args:
+            self: (todo): write your description
+            i: (todo): write your description
+        """
         return self._labels[i]
 
     @property
     def length(self):
+        """
+        Returns the length of the sequence.
+
+        Args:
+            self: (todo): write your description
+        """
         return len(self._labels)
 
     def __nonzero__(self):
+        """
+        Return the number of non - zero elements.
+
+        Args:
+            self: (todo): write your description
+        """
         return self.length > 0
 
     def __bool__(self):
+        """
+        Returns the boolean value of the queue.
+
+        Args:
+            self: (todo): write your description
+        """
         return self.length > 0
 
 
