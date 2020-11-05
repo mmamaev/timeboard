@@ -70,6 +70,15 @@ class Workshift(object):
     """
 
     def __init__(self, timeboard, location, schedule=None):
+        """
+        Initialize the schedule.
+
+        Args:
+            self: (todo): write your description
+            timeboard: (int): write your description
+            location: (str): write your description
+            schedule: (todo): write your description
+        """
         if schedule is None:
             schedule = timeboard.default_schedule
         if not isinstance(schedule, _Schedule):
@@ -90,6 +99,12 @@ class Workshift(object):
         self._schedule = schedule
 
     def _repr_schedule_label(self):
+        """
+        Generate a label for this schedule.
+
+        Args:
+            self: (todo): write your description
+        """
         schedule_label = self.schedule.name
         if schedule_label == self._tb.default_schedule.name:
             schedule_label = ""
@@ -98,12 +113,24 @@ class Workshift(object):
         return schedule_label
 
     def __repr__(self):
+        """
+        Return a human - readable representation of this object.
+
+        Args:
+            self: (todo): write your description
+        """
 
         return "Workshift({}{}) of ".format(
                 self._loc, self._repr_schedule_label()) + self.compact_str
 
     @property
     def compact_str(self):
+        """
+        Return a human - readable string representation of the duration.
+
+        Args:
+            self: (todo): write your description
+        """
         duration_str = ''
         if self.duration != 1:
             duration_str = str(self.duration) + 'x'
@@ -113,31 +140,67 @@ class Workshift(object):
                                                 freq=self._tb.base_unit_freq))
 
     def __str__(self):
+        """
+        Return a string representing this instance.
+
+        Args:
+            self: (todo): write your description
+        """
         return "Workshift({}{}) of ".format(
                 self._loc, self._repr_schedule_label()) + self.compact_str + \
                "\n\n{}".format(self._tb.to_dataframe(self._loc, self._loc))
 
     @property
     def start_time(self):
+        """
+        The start time of the timer.
+
+        Args:
+            self: (todo): write your description
+        """
         # TODO: Refactor. _Timeline methods should not be called from this class
         return self._tb._timeline.get_ws_start_time(self._loc)
 
     @property
     def end_time(self):
+        """
+        The end time.
+
+        Args:
+            self: (todo): write your description
+        """
         # TODO: Refactor. _Timeline methods should not be called from this class
         return self._tb._timeline.get_ws_end_time(self._loc)
 
     @property
     def duration(self):
+        """
+        The duration of the task.
+
+        Args:
+            self: (todo): write your description
+        """
         # TODO: Refactor. _Timeline methods should not be called from this class
         return self._tb._timeline.get_ws_duration(self._loc)
 
     @property
     def label(self):
+        """
+        Returns the label.
+
+        Args:
+            self: (todo): write your description
+        """
         return self._label
 
     @property
     def schedule(self):
+        """
+        Schedules the schedule.
+
+        Args:
+            self: (todo): write your description
+        """
         return self._schedule
 
     def to_timestamp(self):
@@ -189,6 +252,14 @@ class Workshift(object):
         return schedule.is_off_duty(self._loc)
 
     def _get_duty_index(self, duty, schedule):
+        """
+        Get the schedule index of the schedule.
+
+        Args:
+            self: (todo): write your description
+            duty: (str): write your description
+            schedule: (str): write your description
+        """
         i_am_on_duty = self.is_on_duty(schedule)
         i_am_off_duty = self.is_off_duty(schedule)
         if (duty == 'on') or (duty == 'same' and i_am_on_duty) or (

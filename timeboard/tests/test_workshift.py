@@ -9,6 +9,11 @@ import pytest
 import pandas as pd
 
 def tb_12_days():
+    """
+    Return the days days
+
+    Args:
+    """
     return tb.Timeboard(base_unit_freq='D',
                         start='31 Dec 2016', end='12 Jan 2017',
                         layout=[0, 1, 0, 0, 2, 0])
@@ -18,11 +23,23 @@ def tb_12_days():
 class TestWorkshiftConstructor(object):
 
     def test_locate(self):
+        """
+        Test if the test window.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         loc = clnd._locate('04 Jan 2017')
         assert loc == _Location(4, LOC_WITHIN)
 
     def test_locate_outside(self):
+        """
+        Test if the test is on a test.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         loc = clnd._locate('13 Jan 2017')
         assert loc == _Location(None, OOB_RIGHT)
@@ -30,6 +47,12 @@ class TestWorkshiftConstructor(object):
         assert loc == _Location(None, OOB_LEFT)
 
     def test_locate_bad_ts(self):
+        """
+        Test if a badge.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         with pytest.raises(ValueError):
             clnd._locate('33 Dec 2016')
@@ -38,6 +61,12 @@ class TestWorkshiftConstructor(object):
 
 
     def test_workshift_constructor(self):
+        """
+        Return the test workshift.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd.get_workshift('04 Jan 2017')
         assert ws._loc == 4
@@ -54,6 +83,12 @@ class TestWorkshiftConstructor(object):
         assert wsx._loc == ws._loc
 
     def test_workshift_constructor_from_ts(self):
+        """
+        Return a workshift workshift workshift.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd.get_workshift(pd.Timestamp('04 Jan 2017 15:00'))
         assert ws._loc == 4
@@ -70,6 +105,12 @@ class TestWorkshiftConstructor(object):
         assert wsx._loc == ws._loc
 
     def test_workshift_constructor_from_datetime(self):
+        """
+        Return a datetime.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd.get_workshift(datetime.datetime(2017,1,4,15,0,0))
         assert ws._loc == 4
@@ -86,6 +127,12 @@ class TestWorkshiftConstructor(object):
         assert wsx._loc == ws._loc
 
     def test_workshift_constructor_from_pd_period(self):
+        """
+        Return a clndperiod object representing the clnds.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         # freq='W' begins in Mon, which is 02 Jan
         ws = clnd.get_workshift(pd.Period('05 Jan 2017', freq='W'))
@@ -103,11 +150,23 @@ class TestWorkshiftConstructor(object):
         assert wsx._loc == ws._loc
 
     def test_workshift_constructor_date_outside(self):
+        """
+        Set the date workshift workshift workshift workshift.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         with pytest.raises(OutOfBoundsError):
             clnd('14 Jan 2017')
 
     def test_direct_workshift_constructor(self):
+        """
+        Test for a workspace was created.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = Workshift(clnd, 4)
         assert ws._loc == 4
@@ -121,6 +180,12 @@ class TestWorkshiftConstructor(object):
         assert ws.duration == 1
 
     def test_direct_workshift_constructor_with_bad_loc(self):
+        """
+        Test if a workspace.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         #with pytest.raises(KeyError):
         get_timestamp(Workshift(clnd, -1, clnd.default_schedule)
@@ -136,6 +201,12 @@ class TestWorkshiftConstructor(object):
 class TestRollForward(object):
 
     def test_rollforward_trivial_0_to_self(self):
+        """
+        Test to rollforward to rollforward.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd('04 Jan 2017')
         new_ws = ws.rollforward()
@@ -143,12 +214,24 @@ class TestRollForward(object):
 
 
     def test_rollforward_trivial_0_to_next(self):
+        """
+        Test to rollforward to rollforward.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd('31 Dec 2016')
         new_ws = ws.rollforward()
         assert new_ws._loc == 1
 
     def test_rollforward_on_0(self):
+        """
+        Test on on_rollforward.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd('01 Jan 2017')
         new_ws_list = []
@@ -157,6 +240,12 @@ class TestRollForward(object):
         assert new_ws_list == [1, 2, 1, 2, 1]
 
     def test_rollforward_off_0(self):
+        """
+        Test off rollforward rollforward.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd('02 Jan 2017')
         new_ws_list = []
@@ -165,6 +254,12 @@ class TestRollForward(object):
         assert new_ws_list == [4, 2, 2, 4, 2]
 
     def test_rollforward_off_0_after_last_on_element(self):
+        """
+        Toggle rollforward attempts to the last element.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd('11 Jan 2017')
         assert ws.rollforward(duty='off')._loc == 11
@@ -173,6 +268,12 @@ class TestRollForward(object):
             assert ws.rollforward(duty='on')
 
     def test_rollforward_on_n(self):
+        """
+        Test on_roll on n times on every epoch.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd('04 Jan 2017')
         new_ws_list = []
@@ -181,6 +282,12 @@ class TestRollForward(object):
         assert new_ws_list == [10, 8, 10, 8, 6]
 
     def test_rollforward_off_n(self):
+        """
+        Test for rollforward rollforward.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd('03 Jan 2017')
         new_ws_list = []
@@ -189,6 +296,12 @@ class TestRollForward(object):
         assert new_ws_list == [10, 6, 6, 10, 5]
 
     def test_rollforward_on_n_negative(self):
+        """
+        Test if the next n times on n times.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd('10 Jan 2017')
         new_ws_list = []
@@ -197,6 +310,12 @@ class TestRollForward(object):
         assert new_ws_list == [4, 8, 4, 8, 8]
 
     def test_rollforward_off_n_negative(self):
+        """
+        Test for rollforward rollforward times.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd('08 Jan 2017')
         new_ws_list = []
@@ -205,6 +324,12 @@ class TestRollForward(object):
         assert new_ws_list == [4, 5, 5, 4, 6]
 
     def test_rollforward_off_n_negative_after_last_on_element(self):
+        """
+        Test whether the next n_off.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd('12 Jan 2017')
         assert ws.rollforward(steps=-2, duty='off')._loc == 9
@@ -213,21 +338,45 @@ class TestRollForward(object):
             ws.rollforward(steps=-2, duty='on')
 
     def test_rollforward_n_off_limits(self):
+        """
+        Test whether the number of tests.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         with pytest.raises(OutOfBoundsError):
             clnd('10 Jan 2017').rollforward(1)
 
     def test_rollforward_alt_off_limits(self):
+        """
+        Test for rollforward limits.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         with pytest.raises(OutOfBoundsError):
             clnd('11 Jan 2017').rollforward(duty='alt')
 
     def test_rollforward_n_negative_off_limits(self):
+        """
+        Test if the number of free limits.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         with pytest.raises(OutOfBoundsError):
             clnd('01 Jan 2017').rollforward(-1)
 
     def test_rollforward_no_such_duty(self):
+        """
+        Test for rollforward rollforward.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb.Timeboard(base_unit_freq='D',
                             start='31 Dec 2016', end='12 Jan 2017',
                             layout=[0])
@@ -235,6 +384,12 @@ class TestRollForward(object):
             clnd('31 Dec 2016').rollforward()
 
     def test_rollforward_bad_duty(self):
+        """
+        Test if rollforward rollforward.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         with pytest.raises(ValueError):
             clnd('01 Jan 2017').rollforward(duty='bad_value')
@@ -243,6 +398,12 @@ class TestRollForward(object):
 class TestRollBack(object):
 
     def test_rollback_trivial_0_to_self(self):
+        """
+        Test if rollback back to rollback.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd('04 Jan 2017')
         new_ws = ws.rollback()
@@ -250,12 +411,24 @@ class TestRollBack(object):
 
 
     def test_rollback_trivial_0_to_next(self):
+        """
+        Test for back to rollback to rollback.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd('02 Jan 2017')
         new_ws = ws.rollback()
         assert new_ws._loc == 1
 
     def test_rollback_on_0(self):
+        """
+        Test for rollback back to rollback.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd('01 Jan 2017')
         new_ws_list = []
@@ -264,6 +437,12 @@ class TestRollBack(object):
         assert new_ws_list == [1, 0, 1, 0, 1]
 
     def test_rollback_off_0(self):
+        """
+        Test for rollback back to rollback.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd('12 Jan 2017')
         new_ws_list = []
@@ -272,6 +451,12 @@ class TestRollBack(object):
         assert new_ws_list == [10, 12, 12, 10, 12]
 
     def test_rollback_off_0_at_first_element(self):
+        """
+        Test if backback back to rollback changes.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd('31 Dec 2016')
         assert ws.rollback(duty='off')._loc == 0
@@ -280,6 +465,12 @@ class TestRollBack(object):
             ws.rollback(duty='on')
 
     def test_rollback_on_n(self):
+        """
+        Test if rollback back to rollback.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd('10 Jan 2017')
         new_ws_list = []
@@ -288,6 +479,12 @@ class TestRollBack(object):
         assert new_ws_list == [4, 6, 4, 6, 8]
 
     def test_rollback_off_n(self):
+        """
+        Test if back back back back back to rollback.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd('11 Jan 2017')
         new_ws_list = []
@@ -296,6 +493,12 @@ class TestRollBack(object):
         assert new_ws_list == [4, 8, 8, 4, 9]
 
     def test_rollback_on_n_negative(self):
+        """
+        Test if n back back to rollback.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd('04 Jan 2017')
         new_ws_list = []
@@ -304,6 +507,12 @@ class TestRollBack(object):
         assert new_ws_list == [10, 6, 10, 6, 6]
 
     def test_rollback_off_n_negative(self):
+        """
+        Test if back back back back back back to n times.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd('05 Jan 2017')
         new_ws_list = []
@@ -312,6 +521,12 @@ class TestRollBack(object):
         assert new_ws_list == [10, 8, 8, 10, 7]
 
     def test_rollback_off_n_negative_at_first_element(self):
+        """
+        Test if back back back back back back back to the previous back backback.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd('31 Dec 2016')
         assert ws.rollback(steps=-2, duty='off')._loc == 3
@@ -320,21 +535,45 @@ class TestRollBack(object):
             ws.rollback(steps=-2, duty='on')
 
     def test_rollback_alt_off_limits(self):
+        """
+        Test whether rollback back to rollback
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         with pytest.raises(OutOfBoundsError):
             clnd('31 Dec 2016').rollback(duty='alt')
 
     def test_rollback_n_off_limits(self):
+        """
+        Test for backback limits.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         with pytest.raises(OutOfBoundsError):
             clnd('01 Jan 2017').rollback(1)
 
     def test_rollback_n_negative_off_limits(self):
+        """
+        Test if backback back the previous backback back to the previous back - back to the number of the previous backback.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         with pytest.raises(OutOfBoundsError):
             clnd('10 Jan 2017').rollback(-1)
 
     def test_rollback_only_alt(self):
+        """
+        Test for rollback rollback
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb.Timeboard(base_unit_freq='D',
                             start='31 Dec 2016', end='12 Jan 2017',
                             layout=[0])
@@ -342,6 +581,12 @@ class TestRollBack(object):
             clnd('10 Jan 2017').rollback()
 
     def test_rollback_bad_duty(self):
+        """
+        Test for rollback.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         with pytest.raises(ValueError):
             clnd('01 Jan 2017').rollback(duty='bad_value')
@@ -350,11 +595,23 @@ class TestRollBack(object):
 class TestWorkshiftAddSubNumber(object):
 
     def test_workshift_add_positive_n(self):
+        """
+        Test if the test workshift workshift test was added.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd('02 Jan 2017') + 2
         assert ws._loc == 10
 
     def test_workshift_add_zero(self):
+        """
+        Test if a test workshift workshift workshift test purposes.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws0 = clnd('02 Jan 2017')
         addition = 0
@@ -362,6 +619,12 @@ class TestWorkshiftAddSubNumber(object):
         assert ws._loc == 4
 
     def test_workshift_add_negative_n(self):
+        """
+        Test if tbhift workshift workshift
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws0 = clnd('09 Jan 2017')
         addition = -2
@@ -369,11 +632,23 @@ class TestWorkshiftAddSubNumber(object):
         assert ws._loc == 4
 
     def test_workshift_sub_positive_n(self):
+        """
+        Return the number of the workshift workshift workshift
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = clnd('09 Jan 2017') - 2
         assert ws._loc == 1
 
     def test_workshift_sub_zero(self):
+        """
+        Return the workshift workshift workshift workshift
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws0 = clnd('02 Jan 2017')
         addition = 0
@@ -381,6 +656,12 @@ class TestWorkshiftAddSubNumber(object):
         assert ws._loc == 1
 
     def test_workshift_sub_negative_n(self):
+        """
+        Test if the workshift workshift workshift
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws0 = clnd('02 Jan 2017')
         addition = -2
@@ -391,6 +672,12 @@ class TestWorkshiftAddSubNumber(object):
 class TestWorkshiftSubAnotherWS(object):
 
     def test_workshift_sub_non_ws(self):
+        """
+        Test for workshift workshift workshift
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         with pytest.raises(TypeError):
             clnd('07 Jan 2017') - clnd('01 Jan 2017')
@@ -450,6 +737,12 @@ class TestWorkshiftSubAnotherWS(object):
     #     assert False
 
     def test_workshift_sub_non_ws(self):
+        """
+        Test for workshift workshift workshift.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         with pytest.raises(TypeError):
             clnd('07 Jan 2017') - datetime.datetime(2017,1,1,0,0,0)
@@ -458,6 +751,12 @@ class TestWorkshiftSubAnotherWS(object):
 class TestWorkshiftSchedules(object):
     
     def test_ws_on_duty_schedules(self):
+        """
+        Test if schedule schedule schedule schedule.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         sdl = clnd.add_schedule(name='sdl', selector=lambda x: x>1)
         ws0 = clnd('01 Jan 2017')
@@ -471,6 +770,12 @@ class TestWorkshiftSchedules(object):
      
 
     def test_ws_rollforward_0_schedules(self):
+        """
+        Test if schedule schedule schedule.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         sdl = clnd.add_schedule(name='sdl', selector=lambda x: x>1)
         ws0 = clnd('01 Jan 2017')
@@ -489,6 +794,12 @@ class TestWorkshiftSchedules(object):
         assert ws.schedule.name =='on_duty'
 
     def test_ws_rollback_0_schedules(self):
+        """
+        Test if the scheduler.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         sdl = clnd.add_schedule(name='sdl', selector=lambda x: x>1)
         ws0 = clnd('08 Jan 2017')
@@ -507,6 +818,12 @@ class TestWorkshiftSchedules(object):
         assert ws.schedule.name =='on_duty'
 
     def test_ws_rollforward_n_schedules(self):
+        """
+        Test whether the n - schedule.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         sdl = clnd.add_schedule(name='sdl', selector=lambda x: x>1)
         ws0 = clnd('01 Jan 2017')
@@ -525,6 +842,12 @@ class TestWorkshiftSchedules(object):
         assert ws.schedule.name =='on_duty'
 
     def test_ws_rollback_n_schedules(self):
+        """
+        Test if the next n scheduled schedule.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         sdl = clnd.add_schedule(name='sdl', selector=lambda x: x>1)
         ws0 = clnd('11 Jan 2017')
@@ -543,6 +866,12 @@ class TestWorkshiftSchedules(object):
         assert ws.schedule.name =='on_duty'
 
     def test_ws_rollforward_any_schedules(self):
+        """
+        Test to see if any schedule schedule.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         sdl = clnd.add_schedule(name='sdl', selector=lambda x: x>1)
         ws0 = clnd('31 Dec 2016')
@@ -561,6 +890,12 @@ class TestWorkshiftSchedules(object):
         assert ws.schedule.name =='on_duty'
 
     def test_ws_rollforward_schedules_OOB(self):
+        """
+        Test for schedule schedule to schedule.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         sdl = clnd.add_schedule(name='sdl', selector=lambda x: x>1)
         ws0 = clnd('03 Jan 2017')
@@ -570,6 +905,12 @@ class TestWorkshiftSchedules(object):
             ws1.rollforward(2)
 
     def test_ws_bad_schedule(self):
+        """
+        Test if schedule schedule schedule.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         sdl = clnd.add_schedule(name='sdl', selector=lambda x: x>1)
         with pytest.raises(TypeError):
@@ -579,6 +920,12 @@ class TestWorkshiftSchedules(object):
 class TestWorkshiftWorktime(object):
 
     def test_ws_worktime_default(self):
+        """
+        Test if the default worktime.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = Workshift(clnd, 4)
         assert ws.worktime() == 1
@@ -591,6 +938,12 @@ class TestWorkshiftWorktime(object):
         assert ws.worktime(duty='any') == 1
 
     def test_ws_worktime_in_label(self):
+        """
+        Test for the workhift worktime between two workshift.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb.Timeboard(base_unit_freq='D',
                         start='31 Dec 2016', end='12 Jan 2017',
                         layout=[0, 1, 0, 0, 2, 0],
@@ -601,6 +954,12 @@ class TestWorkshiftWorktime(object):
         assert ws.worktime(duty='any') == 2
 
     def test_ws_worktime_other_schedule(self):
+        """
+        Test if the schedule between two workshift.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         other_sdl = clnd.add_schedule('other', lambda label: label < 2)
         ws = Workshift(clnd, 4)
@@ -618,6 +977,12 @@ class TestWorkshiftWorktime(object):
         assert ws.worktime(duty='any', schedule=other_sdl) == 2
 
     def test_ws_worktime_in_labels_strings(self):
+        """
+        Test for workshift labels.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb.Timeboard(base_unit_freq='D',
                             start='31 Dec 2016', end='12 Jan 2017',
                             layout=[0, 1, 0, 0, 'a', 0],
@@ -630,6 +995,12 @@ class TestWorkshiftWorktime(object):
         assert ws.worktime(duty='off') == 0
 
     def test_ws_worktime_bad_duty(self):
+        """
+        Test if the worktime worktime.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = tb_12_days()
         ws = Workshift(clnd, 4)
         with pytest.raises(ValueError):

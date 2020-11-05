@@ -3,6 +3,12 @@ from timeboard.utils import to_iterable
 class TestToIterable(object):
 
     def test_to_iterable(self):
+        """
+        Convert iterable to iterable.
+
+        Args:
+            self: (todo): write your description
+        """
         assert to_iterable(None) is None
         assert to_iterable(1) == [1]
         assert to_iterable('123') == ['123']

@@ -10,6 +10,12 @@ import pytest
 class TestCalendarsRU(object):
 
     def test_calendar_RU_week8x5(self):
+        """
+        Test for day of the first day of the year.
+
+        Args:
+            self: (todo): write your description
+        """
 
         start = RU.Weekly8x5.parameters()['start']
         end = RU.Weekly8x5.parameters()['end']
@@ -58,15 +64,33 @@ class TestCalendarsRU(object):
         assert clnd('22 Feb 2017').label == 7
 
     def test_calendar_RU_week8x5_31dec_off(self):
+        """
+        Test if the day of the day.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = RU.Weekly8x5(work_on_dec31=False)
         for y in range(2008,2020):
             assert clnd("31 Dec {}".format(y)).is_off_duty()
 
     def test_calendar_RU_week8x5_no_short_eves(self):
+        """
+        Test to set the first week.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = RU.Weekly8x5(short_eves=False)
         assert clnd('22 Feb 2017').label == 8
 
     def test_calendar_RU_week8x5_custom_amds(self):
+        """
+        Test if the pid for the week.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = RU.Weekly8x5(custom_amendments={'22 Feb 2017 00:00': 0,
                                              '23.02.2017': 8})
         assert clnd('21 Feb 2017').is_on_duty()
@@ -76,6 +100,12 @@ class TestCalendarsRU(object):
         assert clnd('01 May 2017').is_off_duty()
 
     def test_calendar_RU_week8x5_custom_amds_ambiguous(self):
+        """
+        Test for the calendar pid.
+
+        Args:
+            self: (todo): write your description
+        """
         # We already have timestamps of 22.02.17 00:00:00 and 23.02.17 00:00:00
         # in amendments dict which is to be update by custom amds.
         # Applying the custom amds below would result in ambiguous keys (two
@@ -92,6 +122,12 @@ class TestCalendarsRU(object):
 
 
     def test_calendar_RU_week8x5_only_custom_amds(self):
+        """
+        Reset the week of the week.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = RU.Weekly8x5(only_custom_amendments=True,
                             custom_amendments={'22 Feb 2017': 0,
                                              '23 Feb 2017': 8})
@@ -103,6 +139,12 @@ class TestCalendarsRU(object):
 
 
     def test_calendar_RU_week8x5_no_amds(self):
+        """
+        Calculates the week of the week.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = RU.Weekly8x5(do_not_amend=True,
                             only_custom_amendments=True,
                             custom_amendments={'22 Feb 2017': 0,
@@ -115,6 +157,12 @@ class TestCalendarsRU(object):
         assert clnd('01 May 2017').is_on_duty()
 
     def test_calendar_RU_week8x5_select_years(self):
+        """
+        Test if the next day of the week.
+
+        Args:
+            self: (todo): write your description
+        """
 
         clnd = RU.Weekly8x5('01 Jan 2010', '31 Dec 2015')
         assert clnd.start_time == datetime.datetime(2010, 1, 1, 0, 0, 0)
@@ -127,6 +175,12 @@ class TestCalendarsRU(object):
         assert clnd.end_time < datetime.datetime(2015, 1, 2, 0, 0, 0)
 
     def test_calendar_RU_week8x5_OOB(self):
+        """
+        Determine if the first day of the calendar.
+
+        Args:
+            self: (todo): write your description
+        """
         with pytest.raises(OutOfBoundsError):
             RU.Weekly8x5('1990')
         with pytest.raises(OutOfBoundsError):
@@ -135,6 +189,12 @@ class TestCalendarsRU(object):
 class TestCalendarsUS(object):
 
     def test_calendar_US_week8x5(self):
+        """
+        Calculate the holidays for the calendar.
+
+        Args:
+            self: (todo): write your description
+        """
         holidays_2011 = [
             '31 Dec 2010', '17 Jan 2011', '21 Feb 2011', '30 May 2011',
             '04 Jul 2011', '05 Sep 2011', '10 Oct 2011', '11 Nov 2011',
@@ -162,6 +222,12 @@ class TestCalendarsUS(object):
         assert clnd1('26 Dec 2018').is_off_duty()
 
     def test_calendar_US_week8x5_exclusions(self):
+        """
+        Calculate the calendar calendar.
+
+        Args:
+            self: (todo): write your description
+        """
         holidays_2011 = [
             '31 Dec 2010', '17 Jan 2011', '21 Feb 2011', '30 May 2011',
             '04 Jul 2011', '05 Sep 2011', '10 Oct 2011', '11 Nov 2011',
@@ -179,6 +245,12 @@ class TestCalendarsUS(object):
         assert clnd('26 Dec 2018').is_on_duty()
 
     def test_calendar_US_week8x5_short_weekends(self):
+        """
+        Test for the calendar calendar.
+
+        Args:
+            self: (todo): write your description
+        """
         holidays_2011 = [
             '31 Dec 2010', '17 Jan 2011', '21 Feb 2011', '30 May 2011',
             '04 Jul 2011', '05 Sep 2011', '10 Oct 2011', '11 Nov 2011',
@@ -191,6 +263,12 @@ class TestCalendarsUS(object):
         assert clnd('26 Dec 2011').is_on_duty()
 
     def test_calendar_US_week8x5_shortened(self):
+        """
+        Test for holidays of the calendar of the calendar.
+
+        Args:
+            self: (todo): write your description
+        """
         holidays_2011_shortened = [
                            '17 Jan 2011', '21 Feb 2011', '30 May 2011',
             '04 Jul 2011', '05 Sep 2011', '10 Oct 2011', '11 Nov 2011',
@@ -205,6 +283,12 @@ class TestCalendarsUS(object):
 
 
     def test_calendar_US_week8x5_custom_amds(self):
+        """
+        Calculate the calendar calendar calendar.
+
+        Args:
+            self: (todo): write your description
+        """
         holidays_2011 = [
             '31 Dec 2010', '17 Jan 2011', '21 Feb 2011', '30 May 2011',
             '04 Jul 2011', '05 Sep 2011', '10 Oct 2011', '11 Nov 2011',
@@ -223,6 +307,12 @@ class TestCalendarsUK(object):
 
     @pytest.mark.skip("Is this for a new version of calendar?")
     def test_calendar_UK_week8x5_processing(self):
+        """
+        Test for the last week of the last day
+
+        Args:
+            self: (todo): write your description
+        """
         assert UK.Weekly8x5.amendments() is None
         clnd = UK.Weekly8x5(do_not_amend=True)
         assert len(UK.Weekly8x5.amendments()) == 0
@@ -233,6 +323,12 @@ class TestCalendarsUK(object):
             print(d)
 
     def test_calendar_UK_week8x5_nirl(self):
+        """
+        Test for holidays of the holidays.
+
+        Args:
+            self: (todo): write your description
+        """
         holidays_nirl_2016 = [
             '01 Jan 2016', '17 Mar 2016', '25 Mar 2016', '28 Mar 2016',
             '02 May 2016', '30 May 2016', '12 Jul 2016', '29 Aug 2016',
@@ -251,6 +347,12 @@ class TestCalendarsUK(object):
                len(holidays_nirl_2016))
 
     def test_calendar_UK_week8x5_scot(self):
+        """
+        Test for holidays in - holidays.
+
+        Args:
+            self: (todo): write your description
+        """
         holidays_scot_2012 = [
             '02 Jan 2012', '03 Jan 2012', '06 Apr 2012',
             '07 May 2012', '04 Jun 2012', '05 Jun 2012', '06 Aug 2012',
@@ -265,6 +367,12 @@ class TestCalendarsUK(object):
                len(holidays_scot_2012))
 
     def test_calendar_UK_week8x5_exclusions(self):
+        """
+        Test for the week of the week.
+
+        Args:
+            self: (todo): write your description
+        """
         holidays_scot_2012 = [
             '02 Jan 2012', '03 Jan 2012', '06 Apr 2012',
             '07 May 2012', '04 Jun 2012', '05 Jun 2012', '06 Aug 2012',
@@ -284,6 +392,12 @@ class TestCalendarsUK(object):
         assert clnd('30 Nov 2012').is_off_duty()
 
     def test_calendar_UK_week8x5_short_weekends(self):
+        """
+        Test if the week needs todo8 week.
+
+        Args:
+            self: (todo): write your description
+        """
         clnd = UK.Weekly8x5(country='northern_ireland', long_weekends=False)
         assert clnd('28 Dec 2015').is_on_duty()
         assert clnd('13 Jul 2015').is_on_duty()
@@ -292,6 +406,12 @@ class TestCalendarsUK(object):
         assert clnd('03 Jan 2012').is_on_duty()
 
     def test_calendar_UK_week8x5_shortened(self):
+        """
+        Test if the current holiday of the calendar.
+
+        Args:
+            self: (todo): write your description
+        """
 
         holidays_nirl_2016_shortened = [
             '01 Jan 2016', '17 Mar 2016', '25 Mar 2016', '28 Mar 2016',
@@ -308,6 +428,12 @@ class TestCalendarsUK(object):
                len(holidays_nirl_2016_shortened))
 
     def test_calendar_UK_week8x5_custom_amds(self):
+        """
+        Test if the week.
+
+        Args:
+            self: (todo): write your description
+        """
         holidays_scot_2012 = [
             '02 Jan 2012', '03 Jan 2012', '06 Apr 2012',
             '07 May 2012', '04 Jun 2012', '05 Jun 2012', '06 Aug 2012',

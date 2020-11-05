@@ -168,6 +168,22 @@ class Timeboard(object):
                  workshift_ref='start',
                  default_label=None,
                  worktime_source='duration'):
+        """
+        Initialize workshift objects.
+
+        Args:
+            self: (todo): write your description
+            base_unit_freq: (str): write your description
+            start: (int): write your description
+            end: (int): write your description
+            layout: (todo): write your description
+            amendments: (todo): write your description
+            default_selector: (todo): write your description
+            default_name: (str): write your description
+            workshift_ref: (todo): write your description
+            default_label: (str): write your description
+            worktime_source: (str): write your description
+        """
 
         # check and prepare parameters for the timeline
         if isinstance(layout, Organizer):
@@ -226,34 +242,82 @@ class Timeboard(object):
                      .format(org_repr, base_unit_freq, start, end, org_arg)
 
     def __repr__(self):
+        """
+        Return a repr of the __repr__.
+
+        Args:
+            self: (todo): write your description
+        """
         return self._repr
 
     @property
     def compact_str(self):
+        """
+        Return string representation of the frame.
+
+        Args:
+            self: (todo): write your description
+        """
         return "Timeboard of '{}': {} -> {}".format(
             self.base_unit_freq,
             self._frame[0],
             self._frame[-1])
 
     def __str__(self):
+        """
+        : return string representation of the frame.
+
+        Args:
+            self: (todo): write your description
+        """
         return self.compact_str + "\n\n{!r}".format(self.to_dataframe())
 
     @property
     def base_unit_freq(self):
+        """
+        The unit frequency of the unit.
+
+        Args:
+            self: (todo): write your description
+        """
         return self._base_unit_freq
 
     @property
     def start_time(self):
+        """
+        Return the start time of the timer.
+
+        Args:
+            self: (todo): write your description
+        """
         return self._frame.start_time
 
     @property
     def end_time(self):
+        """
+        The end time.
+
+        Args:
+            self: (todo): write your description
+        """
         return self._frame.end_time
 
     @property
     def default_selector(self):
+        """
+        Return the default selector for this element.
+
+        Args:
+            self: (todo): write your description
+        """
 
         def _default_selector(x):
+            """
+            Return the first element of x.
+
+            Args:
+                x: (todo): write your description
+            """
             return bool(x)
 
         if self._custom_selector is not None:
@@ -263,14 +327,32 @@ class Timeboard(object):
 
     @property
     def schedules(self):
+        """
+        Return a : a : class associated : class : ~sched.
+
+        Args:
+            self: (todo): write your description
+        """
         return self._schedules
 
     @property
     def default_schedule(self):
+        """
+        Return the default schedule.
+
+        Args:
+            self: (todo): write your description
+        """
         return self._default_schedule
 
     @property
     def worktime_source(self):
+        """
+        : return : a : class : ~zhzh.
+
+        Args:
+            self: (todo): write your description
+        """
         return self._worktime_source
 
     def __call__(self, *args, **kwargs):
@@ -422,6 +504,13 @@ class Timeboard(object):
                                    " raised KeyError".format(point_in_time))
 
     def _handle_out_of_bounds(self, msg=None):
+        """
+        Handle out the bounds of the message.
+
+        Args:
+            self: (todo): write your description
+            msg: (str): write your description
+        """
         if msg is None:
             message = "Point in time is outside {}".format(self.compact_str)
         else:
@@ -429,6 +518,13 @@ class Timeboard(object):
         raise OutOfBoundsError(message)
 
     def _handle_void_interval(self, msg=None):
+        """
+        Raises an exception if the interval.
+
+        Args:
+            self: (todo): write your description
+            msg: (str): write your description
+        """
         if msg is None:
             message = "Empty interval is not allowed"
         else:
@@ -799,6 +895,15 @@ class Timeboard(object):
 
     def _get_interval_locs_from_reference(self, interval_ref,
                                           drop_head, drop_tail):
+        """
+        Return the location of the reference location.
+
+        Args:
+            self: (todo): write your description
+            interval_ref: (str): write your description
+            drop_head: (str): write your description
+            drop_tail: (str): write your description
+        """
         locs = [_Location(0, LOC_WITHIN),
                 _Location(len(self._timeline) - 1, LOC_WITHIN)]
         if is_null(interval_ref):
@@ -817,6 +922,16 @@ class Timeboard(object):
 
     def _get_interval_locs_by_length(self, start_ref, length,
                                      drop_head, drop_tail):
+        """
+        Get locus location of the given interval.
+
+        Args:
+            self: (todo): write your description
+            start_ref: (str): write your description
+            length: (int): write your description
+            drop_head: (str): write your description
+            drop_tail: (str): write your description
+        """
         if not isinstance(length, int):
             raise TypeError('Interval length = `{!r}`: expected integer '
                             'got {}. If you are not using length parameter, '
@@ -840,6 +955,17 @@ class Timeboard(object):
 
     def _get_interval_locs_by_period(self, period_ref, period_freq,
                                      clip_period, drop_head, drop_tail):
+        """
+        Get the interval object corresponding to the given period.
+
+        Args:
+            self: (todo): write your description
+            period_ref: (str): write your description
+            period_freq: (todo): write your description
+            clip_period: (todo): write your description
+            drop_head: (todo): write your description
+            drop_tail: (str): write your description
+        """
         p = get_period(period_ref, freq=period_freq)
         locs = [self._locate(p.start_time, by_ref='after'),
                 self._locate(p.end_time, by_ref='before')]
@@ -858,6 +984,15 @@ class Timeboard(object):
                                          drop_head, drop_tail)
 
     def _strip_interval_locs(self, locs, drop_head, drop_tail):
+        """
+        Removes locs from loci.
+
+        Args:
+            self: (todo): write your description
+            locs: (todo): write your description
+            drop_head: (todo): write your description
+            drop_tail: (todo): write your description
+        """
         result0 = locs[0].position
         result1 = locs[1].position
         if drop_head and locs[0].position is not None:

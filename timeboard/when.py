@@ -219,6 +219,13 @@ def from_easter(pi, easter_type='western', normalize_by=None, shift=None,
 
 
 def from_easter_orthodox(pi, normalize_by=None, **kwargs):
+    """
+    Initialize easter from easter
+
+    Args:
+        pi: (todo): write your description
+        normalize_by: (bool): write your description
+    """
     return from_easter(pi, easter_type='orthodox', normalize_by=normalize_by,
                        **kwargs)
 
