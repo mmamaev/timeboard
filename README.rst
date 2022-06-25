@@ -58,7 +58,7 @@ Installation
 
     pip install timeboard
 
-`timeboard` is tested with Python versions 2.7, 3.6, 3.7, and 3.8.
+`timeboard` is tested with Python versions 2.7, 3.6 - 3.10.
 
 Dependencies:
 
