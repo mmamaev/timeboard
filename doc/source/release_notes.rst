@@ -2,6 +2,18 @@
 Release Notes
 ***************
 
+timeboard 0.2.4
+===============
+
+**Release date:** June 25, 2022
+
+Resolved issues
+---------------
+
+* Fixed changed in import path for Iterables.
+* Tested compatibility with Python 3.9, 3.10.
+
+
 timeboard 0.2.3
 ===============
 
